@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "279427655646",
+    "project_id": "mindmate-app-fcf2d",
+    "storage_bucket": "mindmate-app-fcf2d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:279427655646:android:1effec0047a5ef7cf3df4f",
+        "android_client_info": {
+          "package_name": "com.example.mindmate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDipe8wc9MZ6TDn5Y5pe5_XUjbi1ExoC-c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
