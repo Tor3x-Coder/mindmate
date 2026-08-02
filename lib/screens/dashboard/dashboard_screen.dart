@@ -14,6 +14,7 @@ import '../meditation/meditation_screen.dart';
 import '../professional/professional_directory_screen.dart';
 import '../professional/admin_professionals_screen.dart';
 import '../settings/settings_screen.dart';
+import '../achievements_screen.dart'; 
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -278,6 +279,15 @@ Container(
                                 MaterialPageRoute(builder: (_) => const JournalScreen()),
                               ),
                             ),
+                            _QuickActionTile(
+                              icon: Icons.emoji_events_outlined,
+                              label: 'Achievements',
+                              subtitle: 'See your streaks and badges.',
+                              onTap: () => Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+                              ),
+                            ),
+                            
                             _QuickActionTile(
                               icon: Icons.show_chart_rounded,
                               label: 'Progress',

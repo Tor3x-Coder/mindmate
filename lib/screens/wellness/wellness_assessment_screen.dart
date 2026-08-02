@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../models/wellness_assessment_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
+import 'wellness_result_screen.dart';
+import '../../utils/pattern_insight.dart';
 
 class WellnessAssessmentScreen extends StatefulWidget {
   const WellnessAssessmentScreen({super.key});
@@ -64,11 +66,6 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
   bool _isSaving = false;
   String? _errorText;
 
-  // After saving, we show the resulting score right on this screen
-  // instead of immediately navigating away.
-  int? _resultScore;
-  int? _computedStressLevel;
-
   bool get _stressQuizComplete =>
       _stressAnswers.values.every((answer) => answer != null);
 
@@ -120,14 +117,32 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
 
       await firestoreService.addWellnessAssessment(assessment);
 
+      final score = assessment.overallScorePercent;
+
+      // Look across recent history (not just this one entry) to see
+      // if a pattern-worthy insight should be surfaced.
+      final recentMoods = await firestoreService.moodLogsForUser(uid).first;
+      final recentAssessments =
+          await firestoreService.wellnessAssessmentsForUser(uid).first;
+
+      final moodInsight = PatternInsight.fromRecentMoods(recentMoods);
+      final scoreInsight =
+          PatternInsight.fromRecentAssessments(recentAssessments);
+
+      // Prefer whichever insight is more concerning; fall back to the
+      // score-based one (even if empty) so the screen always gets a
+      // valid PatternInsight object.
+      final insight = scoreInsight.isConcerning
+          ? scoreInsight
+          : (moodInsight.message != null ? moodInsight : scoreInsight);
+
       if (!mounted) return;
 
-      // Show the score on-screen rather than a plain snackbar, since
-      // this is the main payoff of filling out the assessment.
-      setState(() {
-        _resultScore = assessment.overallScorePercent;
-        _computedStressLevel = stressLevel;
-      });
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => WellnessResultScreen(score: score, insight: insight),
+        ),
+      );
     } catch (e) {
       setState(() => _errorText = 'DEBUG ERROR: $e');
     } finally {
@@ -142,83 +157,7 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
         title: const Text('Wellness Check'),
       ),
       body: SafeArea(
-        child: _resultScore != null ? _buildResultView() : _buildFormView(),
-      ),
-    );
-  }
-
-  // Shown once the assessment has been saved.
-  Widget _buildResultView() {
-    final score = _resultScore!;
-    final scoreColor = score >= 70
-        ? Colors.green
-        : (score >= 40 ? Colors.orange : Colors.red);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Your Wellness Score',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: scoreColor.withValues(alpha: 0.12),
-                border: Border.all(color: scoreColor, width: 4),
-              ),
-              child: Center(
-                child: Text(
-                  '$score%',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: scoreColor,
-                  ),
-                ),
-              ),
-            ),
-            if (_computedStressLevel != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Computed stress level: $_computedStressLevel / 10',
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-            ],
-            const SizedBox(height: 24),
-            Text(
-              score >= 70
-                  ? 'You\'re doing great! Keep it up.'
-                  : (score >= 40
-                      ? 'You\'re doing okay — small changes can help.'
-                      : 'Things seem tough right now. Be kind to yourself.'),
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 15),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5B9A8B),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 14,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text('Back to Dashboard'),
-            ),
-          ],
-        ),
+        child: _buildFormView(),
       ),
     );
   }
