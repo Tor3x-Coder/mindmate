@@ -92,20 +92,20 @@ class _JournalScreenState extends State<JournalScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.book_outlined, size: 56, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text(
+            Icon(Icons.book_outlined, size: 56, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
               'No journal entries yet',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8),
+            Text(
               'Tap "New Entry" below to write your first one.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey),

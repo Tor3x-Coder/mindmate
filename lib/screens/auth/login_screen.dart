@@ -17,6 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
 
   bool _isLoading = false;
+  bool _obscurePassword = true;
   String? _errorMessage;
 
   Future<void> _handleLogin() async {
@@ -34,9 +35,10 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text.trim(),
       );
 
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
+if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        (route) => false,
       );
     } catch (e) {
       setState(() {
@@ -98,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
-                Text(
+                const Text(
                   'Log in to continue your wellness journey.',
                   style: TextStyle(color: AppTheme.textLight),
                 ),
@@ -113,8 +115,21 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Password'),
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+                      tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+                    ),
+                  ),
                   validator: (value) =>
                       (value == null || value.isEmpty) ? 'Please enter your password' : null,
                 ),

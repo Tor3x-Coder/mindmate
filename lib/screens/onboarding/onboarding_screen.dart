@@ -37,9 +37,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         reminderTime: _selectedReminderTime!,
       );
 
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
+if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        (route) => false,
       );
     } catch (_) {
       if (mounted) {
@@ -67,7 +68,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              Text(
+              const Text(
                 'Select all that apply.',
                 style: TextStyle(color: AppTheme.textLight),
               ),
@@ -87,10 +88,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       duration: const Duration(milliseconds: 150),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.primary : Colors.white,
+                        color: isSelected
+                            ? AppTheme.primary
+                            : Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: isSelected ? AppTheme.primary : AppTheme.textLight.withValues(alpha: 0.3),
+                          color: isSelected
+                              ? AppTheme.primary
+                              : AppTheme.surfaceBorder.withValues(alpha: 0.8),
                         ),
                       ),
                       child: Text(
@@ -110,7 +115,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              Text(
+              const Text(
                 'When should we check in with you?',
                 style: TextStyle(color: AppTheme.textLight),
               ),
@@ -122,9 +127,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     value: time,
                     groupValue: _selectedReminderTime,
                     onChanged: (value) => setState(() => _selectedReminderTime = value),
-                    title: Text(time),
+                    title: Text(
+                      time,
+                      style: const TextStyle(color: AppTheme.textOnDark),
+                    ),
                     activeColor: AppTheme.primary,
-                    tileColor: isSelected ? AppTheme.primary.withValues(alpha: 0.08) : Colors.white,
+                    tileColor: isSelected
+                        ? AppTheme.primary.withValues(alpha: 0.12)
+                        : Theme.of(context).colorScheme.surface,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   );

@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: is the signed-in user marked as admin on their profile?
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true;
+    }
+
+    // ---- Users ----
+    // Each person can only read/write their own profile.
+    // Nobody can grant themselves admin (isAdmin can only stay the same
+    // on update — set it manually in the Firebase console).
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+
+      allow create: if isOwner(userId)
+        && request.resource.data.get('isAdmin', false) == false;
+
+      allow update: if isOwner(userId)
+        && request.resource.data.get('isAdmin', false)
+             == resource.data.get('isAdmin', false);
+
+      allow delete: if false;
+    }
+
+    // ---- Personal wellness data (owner-only) ----
+    match /mood_logs/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read, update, delete: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+    }
+
+    match /journal_entries/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read, update, delete: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+    }
+
+    match /wellness_assessments/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read, update, delete: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+    }
+
+    match /meditation_history/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read, update, delete: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+    }
+
+    match /breathing_sessions/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid;
+      allow read, update, delete: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+    }
+
+    // ---- Professionals directory ----
+    // Any signed-in user can browse. Only admins can add/edit/delete.
+    match /professionals/{docId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ---- Appointment requests ----
+    // Users can create their own requests (must start as pending),
+    // read/delete their own, and admins can update status later.
+    match /appointments/{docId} {
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'pending';
+
+      allow read: if isSignedIn()
+        && (resource.data.uid == request.auth.uid || isAdmin());
+
+      allow update: if isAdmin();
+
+      allow delete: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+    }
+  }
+}

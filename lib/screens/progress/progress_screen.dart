@@ -74,20 +74,20 @@ class ProgressScreen extends StatelessWidget {
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.show_chart, size: 56, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text(
+            Icon(Icons.show_chart, size: 56, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
               'No data yet',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8),
+            Text(
               'Check in with your mood, journal, or take a wellness '
               'assessment to start seeing your progress here.',
               textAlign: TextAlign.center,

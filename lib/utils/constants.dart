@@ -34,3 +34,17 @@ const List<String> onboardingGoals = [
 ];
 
 const List<String> reminderTimes = ['Morning', 'Afternoon', 'Evening'];
+
+// Categories for the Professional Support Directory (from the original spec).
+const List<String> professionalCategories = [
+  'Counselor',
+  'Psychologist',
+  'Psychiatrist',
+  'Physiotherapist',
+  'Dietitian',
+  'General Practitioner',
+];
+
+const List<String> consultationTypes = ['Online', 'Physical'];
+
+const List<String> appointmentStatuses = ['pending', 'approved', 'declined'];

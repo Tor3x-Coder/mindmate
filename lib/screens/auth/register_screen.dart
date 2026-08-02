@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../utils/app_theme.dart';
 import '../onboarding/onboarding_screen.dart';
+import '../terms_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -18,10 +19,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
 
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _agreedToTerms = false;
   String? _errorMessage;
 
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
+    if (!_agreedToTerms) return;
 
     setState(() {
       _isLoading = true;
@@ -72,6 +76,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canRegister = _agreedToTerms && !_isLoading;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Create Account')),
       body: SafeArea(
@@ -87,7 +93,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
-                Text(
+                const Text(
                   'Create your account to begin your wellness journey.',
                   style: TextStyle(color: AppTheme.textLight),
                 ),
@@ -112,21 +118,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Password'),
+                  obscureText: _obscurePassword,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                      ),
+                      onPressed: () {
+                        setState(() => _obscurePassword = !_obscurePassword);
+                      },
+                      tooltip: _obscurePassword ? 'Show password' : 'Hide password',
+                    ),
+                  ),
                   validator: (value) {
                     if (value == null || value.isEmpty) return 'Please enter a password';
                     if (value.length < 6) return 'Password must be at least 6 characters';
                     return null;
                   },
                 ),
+                const SizedBox(height: 12),
+                CheckboxListTile(
+                  value: _agreedToTerms,
+                  onChanged: (value) {
+                    setState(() => _agreedToTerms = value ?? false);
+                  },
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  activeColor: AppTheme.primary,
+                  title: GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const TermsScreen()),
+                      );
+                    },
+                    child: const Text(
+                      'I agree to the Terms & Conditions',
+                      style: TextStyle(
+                        fontSize: 14,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ),
                 if (_errorMessage != null) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
                   Text(_errorMessage!, style: const TextStyle(color: AppTheme.danger)),
                 ],
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 ElevatedButton(
-                  onPressed: _isLoading ? null : _handleRegister,
+                  onPressed: canRegister ? _handleRegister : null,
                   child: _isLoading
                       ? const SizedBox(
                           height: 20,
