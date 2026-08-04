@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../utils/app_theme.dart';
-import 'welcome_screen.dart';
+import 'onboarding_carousel_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,9 +16,9 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
     Timer(const Duration(seconds: 2), () {
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-        );
+      Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const OnboardingCarouselScreen()),
+              );
       }
     });
   }

@@ -10,7 +10,7 @@ class AppSettingsController extends ChangeNotifier {
   static const _checkInWindowKey = 'check_in_window';
   static const _preferredSessionMinutesKey = 'preferred_session_minutes';
 
-  ThemeMode _themeMode = ThemeMode.dark;
+  ThemeMode _themeMode = ThemeMode.light;
   double _textScale = 1.0;
   double _animationIntensity = 1.0;
   bool _hapticsEnabled = true;

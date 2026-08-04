@@ -66,13 +66,13 @@ class EmergencySupportScreen extends StatelessWidget {
               style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
             ),
             const SizedBox(height: 10),
-            _HelpCard(
+            const _HelpCard(
               title: 'MANI (Mentally Aware Nigeria Initiative)',
               subtitle: 'Crisis support and someone to talk to.',
               number: '',
               trailing: 'Find on findahelpline.com',
             ),
-            _HelpCard(
+            const _HelpCard(
               title: 'SURPIN Suicide Prevention Helpline',
               subtitle: '24-hour national helpline, trained counsellors.',
               number: '',

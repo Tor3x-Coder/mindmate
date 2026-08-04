@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/constants.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../main_nav_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -39,7 +39,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
 if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        MaterialPageRoute(builder: (_) => const MainNavScreen()),
         (route) => false,
       );
     } catch (_) {
