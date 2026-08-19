@@ -1,26 +1,38 @@
 import 'package:flutter/material.dart';
 
+/// MindMate's Option A colour system: Quiet Tide.
+///
+/// The palette is calm and mature without looking too clinical. Deep ink is
+/// used for readable text and dark surfaces, Tide is the primary action colour,
+/// Sea Glass is a soft supporting colour, Sand adds warmth, and Coral is
+/// reserved for danger or important attention states.
 class AppTheme {
-  static const Color primary = Color(0xFF71B7A6);
-  static const Color secondary = Color(0xFFA08DE6);
-  static const Color accent = Color(0xFF8AAFF8);
-  static const Color background = Color(0xFF0E1520);
-  static const Color cardBackground = Color(0xFF151E2C);
-  static const Color surfaceAlt = Color(0xFF1C2737);
-  static const Color surfaceBorder = Color(0xFF2D3A4E);
-  static const Color textDark = Color(0xFF1D2430);
-  static const Color textLight = Color(0xFF98A4B5);
-  static const Color textOnDark = Color(0xFFF4F7FB);
-  static const Color danger = Color(0xFFE07A7A);
-  static const Color success = Color(0xFF6FBF8B);
+  // Quiet Tide palette
+  static const Color primary = Color(0xFF2E7D73); // Tide
+  static const Color secondary = Color(0xFF78AFA2); // Sea Glass, deepened for UI
+  static const Color accent = Color(0xFFD9776A); // Coral
 
-static const LinearGradient heroGradient = LinearGradient(
+  static const Color background = Color(0xFF12232B); // Dark ink background
+  static const Color cardBackground = Color(0xFF1B3238);
+  static const Color surfaceAlt = Color(0xFF244047);
+  static const Color surfaceBorder = Color(0xFFC9DED8);
+
+  static const Color textDark = Color(0xFF182A35); // Ink
+  static const Color textLight = Color(0xFF68767C);
+  static const Color textOnDark = Color(0xFFF4F8F6);
+  static const Color danger = Color(0xFFD9776A); // Coral
+  static const Color success = Color(0xFF4F987E);
+
+  static const Color sand = Color(0xFFF4E7D4);
+  static const Color seaGlass = Color(0xFFB8DFD2);
+
+  static const LinearGradient heroGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF202E46),
-      Color(0xFF162230),
-      Color(0xFF111A27),
+      Color(0xFF294B4A),
+      Color(0xFF1B343A),
+      Color(0xFF12232B),
     ],
   );
 
@@ -28,24 +40,24 @@ static const LinearGradient heroGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFFDCEEE7),
-      Color(0xFFE2E0F5),
-      Color(0xFFEAF1FB),
+      Color(0xFFE1F2EC),
+      Color(0xFFEAF3F0),
+      Color(0xFFF4E7D4),
     ],
   );
 
-  // Picks the right hero gradient for the current theme, so screens
-  // don't need to check brightness themselves.
   static LinearGradient heroGradientFor(Brightness brightness) {
     return brightness == Brightness.dark ? heroGradient : heroGradientLight;
   }
 
+  // Kept as a gradient for existing UI components, but both stops stay dark
+  // enough for white button text to remain readable.
   static const LinearGradient accentGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Color(0xFF79C1B0),
-      Color(0xFF9891EA),
+      Color(0xFF2E7D73),
+      Color(0xFF4F987E),
     ],
   );
 
@@ -53,22 +65,18 @@ static const LinearGradient heroGradient = LinearGradient(
     return _buildTheme(Brightness.light);
   }
 
-  static ThemeData get darkTheme => _buildTheme(Brightness.dark);
+  static ThemeData get darkTheme {
+    return _buildTheme(Brightness.dark);
+  }
 
   static ThemeData _buildTheme(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
-    final backgroundColor =
-        isDark ? background : const Color(0xFFF5F7FB);
-    final surfaceColor =
-        isDark ? cardBackground : Colors.white;
-    final panelColor =
-        isDark ? surfaceAlt : const Color(0xFFEFF3FA);
-    final onSurface =
-        isDark ? textOnDark : textDark;
-    final mutedText =
-        isDark ? textLight : const Color(0xFF6E7A8D);
-    final dividerColor =
-        isDark ? surfaceBorder : const Color(0xFFD7DEE9);
+    final backgroundColor = isDark ? background : const Color(0xFFF5F8F6);
+    final surfaceColor = isDark ? cardBackground : Colors.white;
+    final panelColor = isDark ? surfaceAlt : const Color(0xFFEDF6F2);
+    final onSurface = isDark ? textOnDark : textDark;
+    final mutedText = isDark ? textLight : const Color(0xFF68767C);
+    final dividerColor = isDark ? const Color(0xFF355158) : const Color(0xFFC9DED8);
 
     return ThemeData(
       useMaterial3: true,
@@ -80,7 +88,7 @@ static const LinearGradient heroGradient = LinearGradient(
         primary: primary,
         onPrimary: Colors.white,
         secondary: secondary,
-        onSecondary: Colors.white,
+        onSecondary: textDark,
         error: danger,
         onError: Colors.white,
         surface: surfaceColor,
@@ -111,15 +119,9 @@ static const LinearGradient heroGradient = LinearGradient(
           color: onSurface,
           fontWeight: FontWeight.w600,
         ),
-        bodyLarge: TextStyle(
-          color: onSurface,
-        ),
-        bodyMedium: TextStyle(
-          color: onSurface,
-        ),
-        bodySmall: TextStyle(
-          color: mutedText,
-        ),
+        bodyLarge: TextStyle(color: onSurface),
+        bodyMedium: TextStyle(color: onSurface),
+        bodySmall: TextStyle(color: mutedText),
       ),
       dividerColor: dividerColor,
       cardTheme: CardThemeData(
@@ -144,7 +146,10 @@ static const LinearGradient heroGradient = LinearGradient(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
           ),
-          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -158,17 +163,17 @@ static const LinearGradient heroGradient = LinearGradient(
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: primary,
-        ),
+        style: TextButton.styleFrom(foregroundColor: primary),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: panelColor,
         labelStyle: TextStyle(color: mutedText),
         hintStyle: TextStyle(color: mutedText),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide(color: dividerColor),
@@ -183,17 +188,13 @@ static const LinearGradient heroGradient = LinearGradient(
       ),
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return primary;
-          }
+          if (states.contains(WidgetState.selected)) return primary;
           return mutedText;
         }),
       ),
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return primary;
-          }
+          if (states.contains(WidgetState.selected)) return primary;
           return Colors.transparent;
         }),
         side: BorderSide(color: dividerColor),
@@ -201,9 +202,7 @@ static const LinearGradient heroGradient = LinearGradient(
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return primary;
-          }
+          if (states.contains(WidgetState.selected)) return primary;
           return mutedText;
         }),
         trackColor: WidgetStateProperty.resolveWith((states) {
@@ -214,7 +213,7 @@ static const LinearGradient heroGradient = LinearGradient(
         }),
       ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: isDark ? const Color(0xFF243144) : textDark,
+        backgroundColor: isDark ? const Color(0xFF29434A) : textDark,
         contentTextStyle: const TextStyle(color: Colors.white),
         behavior: SnackBarBehavior.floating,
       ),

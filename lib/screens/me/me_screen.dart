@@ -5,7 +5,7 @@ import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/app_theme.dart';
 import '../settings/settings_screen.dart';
-import '../welcome_screen.dart';
+import '../onboarding_carousel_screen.dart';
 
 class MeScreen extends StatelessWidget {
   const MeScreen({super.key});
@@ -244,8 +244,8 @@ Container(
                   onPressed: () async {
                     await authService.logout();
                     if (!context.mounted) return;
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+                      Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const OnboardingCarouselScreen()),
                       (route) => false,
                     );
                   },

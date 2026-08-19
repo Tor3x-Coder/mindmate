@@ -3,6 +3,14 @@ import 'package:provider/provider.dart';
 import '../../models/journal_entry_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_theme.dart';
+
+const List<String> _journalPrompts = [
+  'What made you smile today?',
+  'What\'s something on your mind right now?',
+  'What are you grateful for today?',
+  'What was challenging about today?',
+];
 
 class JournalScreen extends StatefulWidget {
   const JournalScreen({super.key});
@@ -12,25 +20,57 @@ class JournalScreen extends StatefulWidget {
 }
 
 class _JournalScreenState extends State<JournalScreen> {
-  // A few optional starter prompts the user can tap to fill the box,
-  // so they're not stuck staring at a blank page.
-  final List<String> _prompts = const [
-    'What made you smile today?',
-    'What\'s something on your mind right now?',
-    'What are you grateful for today?',
-    'What was challenging about today?',
-  ];
-
-  void _openNewEntrySheet() {
+  void _openNewEntrySheet({String? prompt}) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // lets the sheet grow with the keyboard
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => const _NewJournalEntrySheet(),
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _JournalEntrySheet(initialPrompt: prompt),
     );
+  }
+
+  void _openEditSheet(JournalEntryModel entry) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _JournalEntrySheet(existingEntry: entry),
+    );
+  }
+
+  Future<void> _confirmDelete(JournalEntryModel entry) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: const Text('Delete this entry?'),
+        content: const Text('This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.danger),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await context.read<FirestoreService>().deleteJournalEntry(entry.id);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not delete that entry. Try again.')),
+      );
+    }
   }
 
   @override
@@ -38,16 +78,12 @@ class _JournalScreenState extends State<JournalScreen> {
     final authService = context.watch<AuthService>();
     final firestoreService = context.watch<FirestoreService>();
     final uid = authService.currentUser?.uid;
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Journal'),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openNewEntrySheet,
-        backgroundColor: const Color(0xFF5B9A8B),
-        icon: const Icon(Icons.edit, color: Colors.white),
-        label: const Text('New Entry', style: TextStyle(color: Colors.white)),
+        automaticallyImplyLeading: true,
       ),
       body: SafeArea(
         child: uid == null
@@ -60,30 +96,48 @@ class _JournalScreenState extends State<JournalScreen> {
                   }
 
                   if (snapshot.hasError) {
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Text(
-                          'ERROR: ${snapshot.error}',
-                          style:
-                              const TextStyle(color: Colors.red, fontSize: 12),
+                    return _buildErrorState();
+                  }
+
+                  final entries = snapshot.data ?? <JournalEntryModel>[];
+
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildDiaryHero(),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Gentle prompts',
+                          style: theme.textTheme.titleMedium,
                         ),
-                      ),
-                    );
-                  }
-
-                  final entries = snapshot.data ?? [];
-
-                  if (entries.isEmpty) {
-                    return _buildEmptyState();
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-                    itemCount: entries.length,
-                    itemBuilder: (context, index) {
-                      return _JournalEntryCard(entry: entries[index]);
-                    },
+                        const SizedBox(height: 10),
+                        _buildPromptRow(),
+                        const SizedBox(height: 26),
+                        Text(
+                          entries.isEmpty ? 'Start your diary' : 'Recent entries',
+                          style: theme.textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 10),
+                        if (entries.isEmpty)
+                          _buildEmptyState()
+                        else
+                          ...entries.map(
+                            (entry) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _JournalEntryCard(
+                                entry: entry,
+                                accentColor: entries.indexOf(entry).isEven
+                                    ? AppTheme.primary
+                                    : AppTheme.secondary,
+                                onEdit: () => _openEditSheet(entry),
+                                onDelete: () => _confirmDelete(entry),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   );
                 },
               ),
@@ -91,40 +145,163 @@ class _JournalScreenState extends State<JournalScreen> {
     );
   }
 
+  Widget _buildDiaryHero() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: AppTheme.heroGradientFor(Theme.of(context).brightness),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'A MOMENT FOR YOU',
+                  style: TextStyle(
+                    color: Color(0xFF806B59),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'What’s on your mind?',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Write as much or as little as you want.',
+                  style: TextStyle(
+                    color: Color(0xFF806B59),
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _openNewEntrySheet,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 12,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('New entry'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Text('✎', style: TextStyle(fontSize: 48, color: Color(0xFFC78D61))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPromptRow() {
+    return SizedBox(
+      height: 54,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _journalPrompts.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final prompt = _journalPrompts[index];
+          return InkWell(
+            onTap: () => _openNewEntrySheet(prompt: prompt),
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+                ),
+              ),
+              child: Text(
+                prompt,
+                style: const TextStyle(
+                  color: AppTheme.textLight,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildEmptyState() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+        ),
+      ),
+      child: const Column(
+        children: [
+          Icon(Icons.book_outlined, size: 48, color: AppTheme.textLight),
+          SizedBox(height: 14),
+          Text(
+            'Your first entry can start small.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          SizedBox(height: 7),
+          Text(
+            'You do not need the perfect words. Just begin wherever you are.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppTheme.textLight, height: 1.4),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
     return const Center(
       child: Padding(
-        padding: EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.book_outlined, size: 56, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'No journal entries yet',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Tap "New Entry" below to write your first one.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Your journal could not load right now. Check your connection and try again.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: AppTheme.danger),
         ),
       ),
     );
   }
 }
 
-// A single card showing one past journal entry in the list.
 class _JournalEntryCard extends StatelessWidget {
   final JournalEntryModel entry;
+  final Color accentColor;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
-  const _JournalEntryCard({required this.entry});
+  const _JournalEntryCard({
+    required this.entry,
+    required this.accentColor,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   String _formatDate(DateTime date) {
-    // Simple readable date, no extra packages needed.
     const months = [
       'Jan',
       'Feb',
@@ -142,68 +319,125 @@ class _JournalEntryCard extends StatelessWidget {
     final hour = date.hour % 12 == 0 ? 12 : date.hour % 12;
     final minute = date.minute.toString().padLeft(2, '0');
     final ampm = date.hour >= 12 ? 'PM' : 'AM';
-    return '${months[date.month - 1]} ${date.day}, ${date.year} · $hour:$minute $ampm';
+    return '${months[date.month - 1]} ${date.day} · $hour:$minute $ampm';
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF9B8ECF).withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(21),
+        border: Border.all(
+          color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (entry.prompt.isNotEmpty) ...[
-            Text(
-              entry.prompt,
-              style: const TextStyle(
-                fontSize: 13,
-                fontStyle: FontStyle.italic,
-                color: Color(0xFF9B8ECF),
-                fontWeight: FontWeight.w600,
+      clipBehavior: Clip.antiAlias,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(width: 7, color: accentColor),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            entry.prompt.isEmpty
+                                ? _formatDate(entry.date)
+                                : entry.prompt,
+                            style: TextStyle(
+                              color: accentColor,
+                              fontSize: 12,
+                              fontStyle: entry.prompt.isNotEmpty
+                                  ? FontStyle.italic
+                                  : FontStyle.normal,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        PopupMenuButton<String>(
+                          icon: const Icon(
+                            Icons.more_vert,
+                            size: 20,
+                            color: AppTheme.textLight,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          onSelected: (value) {
+                            if (value == 'edit') onEdit();
+                            if (value == 'delete') onDelete();
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(value: 'edit', child: Text('Edit')),
+                            PopupMenuItem(value: 'delete', child: Text('Delete')),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      entry.content,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 15, height: 1.4),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      _formatDate(entry.date),
+                      style: const TextStyle(
+                        color: AppTheme.textLight,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 6),
           ],
-          Text(
-            entry.content,
-            style: const TextStyle(fontSize: 15),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            _formatDate(entry.date),
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-// The bottom sheet form used to write a new journal entry.
-class _NewJournalEntrySheet extends StatefulWidget {
-  const _NewJournalEntrySheet();
+class _JournalEntrySheet extends StatefulWidget {
+  final JournalEntryModel? existingEntry;
+  final String? initialPrompt;
+
+  const _JournalEntrySheet({
+    this.existingEntry,
+    this.initialPrompt,
+  });
 
   @override
-  State<_NewJournalEntrySheet> createState() => _NewJournalEntrySheetState();
+  State<_JournalEntrySheet> createState() => _JournalEntrySheetState();
 }
 
-class _NewJournalEntrySheetState extends State<_NewJournalEntrySheet> {
-  final TextEditingController _contentController = TextEditingController();
-  String _selectedPrompt = '';
+class _JournalEntrySheetState extends State<_JournalEntrySheet> {
+  late final TextEditingController _contentController;
+  late String _selectedPrompt;
   bool _isSaving = false;
   String? _errorText;
 
-  final List<String> _prompts = const [
-    'What made you smile today?',
-    'What\'s something on your mind right now?',
-    'What are you grateful for today?',
-    'What was challenging about today?',
-  ];
+  bool get _isEditing => widget.existingEntry != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _contentController = TextEditingController(
+      text: widget.existingEntry?.content ?? '',
+    );
+    _selectedPrompt =
+        widget.existingEntry?.prompt ?? widget.initialPrompt ?? '';
+  }
 
   @override
   void dispose() {
@@ -211,11 +445,7 @@ class _NewJournalEntrySheetState extends State<_NewJournalEntrySheet> {
     super.dispose();
   }
 
-  String _friendlyError(Object e) {
-    return 'Something went wrong saving your entry. Please try again.';
-  }
-
-  Future<void> _saveEntry() async {
+  Future<void> _save() async {
     setState(() => _errorText = null);
 
     if (_contentController.text.trim().isEmpty) {
@@ -235,20 +465,33 @@ class _NewJournalEntrySheetState extends State<_NewJournalEntrySheet> {
     setState(() => _isSaving = true);
 
     try {
-      final entry = JournalEntryModel(
-        id: '', // Firestore generates this automatically
-        uid: uid,
-        prompt: _selectedPrompt,
-        content: _contentController.text.trim(),
-        date: DateTime.now(),
-      );
-
-      await firestoreService.addJournalEntry(entry);
+      if (_isEditing) {
+        final updated = JournalEntryModel(
+          id: widget.existingEntry!.id,
+          uid: uid,
+          prompt: _selectedPrompt,
+          content: _contentController.text.trim(),
+          date: widget.existingEntry!.date,
+        );
+        await firestoreService.updateJournalEntry(updated);
+      } else {
+        final entry = JournalEntryModel(
+          id: '',
+          uid: uid,
+          prompt: _selectedPrompt,
+          content: _contentController.text.trim(),
+          date: DateTime.now(),
+        );
+        await firestoreService.addJournalEntry(entry);
+      }
 
       if (!mounted) return;
       Navigator.of(context).pop();
-    } catch (e) {
-      setState(() => _errorText = _friendlyError(e));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorText = 'Something went wrong saving your entry. Please try again.';
+      });
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -256,102 +499,119 @@ class _NewJournalEntrySheetState extends State<_NewJournalEntrySheet> {
 
   @override
   Widget build(BuildContext context) {
-    // Pushes the sheet up above the on-screen keyboard when typing.
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final surface = Theme.of(context).colorScheme.surface;
 
     return Padding(
       padding: EdgeInsets.only(bottom: bottomInset),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
+      child: Container(
+        decoration: BoxDecoration(
+          color: surface,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(26),
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceBorder,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 18),
-            const Text(
-              'New Journal Entry',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 14),
-
-            // Optional prompt chips.
-            const Text(
-              'Need a prompt? (optional)',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _prompts.map((prompt) {
-                final isSelected = _selectedPrompt == prompt;
-                return ChoiceChip(
-                  label: Text(prompt, style: const TextStyle(fontSize: 12)),
-                  selected: isSelected,
-                  selectedColor:
-                      const Color(0xFF9B8ECF).withValues(alpha: 0.25),
-                  onSelected: (selected) {
-                    setState(() {
-                      _selectedPrompt = selected ? prompt : '';
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 18),
-            TextField(
-              controller: _contentController,
-              maxLines: 6,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: 'Write here...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-
-            if (_errorText != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 18),
               Text(
-                _errorText!,
-                style: const TextStyle(color: Colors.red, fontSize: 14),
+                _isEditing ? 'Edit entry' : 'New journal entry',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Your entry is private. Use a prompt or start wherever you are.',
+                style: TextStyle(
+                  color: AppTheme.textLight,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Choose a prompt (optional)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 9),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _journalPrompts.map((prompt) {
+                  final isSelected = _selectedPrompt == prompt;
+                  return ChoiceChip(
+                    label: Text(
+                      prompt,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    selected: isSelected,
+                    selectedColor: AppTheme.secondary.withValues(alpha: 0.25),
+                    onSelected: (selected) {
+                      setState(() {
+                        _selectedPrompt = selected ? prompt : '';
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                controller: _contentController,
+                maxLines: 7,
+                autofocus: true,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  hintText: 'Write here...',
+                  filled: true,
+                  fillColor: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerHighest
+                      .withValues(alpha: 0.45),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+              if (_errorText != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _errorText!,
+                  style: const TextStyle(
+                    color: AppTheme.danger,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _isSaving ? null : _save,
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(_isEditing ? 'Save changes' : 'Save entry'),
               ),
             ],
-
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _isSaving ? null : _saveEntry,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF5B9A8B),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: _isSaving
-                  ? const SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : const Text('Save Entry', style: TextStyle(fontSize: 16)),
-            ),
-          ],
+          ),
         ),
       ),
     );

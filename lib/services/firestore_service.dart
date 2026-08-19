@@ -5,6 +5,7 @@ import '../models/wellness_assessment_model.dart';
 import '../models/meditation_session_model.dart';
 import '../models/professional_model.dart';
 import '../models/appointment_model.dart';
+import '../models/thought_record_model.dart';
 import '../utils/constants.dart';
 
 class FirestoreService {
@@ -151,6 +152,44 @@ class FirestoreService {
         .snapshots()
         .map((snap) => snap.docs
             .map((d) => AppointmentModel.fromMap(d.data(), d.id))
+            .toList());
+  }
+
+// ---- Journal: Update & Delete ----
+  Future<void> updateJournalEntry(JournalEntryModel entry) async {
+    await _db
+        .collection(FirestoreCollections.journalEntries)
+        .doc(entry.id)
+        .update(entry.toMap());
+  }
+
+  Future<void> deleteJournalEntry(String entryId) async {
+    await _db
+        .collection(FirestoreCollections.journalEntries)
+        .doc(entryId)
+        .delete();
+  }
+  
+  // ---- CBT Thought Records ----
+  // Saves a completed thought-reframe exercise (situation, automatic
+  // thought, evidence for/against, and the reframed "balanced" thought).
+  Future<void> addThoughtRecord(ThoughtRecordModel record) async {
+    await _db
+        .collection(FirestoreCollections.thoughtRecords)
+        .add(record.toMap());
+  }
+
+  // REQUIRES a composite index in Firebase Console:
+  // Collection: thought_records
+  // Fields: uid (Ascending), date (Descending)
+  Stream<List<ThoughtRecordModel>> thoughtRecordsForUser(String uid) {
+    return _db
+        .collection(FirestoreCollections.thoughtRecords)
+        .where('uid', isEqualTo: uid)
+        .orderBy('date', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs
+            .map((d) => ThoughtRecordModel.fromMap(d.data(), d.id))
             .toList());
   }
 }

@@ -257,7 +257,7 @@ class _BreathingScreenState extends State<BreathingScreen>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-Builder(
+              Builder(
                 builder: (context) {
                   final isDark = Theme.of(context).brightness == Brightness.dark;
                   final textColor = isDark ? Colors.white : AppTheme.textDark;
@@ -289,12 +289,12 @@ Builder(
                             fontSize: 15,
                           ),
                         ),
-                    const SizedBox(height: 18),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-_TopPill(
+                        const SizedBox(height: 18),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            _TopPill(
                               icon: Icons.air_rounded,
                               label: pattern.benefit,
                               isDark: isDark,
@@ -489,7 +489,6 @@ _TopPill(
     final currentLabel = _currentPhaseLabel;
     final intensity = settings.animationIntensity;
     final orbScale = 0.62 + (_circleController.value * 0.38 * intensity.clamp(0.6, 1.3));
-    final orbGlow = 30 + (26 * _circleController.value * intensity);
 
     return Stack(
       children: [
@@ -511,167 +510,155 @@ _TopPill(
         ),
         Padding(
           padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.88),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: AppTheme.surfaceBorder.withValues(alpha: 0.8),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.88),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: AppTheme.surfaceBorder.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _SessionStat(
+                          label: 'Time left',
+                          value: _formatClock(_secondsRemainingTotal),
+                        ),
+                      ),
+                      Expanded(
+                        child: _SessionStat(
+                          label: 'Cycles',
+                          value: '$_completedCycles',
+                        ),
+                      ),
+                      Expanded(
+                        child: _SessionStat(
+                          label: 'Pattern',
+                          value: _selectedPattern.name,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _SessionStat(
-                        label: 'Time left',
-                        value: _formatClock(_secondsRemainingTotal),
-                      ),
-                    ),
-                    Expanded(
-                      child: _SessionStat(
-                        label: 'Cycles',
-                        value: '$_completedCycles',
-                      ),
-                    ),
-                    Expanded(
-                      child: _SessionStat(
-                        label: 'Pattern',
-                        value: _selectedPattern.name,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              AnimatedBuilder(
-                animation: _circleController,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: orbScale,
-                    child: SizedBox(
-                      width: 300,
-                      height: 300,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          CustomPaint(
-                            size: const Size.square(300),
-                            painter: _ProgressRingPainter(
-                              progress: _sessionProgress,
-                              activeColor: AppTheme.primary,
-                              trackColor: AppTheme.surfaceBorder.withValues(alpha: 0.35),
+                const SizedBox(height: 24),
+                AnimatedBuilder(
+                  animation: _circleController,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: orbScale,
+                      child: SizedBox(
+                        width: 300,
+                        height: 300,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CustomPaint(
+                              size: const Size.square(300),
+                              painter: _ProgressRingPainter(
+                                progress: _sessionProgress,
+                                activeColor: AppTheme.primary,
+                                trackColor: AppTheme.surfaceBorder.withValues(alpha: 0.35),
+                              ),
                             ),
-                          ),
-                          Container(
-                            width: 250,
-                            height: 250,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.primary.withValues(alpha: 0.20),
-                                  blurRadius: orbGlow,
-                                  spreadRadius: 2,
+                            CustomPaint(
+                              size: const Size.square(220),
+                              painter: _BreathingFigurePainter(
+                                breathValue: _circleController.value,
+                                color: AppTheme.primary,
+                              ),
+                            ),
+                            Container(
+                              width: 166,
+                              height: 166,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: const Color(0xFF11202A).withValues(alpha: 0.30),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.10),
                                 ),
-                              ],
-                              gradient: RadialGradient(
-                                colors: [
-                                  Colors.white.withValues(alpha: 0.18),
-                                  AppTheme.primary.withValues(alpha: 0.54),
-                                  AppTheme.secondary.withValues(alpha: 0.30),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    currentLabel,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '$_secondsRemainingInPhase',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 40,
+                                      fontWeight: FontWeight.w300,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                          ),
-                          Container(
-                            width: 166,
-                            height: 166,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: const Color(0xFF11202A).withValues(alpha: 0.72),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.10),
-                              ),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  currentLabel,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '$_secondsRemainingInPhase',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 40,
-                                    fontWeight: FontWeight.w300,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 28),
-              Text(
-                _phaseSupportText,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: AppTheme.textLight,
+                    );
+                  },
                 ),
-              ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: List.generate(_selectedPattern.phaseLabels.length, (index) {
-                  final isActive = index == _currentPhaseIndex;
-                  return AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: isActive ? AppTheme.accentGradient : null,
-                      color: isActive
-                          ? null
-                          : AppTheme.surfaceAlt.withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      _selectedPattern.phaseLabels[index],
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                const SizedBox(height: 28),
+                Text(
+                  _phaseSupportText,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    color: AppTheme.textLight,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: List.generate(_selectedPattern.phaseLabels.length, (index) {
+                    final isActive = index == _currentPhaseIndex;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
                       ),
-                    ),
-                  );
-                }),
-              ),
-              const Spacer(),
-              OutlinedButton.icon(
-                onPressed: _stopSession,
-                icon: const Icon(Icons.close_rounded),
-                label: const Text('End session'),
-              ),
-              const SizedBox(height: 8),
-            ],
+                      decoration: BoxDecoration(
+                        gradient: isActive ? AppTheme.accentGradient : null,
+                        color: isActive
+                            ? null
+                            : AppTheme.surfaceAlt.withValues(alpha: 0.55),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        _selectedPattern.phaseLabels[index],
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 24),
+                OutlinedButton.icon(
+                  onPressed: _stopSession,
+                  icon: const Icon(Icons.close_rounded),
+                  label: const Text('End session'),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ],
@@ -828,5 +815,71 @@ class _ProgressRingPainter extends CustomPainter {
     return oldDelegate.progress != progress ||
         oldDelegate.activeColor != activeColor ||
         oldDelegate.trackColor != trackColor;
+  }
+}
+
+// Draws a simple human silhouette whose chest expands and contracts
+// with the breathing animation — head, chest (scales with breathValue),
+// and a hint of lower body.
+class _BreathingFigurePainter extends CustomPainter {
+  final double breathValue;
+  final Color color;
+
+  const _BreathingFigurePainter({
+    required this.breathValue,
+    required this.color,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+
+    // Head
+    final headPaint = Paint()..color = color.withValues(alpha: 0.85);
+    final headRadius = size.width * 0.09;
+    final headCenter = Offset(center.dx, size.height * 0.22);
+    canvas.drawCircle(headCenter, headRadius, headPaint);
+
+    // Chest — this is the part that visibly grows on inhale and
+    // shrinks on exhale, so the user can watch it "breathe."
+    final chestWidthBase = size.width * 0.30;
+    final chestWidth = chestWidthBase + (chestWidthBase * 0.35 * breathValue);
+    final chestHeight = size.height * 0.30;
+    final chestTop = headCenter.dy + headRadius + size.height * 0.03;
+    final chestRect = Rect.fromCenter(
+      center: Offset(center.dx, chestTop + chestHeight / 2),
+      width: chestWidth,
+      height: chestHeight,
+    );
+    final chestPaint = Paint()
+      ..shader = LinearGradient(
+        colors: [color.withValues(alpha: 0.9), color.withValues(alpha: 0.4)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ).createShader(chestRect);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(chestRect, Radius.circular(chestWidth * 0.35)),
+      chestPaint,
+    );
+
+    // A faint lower-body hint below the chest, so it reads as a full
+    // figure rather than a floating head-and-chest.
+    final lowerRect = Rect.fromLTWH(
+      center.dx - chestWidthBase * 0.42,
+      chestRect.bottom - 4,
+      chestWidthBase * 0.84,
+      size.height * 0.18,
+    );
+    final lowerPaint = Paint()..color = color.withValues(alpha: 0.25);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(lowerRect, const Radius.circular(20)),
+      lowerPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _BreathingFigurePainter oldDelegate) {
+    return oldDelegate.breathValue != breathValue ||
+        oldDelegate.color != color;
   }
 }

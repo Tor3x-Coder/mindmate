@@ -4,13 +4,13 @@ import '../../services/app_settings_controller.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/app_theme.dart';
+import '../breathing/breathing_screen.dart';
+import '../chat/chat_tab_screen.dart';
+import '../journal/journal_screen.dart';
 import '../mood/mood_checkin_screen.dart';
-import '../wellness/wellness_assessment_screen.dart';
 import '../settings/settings_screen.dart';
+import '../wellness/wellness_assessment_screen.dart';
 
-// The trimmed-down Home tab — just the greeting, Mood Check-in, and
-// Wellness Score. Everything else that used to crowd the old
-// Dashboard now lives in the Practice tab instead.
 class HomeTabScreen extends StatefulWidget {
   const HomeTabScreen({super.key});
 
@@ -19,8 +19,9 @@ class HomeTabScreen extends StatefulWidget {
 }
 
 class _HomeTabScreenState extends State<HomeTabScreen> {
-  String _userName = '';
+  String _userName = 'there';
   bool _isLoading = true;
+  bool _profileLoadFailed = false;
   Map<String, dynamic>? _profile;
 
   @override
@@ -34,18 +35,30 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     final firestoreService = context.read<FirestoreService>();
     final uid = authService.currentUser?.uid;
 
-    if (uid != null) {
-      final profile = await firestoreService.getUserProfile(uid);
-      if (mounted) {
-        setState(() {
-          _profile = profile;
-          _userName =
-              profile?['fullName']?.toString().split(' ').first ?? 'there';
-          _isLoading = false;
-        });
-      }
-    } else {
+    if (uid == null) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final profile = await firestoreService.getUserProfile(uid);
+      if (!mounted) return;
+
+      final fullName = profile?['fullName']?.toString().trim() ?? '';
+      setState(() {
+        _profile = profile;
+        _userName = fullName.isEmpty ? 'there' : fullName.split(' ').first;
+        _isLoading = false;
+      });
+    } catch (_) {
+      // Home should remain useful even if the profile request fails because
+      // of a temporary network problem. The check-in flow can still work.
+      if (!mounted) return;
+      setState(() {
+        _profileLoadFailed = true;
+        _isLoading = false;
+      });
     }
   }
 
@@ -56,15 +69,21 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
     return 'Good evening';
   }
 
+  void _openMoodCheckIn() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const MoodCheckinScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<AppSettingsController>();
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
     final reminderTime =
         _profile?['reminderTime']?.toString() ?? settings.checkInWindow;
-    final goalsCount = List<String>.from(_profile?['goals'] ?? const []).length;
+    final goals = List<String>.from(_profile?['goals'] ?? const <String>[]);
     final greeting = _greetingForNow();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final heroTextColor = isDark ? Colors.white : AppTheme.textDark;
 
     return Scaffold(
       appBar: AppBar(
@@ -72,7 +91,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.tune_rounded),
+            icon: const Icon(Icons.settings_outlined),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -86,151 +105,296 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
           ? const Center(child: CircularProgressIndicator())
           : SafeArea(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: AppTheme.heroGradientFor(Theme.of(context).brightness),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(
-                          color: AppTheme.surfaceBorder.withValues(alpha: 0.95),
+                    Text(
+                      '$greeting, $_userName',
+                      style: TextStyle(
+                        color: onSurface,
+                        fontSize: 29,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'You can start with one small thing.',
+                      style: TextStyle(
+                        color: AppTheme.textLight,
+                        fontSize: 15,
+                      ),
+                    ),
+                    if (_profileLoadFailed) ...[
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Some profile details are unavailable right now, but your check-in is still ready.',
+                        style: TextStyle(
+                          color: AppTheme.textLight,
+                          fontSize: 12,
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$greeting, $_userName',
-                            style: TextStyle(
-                              color: heroTextColor,
-                              fontSize: 26,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            'A softer, calmer space for your day.',
-                            style: TextStyle(
-                              color: heroTextColor.withValues(alpha: 0.76),
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Wrap(
-                            spacing: 10,
-                            runSpacing: 10,
-                            children: [
-                              _HeroPill(
-                                icon: Icons.schedule_rounded,
-                                label: '$reminderTime rhythm',
-                                isDark: isDark,
-                              ),
-                              _HeroPill(
-                                icon: Icons.auto_awesome_rounded,
-                                label: '$goalsCount goals',
-                                isDark: isDark,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text('For right now', style: Theme.of(context).textTheme.titleLarge),
-                    const SizedBox(height: 12),
-                    _FeatureSpotlight(
-                      title: 'Daily Mood Check-In',
-                      subtitle: 'Log how you feel and keep your emotional rhythm visible.',
-                      icon: Icons.mood_rounded,
-                      gradient: isDark
-                          ? const LinearGradient(colors: [Color(0xFF1A3242), Color(0xFF23364B)])
-                          : const LinearGradient(colors: [Color(0xFFDCEEE7), Color(0xFFE8F4F0)]),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const MoodCheckinScreen()),
-                      ),
+                    ],
+                    const SizedBox(height: 22),
+                    _buildRightNowCard(),
+                    const SizedBox(height: 26),
+                    Text(
+                      'Quick starts',
+                      style: theme.textTheme.titleMedium,
                     ),
                     const SizedBox(height: 12),
-                    _FeatureSpotlight(
-                      title: 'Wellness Score',
-                      subtitle: 'Take today\'s assessment and see where your energy stands.',
-                      icon: Icons.favorite_border_rounded,
-                      gradient: isDark
-                          ? const LinearGradient(colors: [Color(0xFF2A2443), Color(0xFF1C2842)])
-                          : const LinearGradient(colors: [Color(0xFFE9E5F9), Color(0xFFEFF1FB)]),
-                      trailingLabel: 'Start',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const WellnessAssessmentScreen()),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _QuickStartCard(
+                            icon: Icons.air_rounded,
+                            title: 'Breathe',
+                            subtitle: '3 min',
+                            color: AppTheme.primary,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const BreathingScreen(),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _QuickStartCard(
+                            icon: Icons.book_outlined,
+                            title: 'Journal',
+                            subtitle: 'Reflect',
+                            color: AppTheme.secondary,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const JournalScreen(),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _QuickStartCard(
+                            icon: Icons.chat_bubble_outline_rounded,
+                            title: 'Talk',
+                            subtitle: 'AI companion',
+                            color: AppTheme.accent,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const ChatTabScreen(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 26),
+                    _buildRoutineCard(
+                      reminderTime: reminderTime,
+                      goalsCount: goals.length,
+                    ),
+                    const SizedBox(height: 14),
+                    _buildWellnessCard(onSurface),
                   ],
                 ),
               ),
             ),
     );
   }
-}
 
-class _FeatureSpotlight extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Gradient gradient;
-  final String trailingLabel;
-  final VoidCallback onTap;
+  Widget _buildRightNowCard() {
+    final brightness = Theme.of(context).brightness;
 
-  const _FeatureSpotlight({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.gradient,
-    required this.onTap,
-    this.trailingLabel = 'Open',
-  });
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: AppTheme.heroGradientFor(brightness),
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'FOR RIGHT NOW',
+                  style: TextStyle(
+                    color: Color(0xFF35545B),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'What would feel useful?',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 23,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                const Text(
+                  'A quick check-in helps us choose your next step.',
+                  style: TextStyle(
+                    color: Color(0xFF35545B),
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _openMoodCheckIn,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 12,
+                    ),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('Check in now'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            width: 72,
+            height: 72,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.48),
+              shape: BoxShape.circle,
+            ),
+            child: const Text('🌊', style: TextStyle(fontSize: 36)),
+          ),
+        ],
+      ),
+    );
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final textColor = isDark ? Colors.white : AppTheme.textDark;
+  Widget _buildRoutineCard({
+    required String reminderTime,
+    required int goalsCount,
+  }) {
+    final surface = Theme.of(context).colorScheme.surface;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppTheme.secondary.withValues(alpha: 0.24),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const Icon(
+              Icons.waves_rounded,
+              color: AppTheme.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Your routine',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  '$reminderTime check-in  •  $goalsCount ${goalsCount == 1 ? 'goal' : 'goals'}',
+                  style: const TextStyle(
+                    color: AppTheme.textLight,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(
+            Icons.chevron_right_rounded,
+            color: AppTheme.textLight,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWellnessCard(Color onSurface) {
     return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(26),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const WellnessAssessmentScreen()),
+      ),
+      borderRadius: BorderRadius.circular(22),
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(26),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+          ),
         ),
         child: Row(
           children: [
             Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(18),
-              ),
+              width: 46,
+              height: 46,
               alignment: Alignment.center,
-              child: Icon(icon, color: Colors.white),
+              decoration: BoxDecoration(
+                color: AppTheme.secondary.withValues(alpha: 0.20),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: const Icon(
+                Icons.favorite_outline_rounded,
+                color: AppTheme.danger,
+              ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(color: textColor, fontWeight: FontWeight.w700, fontSize: 16)),
-                  const SizedBox(height: 4),
-                  Text(subtitle, style: TextStyle(color: textColor.withValues(alpha: 0.72), fontSize: 13)),
+                  Text(
+                    'Take a wellness check',
+                    style: TextStyle(
+                      color: onSurface,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    'Reflect on how today has been feeling.',
+                    style: TextStyle(
+                      color: AppTheme.textLight,
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const SizedBox(width: 10),
-            Text(trailingLabel, style: TextStyle(color: textColor.withValues(alpha: 0.82), fontWeight: FontWeight.w600)),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.textLight,
+            ),
           ],
         ),
       ),
@@ -238,29 +402,68 @@ class _FeatureSpotlight extends StatelessWidget {
   }
 }
 
-class _HeroPill extends StatelessWidget {
+class _QuickStartCard extends StatelessWidget {
   final IconData icon;
-  final String label;
-  final bool isDark;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
 
-  const _HeroPill({required this.icon, required this.label, required this.isDark});
+  const _QuickStartCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final color = isDark ? Colors.white : AppTheme.textDark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.08 : 0.06),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 8),
-          Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600)),
-        ],
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 14, 12, 13),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppTheme.textLight,
+                fontSize: 10,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
