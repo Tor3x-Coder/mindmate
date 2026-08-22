@@ -37,9 +37,9 @@ class AudioGuideService extends ChangeNotifier {
     final generation = ++_requestGeneration;
 
     try {
-      await _player.stop();
-      if (generation != _requestGeneration) return false;
-
+      // setAsset replaces the current source and stops its playback. Calling
+      // stop() first is unnecessary and has caused source-replacement issues
+      // in some just_audio platform implementations.
       await _player.setAsset(assetPath);
       if (generation != _requestGeneration) return false;
 
@@ -47,7 +47,11 @@ class AudioGuideService extends ChangeNotifier {
       _notifyIfActive();
       unawaited(_playLoadedAudio(generation));
       return true;
-    } catch (_) {
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('AudioGuideService could not load $assetPath: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
       if (generation == _requestGeneration) {
         _currentAsset = null;
         _notifyIfActive();
@@ -87,7 +91,11 @@ class AudioGuideService extends ChangeNotifier {
   Future<void> _playLoadedAudio(int generation) async {
     try {
       await _player.play();
-    } catch (_) {
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('AudioGuideService playback failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
       if (generation == _requestGeneration) {
         _clearAfterPlaybackFailure();
       }

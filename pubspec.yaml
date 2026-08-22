@@ -31,3 +31,5 @@ flutter:
     - assets/models/
     - assets/illustrations/
     - assets/audio/
+    - assets/audio/breathing/box/
+    - assets/audio/meditation/stress_relief/quick_reset/

@@ -193,6 +193,6 @@ Check in
 
 ## Immediate next action
 
-Post-audio dependency resolution, analysis, the smoke test, debug APK build, and Web build pass. Run in Chrome and test Quick Reset plus Box Breathing with Guided voice on/off, preview, pause/resume, replay, early exit, and completion. Do not expand narration or implement the contextual guide until those playback results are recorded.
+Post-audio dependency resolution, analysis, smoke test, and platform builds pass. The first Chrome preview failed safely because nested MP3 directories were not explicitly bundled. Pull the packaging/logging fix, run `flutter pub get`, fully stop/restart the Chrome app, and retest Quick Reset plus Box Breathing. Do not expand narration or implement the contextual guide until playback succeeds.
 
 The developer has no physical phone. Use an Android emulator later if practical and keep phone-only behavior explicitly unverified until a borrowed or competition device is available. The existing landing-page code is only a reference for future Batch 13A and must not distract from pilot validation.

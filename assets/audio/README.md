@@ -55,8 +55,11 @@ Completed locally after the pilot:
 - the post-audio Android debug build passed in 411 seconds after recovering from stale depfiles left by the power interruption;
 - the Web build passed in 146.9 seconds and its WASM dry run succeeded.
 
+Initial Chrome playback exposed an asset-packaging bug: Flutter did not include deeply nested MP3 directories from the parent `assets/audio/` entry. The pilot directories are now declared explicitly in `pubspec.yaml`, and debug builds log the safe technical load/playback error to the console. Revalidation is pending.
+
 Still required:
 
+- confirm the fixed asset paths load and play in Chrome;
 - confirm prompt timing and no overlap in Chrome;
 - test an Android emulator;
 - test audio focus, routing, interruption, and volume on a physical phone before release;
@@ -70,5 +73,5 @@ Still required:
 - use compressed MP3 and normalize loudness across clips;
 - preserve or update the matching written caption/transcript;
 - add every new path to `lib/utils/audio_assets.dart`;
-- declare only the parent `assets/audio/` path in `pubspec.yaml`;
+- add each directory containing audio files to `pubspec.yaml`; Flutter directory entries do not automatically bundle arbitrary deeper subdirectories;
 - record exact file count/size, tests, and remaining coverage after each audio batch.

@@ -38,7 +38,7 @@ Before the audio pilot, the developer successfully ran dependency resolution, an
 | Mode-aware AI Worker and safety route | Yes | Dart analysis and `node --check` passed; live tests pending | **Unconfirmed** | No |
 | Trusted contacts and support-event tracking | Yes | `flutter analyze` passed; runtime pending | Rules live; app build unverified | No |
 | State/international emergency-number UI | Yes | `flutter analyze` passed; device tests pending | N/A | No; resource verification required |
-| Guided audio: Meditation, Breathing, Daily Snapshot | Pilot implemented | Dependencies/analyzer/test + Android/Web builds pass; Chrome playback pending | N/A | Quick Reset + Box Breathing only; no runtime playback verification |
+| Guided audio: Meditation, Breathing, Daily Snapshot | Pilot + packaging fix implemented | Initial Chrome load failed; nested asset declarations/debug logs fixed; retest pending | N/A | Quick Reset + Box Breathing only; playback not yet verified |
 | Contextual first-use guide | Design approved, not implemented | N/A | N/A | Four coach marks + lightweight 2D MindMate figure planned |
 | Informational landing site | Direction approved, not implemented | N/A | N/A | Static product info + signed APK download; no hosted Flutter app |
 | Android APK | Post-audio debug APK built | Build passed in 411 seconds despite recovered stale-depfile warnings | N/A | No phone available; emulator/device verification pending |
@@ -188,7 +188,7 @@ Pilot implementation now exists:
 - 10 MP3 files total **280,242 bytes (about 274 KB)**;
 - asset registry, relative imports, delimiters, and whitespace checks pass.
 
-Post-audio dependency resolution, analysis, the smoke test, Android build, and Web build pass. Before expanding coverage, run the app in Chrome and test Quick Reset plus Box Breathing for playback, timing, pause/resume, replay, mute, early exit, and completion. See `assets/audio/README.md` for transcripts and exact validation gaps.
+Post-audio dependency resolution, analysis, the smoke test, Android build, and Web build pass. The first Chrome preview could not load its MP3 because nested audio directories were not explicitly bundled. The packaging fix and debug-only error logging are implemented; pull and fully restart Chrome, then retest Quick Reset and Box Breathing before expanding coverage. See `assets/audio/README.md` for details.
 
 ### 3. Test the deployed Firestore configuration
 
@@ -300,6 +300,7 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 22 Aug 2026 | Post-audio platform builds | No code change | Debug APK passed in 411s; Web passed in 146.9s; WASM dry run passed | Build artifacts local only | Run Chrome playback matrix |
 | 22 Aug 2026 | Contextual guide decision | Planning only | Four one-time coach marks + lightweight 2D Flutter-drawn guide approved | Not applicable | Implement only after audio pilot playback validation |
 | 22 Aug 2026 | Landing-site direction | Planning only | Separate informational static site; supplied page is design reference only | Not deployed | Build later with product copy + signed release APK download |
+| 22 Aug 2026 | Chrome audio asset-load fix | Explicit nested asset directories + debug-only load/play logs; removed unnecessary pre-load stop | Initial preview failed safely; fix statically checked | Not deployed | Pull, `pub get`, fully restart Chrome, and retest pilot |
 
 ## Rule for the next agent
 
