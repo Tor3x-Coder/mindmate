@@ -2,62 +2,120 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can only read/write their own profile document.
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Shared helpers ---------------------------------------------------------
+
+    // Is the request coming from a signed-in user?
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    // Personal collections: only the owner (matched by the uid field
-    // stored inside each document) can read or write their own data.
+    // Is the signed-in user the owner of the document being touched?
+    // Only useful for read/update/delete where the existing doc exists.
+    function isOwner() {
+      return isSignedIn() && request.auth.uid == resource.data.uid;
+    }
+
+    // Is the signed-in user an admin? Admin is granted in the Firebase
+    // Console on the user document; users cannot grant it to themselves.
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Users ------------------------------------------------------------------
+    // Owners can read and update their own profile, but they cannot:
+    //   - delete it;
+    //   - change their email;
+    //   - change isAdmin (so nobody can self-grant admin).
+    match /users/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.isAdmin != true;
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.email == resource.data.email
+        && request.resource.data.isAdmin == resource.data.isAdmin;
+      // Intentionally no delete rule.
+    }
+
+    // Personal collections ---------------------------------------------------
+    // Only the owner can read, create, or delete their own records.
+    // Updates must keep the original uid so a record can never be
+    // reassigned to another user.
     match /mood_logs/{docId} {
-      allow read, write: if request.auth != null &&
-        request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null &&
-        request.auth.uid == request.resource.data.uid;
+      allow read: if isOwner();
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow update: if isOwner()
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if isOwner();
     }
 
     match /journal_entries/{docId} {
-      allow read, write: if request.auth != null &&
-        request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null &&
-        request.auth.uid == request.resource.data.uid;
+      allow read: if isOwner();
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow update: if isOwner()
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if isOwner();
     }
 
     match /wellness_assessments/{docId} {
-      allow read, write: if request.auth != null &&
-        request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null &&
-        request.auth.uid == request.resource.data.uid;
+      allow read: if isOwner();
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow update: if isOwner()
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if isOwner();
     }
 
     match /meditation_history/{docId} {
-      allow read, write: if request.auth != null &&
-        request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null &&
-        request.auth.uid == request.resource.data.uid;
+      allow read: if isOwner();
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow update: if isOwner()
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if isOwner();
     }
 
     match /breathing_sessions/{docId} {
-      allow read, write: if request.auth != null &&
-        request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null &&
-        request.auth.uid == request.resource.data.uid;
+      allow read: if isOwner();
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow update: if isOwner()
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if isOwner();
     }
 
+    // CBT thought records ----------------------------------------------------
+    // Same owner-only rules. This collection previously had no rule, which
+    // is why saving a thought record failed with permission-denied.
+    match /thought_records/{docId} {
+      allow read: if isOwner();
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow update: if isOwner()
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if isOwner();
+    }
+
+    // Appointments -----------------------------------------------------------
+    // Users create requests to their own profile (pending status).
+    // Owners can read their own requests and delete them.
+    // Only admins can read every request and update status (approve/decline).
+    // An owner cannot change the status, so nobody can approve themselves.
     match /appointments/{docId} {
-      allow read, write: if request.auth != null &&
-        request.auth.uid == resource.data.uid;
-      allow create: if request.auth != null &&
-        request.auth.uid == request.resource.data.uid;
+      allow read: if isOwner() || isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow update: if isAdmin()
+        || (isOwner()
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.status == resource.data.status);
+      allow delete: if isOwner();
     }
 
-    // Professionals: anyone signed in can read the directory, but
-    // only an admin (isAdmin == true on their own user document) can
-    // add, edit, or delete listings.
+    // Professionals ----------------------------------------------------------
+    // Anyone signed in can read the directory. Only admins can add, edit,
+    // or remove listings.
     match /professionals/{docId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
   }
 }
