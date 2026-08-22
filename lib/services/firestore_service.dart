@@ -7,6 +7,8 @@ import '../models/professional_model.dart';
 import '../models/appointment_model.dart';
 import '../models/thought_record_model.dart';
 import '../models/feedback_record_model.dart';
+import '../models/trusted_contact_model.dart';
+import '../models/support_event_model.dart';
 import '../utils/constants.dart';
 
 class FirestoreService {
@@ -241,5 +243,51 @@ class FirestoreService {
     await _db
         .collection(FirestoreCollections.feedbackRecords)
         .add(record.toMap());
+  }
+
+  // ---- Trusted Contacts ----
+  // We query by uid only and sort client-side so this does not require a
+  // composite Firestore index for this small, per-user list.
+  Stream<List<TrustedContactModel>> trustedContactsForUser(String uid) {
+    return _db
+        .collection(FirestoreCollections.trustedContacts)
+        .where('uid', isEqualTo: uid)
+        .snapshots()
+        .map((snap) {
+          final contacts = snap.docs
+              .map((d) => TrustedContactModel.fromMap(d.data(), d.id))
+              .toList();
+          contacts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return contacts;
+        });
+  }
+
+  Future<void> addTrustedContact(TrustedContactModel contact) async {
+    await _db
+        .collection(FirestoreCollections.trustedContacts)
+        .add(contact.toMap());
+  }
+
+  Future<void> updateTrustedContact(TrustedContactModel contact) async {
+    await _db
+        .collection(FirestoreCollections.trustedContacts)
+        .doc(contact.id)
+        .update(contact.toMap());
+  }
+
+  Future<void> deleteTrustedContact(String contactId) async {
+    await _db
+        .collection(FirestoreCollections.trustedContacts)
+        .doc(contactId)
+        .delete();
+  }
+
+  // ---- Support Events ----
+  // Logs when a user taps a support action or answers the follow-up
+  // question. Personal data is owner-only via Firestore rules.
+  Future<void> addSupportEvent(SupportEventModel event) async {
+    await _db
+        .collection(FirestoreCollections.supportEvents)
+        .add(event.toMap());
   }
 }
