@@ -32,11 +32,11 @@ Backend/integration batches 1–5 are implemented in the repository:
 - mode-aware AI Worker validation, safety routing, logging, and fallbacks;
 - trusted contacts, support-event tracking, and expanded emergency-resource UI.
 
-They are **not yet considered release-complete**. The final Batch #5 Firestore rules compiled and were released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Local dependency resolution and static analysis also passed with 0 errors, 0 warnings, and 21 non-blocking informational notices.
+They are **not yet considered release-complete**. The final Batch #5 Firestore rules compiled and were released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Local dependency resolution and static analysis passed with 0 errors, 0 warnings, and 21 non-blocking informational notices. `flutter test` also passed the repository's single basic smoke test; this is not meaningful end-to-end coverage.
 
 A repository audit confirmed a major missing experience: **there is currently no guided audio**. There are no audio assets or playback/TTS dependency; Meditation uses timed written guidance, Breathing uses visual/text cues, and the Sound setting is a placeholder. The guided-audio MVP is now competition-critical in `MINDMATE_REMAINING_BATCHES.md`.
 
-Flutter tests/builds, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. See `MINDMATE_STATUS.md` for the exact status table.
+The debug APK build, meaningful tests, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. The developer currently has no physical test phone, so emulator/Chrome checks are the near-term fallback and real-device-only behavior remains a release risk. See `MINDMATE_STATUS.md` for the exact status table.
 
 ## Core experience
 

@@ -27,7 +27,7 @@ The repository contains backend/integration batches 1–5. The work from the int
 
 The developer confirmed that the local checkout is on `arena/01a02a49-mindmate`, tracks the matching remote branch, and has a clean working tree. The final Batch #5 Firestore rules were compiled and released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Those rules are byte-for-byte identical to the rules on the current branch.
 
-The developer also ran `flutter pub get` and `flutter analyze` successfully on 22 August 2026. Analysis completed with **0 errors, 0 warnings, and 21 informational notices**: 2 deprecated onboarding Radio API notices and 19 optional `const` style/performance notices.
+The developer also ran `flutter pub get`, `flutter analyze`, and `flutter test` successfully on 22 August 2026. Analysis completed with **0 errors, 0 warnings, and 21 informational notices**: 2 deprecated onboarding Radio API notices and 19 optional `const` style/performance notices. The current test suite passed **1 test**, but that test is only a basic smoke test and does not validate the real app journey.
 
 | Area | Implemented | Validated | Deployed | Verified end to end |
 |---|---:|---:|---:|---:|
@@ -39,11 +39,13 @@ The developer also ran `flutter pub get` and `flutter analyze` successfully on 2
 | Trusted contacts and support-event tracking | Yes | `flutter analyze` passed; runtime pending | Rules live; app build unverified | No |
 | State/international emergency-number UI | Yes | `flutter analyze` passed; device tests pending | N/A | No; resource verification required |
 | Guided meditation/breathing audio | **No** | Repository audit confirms no assets/package/playback | N/A | No; Batch 7 decision pending |
-| Android APK | No current verified build | Analysis passed; build pending | N/A | No |
+| Android APK | No current verified build | Analysis + 1 smoke test passed; build pending | N/A | No phone available; emulator/device verification pending |
 
 ### Validation environment note
 
-Flutter and Dart are not installed in the current Arena sandbox, so Flutter commands cannot be repeated here. The successful `flutter pub get` and `flutter analyze` results above came from the developer's local Flutter environment. `flutter test` and APK builds are still pending.
+Flutter and Dart are not installed in the current Arena sandbox, so Flutter commands cannot be repeated here. The successful `flutter pub get`, `flutter analyze`, and `flutter test` results above came from the developer's local Flutter environment. The debug APK build is still pending.
+
+The developer currently has no physical Android phone for testing. Use Chrome for broad UI/Firestore checks and an Android emulator if the PC can support one. Physical-device-only behavior—especially `tel:`, `sms:`, audio interruption/routing, notifications, and final APK installation—must remain explicitly unverified until a borrowed or competition device is available.
 
 ## Backend/integration work implemented so far
 
@@ -157,18 +159,18 @@ Completed:
 ```bash
 flutter pub get
 flutter analyze
+flutter test
 ```
 
-Result: **0 errors, 0 warnings, 21 informational notices**. The notices are non-blocking and may be cleaned later; do not perform major dependency upgrades immediately before the competition without a specific need.
+Result: **0 errors, 0 warnings, 21 informational notices, and 1 passing smoke test**. The notices are non-blocking, and the smoke test is not meaningful end-to-end coverage. Do not perform major dependency upgrades immediately before the competition without a specific need.
 
 Run next:
 
 ```bash
-flutter test
 flutter build apk --debug
 ```
 
-Then install the debug APK on a real Android device and confirm the app opens before adding audio.
+If available, install/open it in an Android emulator. If no emulator is practical, a successful APK build is enough to proceed to audio implementation with a documented device-verification risk; a physical-device check is still required before the competition.
 
 ### 2. Implement the approved guided-audio MVP
 
@@ -280,6 +282,8 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 22 Aug 2026 | Local sync and Firestore deployment confirmation | Current branch pulled; working tree clean | Firebase CLI compiled rules successfully | Rules released to `mindmate-app-fcf2d` | Run `flutter pub get` and `flutter analyze` |
 | 22 Aug 2026 | Local dependency resolution and static analysis | No code change | `flutter pub get` succeeded; `flutter analyze`: 0 errors, 0 warnings, 21 info | Not applicable | Run `flutter test`, then `flutter build apk --debug` |
 | 22 Aug 2026 | Remaining-batch plan and competitive audit | Planning/docs only; audio confirmed missing | Repository audio/assets/dependency audit completed | Not applicable | Choose audio Option A or B; run Batch 6 baseline first |
+| 22 Aug 2026 | Local Flutter test | No code change | `flutter test`: 1 test passed; coverage is smoke-only | Not applicable | Build debug APK; use emulator/Chrome because no phone is available |
+| 22 Aug 2026 | Device-constraint and landing-page plan | Planning/docs only | No physical phone; emulator/Chrome fallback documented | Not applicable | Finish APK build; approve audio and optional landing-page options |
 
 ## Rule for the next agent
 

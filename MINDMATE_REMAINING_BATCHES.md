@@ -45,20 +45,27 @@ Tasks:
 1. Pull the current active branch.
 2. Run `flutter test`.
 3. Run `flutter build apk --debug`.
-4. Install the debug APK and confirm the app opens, authenticates, and reaches Home.
+4. Open the app in an Android emulator if the PC can support one.
 5. Fix only blocking test/build/startup problems.
 
 Already complete:
 
 - `flutter pub get` succeeded;
-- `flutter analyze` completed with 0 errors, 0 warnings, and 21 informational notices.
+- `flutter analyze` completed with 0 errors, 0 warnings, and 21 informational notices;
+- `flutter test` passed its single smoke test.
 
-Exit criteria:
+Current device constraint:
 
-- tests pass;
+- the developer does not have a physical Android phone. Chrome can cover broad UI/Firestore behavior, and an Android emulator can cover most Android startup/runtime checks. Real-device-only behavior must be tested later on a borrowed or competition device.
+
+Exit criteria for moving to Batch 7:
+
 - debug APK builds;
-- debug APK opens on a real Android phone;
+- app opens in an Android emulator if one is practical;
+- if no emulator is practical, the APK build passes and the runtime/device risk is explicitly documented;
 - results are recorded in `MINDMATE_STATUS.md`.
+
+Release still requires a physical-device check; this constraint is deferred, not waived.
 
 ### Batch 7 — Guided-audio MVP
 
@@ -292,6 +299,48 @@ Exit criteria:
 - the complete demo journey works repeatedly;
 - backend versions and test evidence are documented;
 - rollback/demo fallback is ready.
+
+### Optional Batch 13A — Competition landing page
+
+**Purpose:** Give judges and early users a fast, polished explanation of MindMate with a QR/link they can revisit after the demo.
+
+This is a useful competition asset, but it must not delay audio, safety, testing, or the release candidate. Build it after the app's visual/content claims are stable so screenshots and feature copy are accurate.
+
+#### Option A — Responsive static showcase `[RECOMMENDED]`
+
+- lightweight HTML/CSS/JavaScript in a separate `landing/` directory;
+- Quiet Tide visual identity;
+- clear hero promise;
+- the check-in-to-action loop;
+- three to five real app screenshots;
+- safety boundary and privacy summary;
+- competition/demo status;
+- QR code and APK/demo link when available;
+- contact/project links;
+- responsive, accessible, and fast on weak connections.
+
+#### Option B — Interactive app-preview microsite
+
+- animated phone mockup;
+- clickable feature tour;
+- more motion and richer storytelling.
+
+Option B is more visually impressive but costs more time, has more accessibility/performance risk, and can distract from release work.
+
+Technical note:
+
+- do not replace `web/index.html`, because that file is the Flutter Web app shell;
+- use a separate landing-page folder/deployment target;
+- Firebase Hosting is not currently configured in `firebase.json`, so hosting configuration and destination must be explicitly approved.
+
+Exit criteria:
+
+- every claim matches the shipped prototype;
+- no diagnosis/therapy/emergency-service claim;
+- no broken download, privacy, or support link;
+- responsive desktop/mobile checks pass;
+- Lighthouse-style accessibility/performance checks are acceptable;
+- deployed URL and hosting configuration are documented.
 
 ## Post-competition production batches
 

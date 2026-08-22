@@ -129,13 +129,13 @@ See `MINDMATE_STATUS.md` for exact files and status.
 4. **AI Worker** — modes, limits, crisis route, rate-limit hook, logging, quota fallback, and model configuration.
 5. **Trusted contacts/support events** — owner-only contact storage, explicit call/message actions, follow-up events, and expanded emergency UI.
 
-Important: implementation is not proof of end-to-end operation. The final Batch #5 Firestore rules were compiled and released successfully to `mindmate-app-fcf2d` on 22 August 2026. Local `flutter pub get` and `flutter analyze` also succeeded with 0 errors, 0 warnings, and 21 non-blocking informational notices. Firestore denial tests, Worker deployment, Flutter tests/builds, and device verification remain pending.
+Important: implementation is not proof of end-to-end operation. The final Batch #5 Firestore rules were compiled and released successfully to `mindmate-app-fcf2d` on 22 August 2026. Local `flutter pub get` and `flutter analyze` succeeded with 0 errors, 0 warnings, and 21 non-blocking informational notices. `flutter test` passed the repository's single basic smoke test. Firestore denial tests, Worker deployment, APK builds, meaningful test coverage, and runtime verification remain pending.
 
 ## Remaining backend/release work
 
 Immediate prototype path:
 
-1. Complete Batch 6 baseline: `flutter test`, debug APK build, and startup check on Android.
+1. Complete Batch 6 baseline: build the debug APK and use an Android emulator for startup if practical; the smoke test already passed.
 2. Complete the user-approved Batch 7 guided-audio MVP; do not leave the Sound setting as a placeholder.
 3. Harden/test the deployed Firestore rules and verify owner/admin denial cases; redeploy only after a rule change passes tests.
 4. Fix account/runtime reliability issues from Batch 9.
@@ -195,11 +195,12 @@ First, get the user's explicit audio decision from `MINDMATE_REMAINING_BATCHES.m
 - Option A — curated natural-voice launch pack `[RECOMMENDED]`; or
 - Option B — device text-to-speech for all current sessions.
 
-Execution still starts with the Batch 6 baseline so audio is not mixed with an unknown build failure:
+The smoke test passed. Finish the Batch 6 build gate so audio is not mixed with an unknown Android compilation failure:
 
 ```bash
-flutter test
 flutter build apk --debug
 ```
 
-Record both results in `MINDMATE_STATUS.md`, then implement only the approved audio option in a controlled batch and update all relevant documentation.
+The developer has no physical phone. Use an Android emulator if practical and Chrome for broad UI/Firestore checks; keep phone-only behavior explicitly unverified until a borrowed or competition device is available.
+
+After recording the APK result, implement only the approved audio option in a controlled batch. An optional competition landing page is proposed as Batch 13A and must not delay core app release work.
