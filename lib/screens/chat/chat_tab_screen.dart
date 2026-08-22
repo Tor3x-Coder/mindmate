@@ -2,16 +2,12 @@ import 'package:flutter/material.dart';
 import '../../services/chat_service.dart';
 import '../../utils/app_theme.dart';
 
-// A single message in the conversation, kept simple on purpose —
-// this is just what's needed to draw a chat bubble and to send history
-// back to the AI. Nothing here is saved to Firestore yet (that's the
-// next phase); it only lives in memory while this screen is open.
 class _ChatMessage {
-  final String role; // 'user' or 'assistant'
+  final String role;
   final String content;
-  final bool isError; // true if this bubble represents a failed send
+  final bool isError;
 
-  _ChatMessage({
+  const _ChatMessage({
     required this.role,
     required this.content,
     this.isError = false,
@@ -29,34 +25,67 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
   final ChatService _chatService = ChatService();
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _inputFocusNode = FocusNode();
 
   final List<_ChatMessage> _messages = [];
-
-  // True while we're waiting on a reply from the AI — used to disable
-  // the send button and show a "typing" indicator, so the user can't
-  // fire off five messages before the first one even lands.
   bool _isSending = false;
 
   @override
   void dispose() {
     _inputController.dispose();
     _scrollController.dispose();
+    _inputFocusNode.dispose();
     super.dispose();
   }
 
-  // Scrolls the message list down to the newest message. Called after
-  // adding any new bubble so the user always sees the latest one.
+  void _useStarter(String starter) {
+    setState(() => _inputController.text = starter);
+    _inputController.selection = TextSelection.fromPosition(
+      TextPosition(offset: _inputController.text.length),
+    );
+    _inputFocusNode.requestFocus();
+  }
+
+  void _useMode(String mode) {
+    switch (mode) {
+      case 'listen':
+        _useStarter('I just need someone to listen. ');
+        break;
+      case 'calm':
+        _useStarter('I need help calming down. ');
+        break;
+      case 'plan':
+        _useStarter('Help me make a small plan for ');
+        break;
+    }
+  }
+
+  void _showAiBoundary() {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('About the AI companion'),
+        content: const Text(
+          'MindMate can listen, help you reflect, and suggest small next steps. It is not a therapist, doctor, or emergency service. If you may be in immediate danger, use Emergency Support instead.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _scrollToBottom() {
-    // Wait a frame so the new bubble has actually been laid out before
-    // we try to scroll to it — otherwise maxScrollExtent is stale.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOut,
-        );
-      }
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
     });
   }
 
@@ -64,12 +93,17 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
     final text = _inputController.text.trim();
     if (text.isEmpty || _isSending) return;
 
-    // Build the history list the AI needs for context, BEFORE adding
-    // the new user message to it — this should only contain turns that
-    // already happened, not the one we're sending right now.
-    final history = _messages
-        .where((m) => !m.isError) // don't send failed turns back to the AI
-        .map((m) => {'role': m.role, 'content': m.content})
+    // Keep the client request small while the backend history limit is still
+    // being completed in the AI safety batch.
+    final previousMessages = _messages
+        .where((message) => !message.isError)
+        .toList();
+    final history = previousMessages
+        .skip(previousMessages.length > 12 ? previousMessages.length - 12 : 0)
+        .map((message) => {
+              'role': message.role,
+              'content': message.content,
+            })
         .toList();
 
     setState(() {
@@ -91,14 +125,16 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
         _isSending = false;
       });
       _scrollToBottom();
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      // Strip the "Exception: " prefix Dart adds automatically so the
-      // user sees a clean message instead of raw error formatting.
-      final message = e.toString().replaceFirst('Exception: ', '');
       setState(() {
         _messages.add(
-          _ChatMessage(role: 'assistant', content: message, isError: true),
+          const _ChatMessage(
+            role: 'assistant',
+            content:
+                'I could not connect right now. You can try again or use one of the guided practices instead.',
+            isError: true,
+          ),
         );
         _isSending = false;
       });
@@ -112,22 +148,30 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat'),
+        title: const Text('Talk with MindMate'),
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            onPressed: _showAiBoundary,
+            icon: const Icon(Icons.info_outline_rounded),
+            tooltip: 'About the AI companion',
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(
           children: [
             Expanded(
               child: _messages.isEmpty
-                  ? _buildEmptyState()
+                  ? _buildGuidedStart(isDark)
                   : ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                       itemCount: _messages.length + (_isSending ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (index == _messages.length) {
-                          // Extra item at the end while waiting for a reply.
                           return _buildTypingIndicator(isDark);
                         }
                         return _buildMessageBubble(_messages[index], isDark);
@@ -141,72 +185,148 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
     );
   }
 
-  // Shown before the user has sent anything yet.
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 88,
-              height: 88,
-              decoration: const BoxDecoration(
-                gradient: AppTheme.accentGradient,
-                shape: BoxShape.circle,
+  Widget _buildGuidedStart(bool isDark) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: AppTheme.heroGradientFor(Theme.of(context).brightness),
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.55),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        color: AppTheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'I’m here to listen.',
+                        style: TextStyle(
+                          color: AppTheme.textDark,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Choose a direction, or type whatever is on your mind.',
+                  style: TextStyle(
+                    color: Color(0xFF59646F),
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  'The AI companion supports reflection. It is not therapy or emergency care.',
+                  style: TextStyle(
+                    color: const Color(0xFF59646F).withValues(alpha: 0.85),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          Text(
+            'What do you need?',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: _ModeCard(
+                  icon: Icons.favorite_border_rounded,
+                  label: 'Listen',
+                  color: AppTheme.primary,
+                  onTap: () => _useMode('listen'),
+                ),
               ),
-              alignment: Alignment.center,
-              child: const Icon(
-                Icons.chat_bubble_outline_rounded,
-                color: Colors.white,
-                size: 36,
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ModeCard(
+                  icon: Icons.air_rounded,
+                  label: 'Calm me',
+                  color: AppTheme.secondary,
+                  onTap: () => _useMode('calm'),
+                ),
               ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _ModeCard(
+                  icon: Icons.checklist_rounded,
+                  label: 'Make a plan',
+                  color: AppTheme.accent,
+                  onTap: () => _useMode('plan'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Try saying',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 10),
+          _StarterTile(
+            text: 'I keep overthinking what happened.',
+            onTap: () => _useStarter('I keep overthinking what happened.'),
+          ),
+          _StarterTile(
+            text: 'Help me take one small next step.',
+            onTap: () => _useStarter('Help me take one small next step.'),
+          ),
+          _StarterTile(
+            text: 'I just want to talk about what went well today.',
+            onTap: () => _useStarter(
+              'I just want to talk about what went well today.',
             ),
-            const SizedBox(height: 24),
+          ),
+          const SizedBox(height: 18),
+          if (!isDark)
             const Text(
-              'Your AI companion is here',
+              'You can change your mind at any time and use a guided practice instead.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              style: TextStyle(color: AppTheme.textLight, fontSize: 12),
             ),
-            const SizedBox(height: 10),
-            const Text(
-              'A place to talk through what\'s on your mind, anytime '
-              'someone else isn\'t available.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppTheme.textLight, fontSize: 14),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildMessageBubble(_ChatMessage message, bool isDark) {
     final isUser = message.role == 'user';
-
-    // User bubbles use the app's accent gradient to match the rest of
-    // the app. AI bubbles use a plain surface color so they read as
-    // calm/neutral, and error bubbles get a soft red tint so a failed
-    // send is obviously different from a normal reply.
-    Color bubbleColor;
-    Gradient? bubbleGradient;
-    Color textColor;
-
-    if (isUser) {
-      bubbleGradient = AppTheme.accentGradient;
-      bubbleColor = Colors.transparent;
-      textColor = Colors.white;
-    } else if (message.isError) {
-      // AppTheme.danger is the app's single source of truth for "error"
-      // red — using it here (instead of a raw Colors.red) keeps this
-      // bubble in sync if the theme's danger color ever changes.
-      bubbleColor = AppTheme.danger.withValues(alpha: isDark ? 0.18 : 0.12);
-      textColor = isDark ? AppTheme.textOnDark : AppTheme.danger;
-    } else {
-      bubbleColor = Theme.of(context).colorScheme.surface;
-      textColor = Theme.of(context).colorScheme.onSurface;
-    }
+    final bubbleColor = isUser
+        ? AppTheme.primary
+        : message.isError
+            ? AppTheme.danger.withValues(alpha: isDark ? 0.18 : 0.10)
+            : Theme.of(context).colorScheme.surface;
+    final textColor = isUser
+        ? Colors.white
+        : message.isError
+            ? AppTheme.danger
+            : Theme.of(context).colorScheme.onSurface;
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -214,27 +334,22 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+          maxWidth: MediaQuery.of(context).size.width * 0.78,
         ),
         decoration: BoxDecoration(
           color: bubbleColor,
-          gradient: bubbleGradient,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(18),
             topRight: const Radius.circular(18),
             bottomLeft: Radius.circular(isUser ? 18 : 4),
             bottomRight: Radius.circular(isUser ? 4 : 18),
           ),
-          // AI bubbles get a subtle border so they're visible against a
-          // light-mode background that's very close to the same color.
-          // User bubbles (gradient) and error bubbles (tinted red) don't
-          // need this since they already stand out on their own.
           border: (!isUser && !message.isError)
-              ? Border.all(color: Theme.of(context).dividerColor, width: 1)
+              ? Border.all(color: Theme.of(context).dividerColor)
               : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.06),
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.05),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -248,7 +363,6 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
     );
   }
 
-  // A simple "..." bubble shown on the AI's side while a reply is loading.
   Widget _buildTypingIndicator(bool isDark) {
     return Align(
       alignment: Alignment.centerLeft,
@@ -265,17 +379,11 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
           ),
         ),
         child: SizedBox(
-          width: 20,
-          height: 12,
-          child: Center(
-            child: SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Theme.of(context).colorScheme.primary,
           ),
         ),
       ),
@@ -302,12 +410,17 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
             Expanded(
               child: TextField(
                 controller: _inputController,
+                focusNode: _inputFocusNode,
                 minLines: 1,
                 maxLines: 4,
+                maxLength: 800,
                 textCapitalization: TextCapitalization.sentences,
+                textInputAction: TextInputAction.send,
                 enabled: !_isSending,
+                onSubmitted: (_) => _sendMessage(),
                 decoration: InputDecoration(
-                  hintText: 'Type what\'s on your mind...',
+                  counterText: '',
+                  hintText: 'Type what’s on your mind...',
                   filled: true,
                   fillColor: isDark
                       ? Colors.white.withValues(alpha: 0.05)
@@ -321,7 +434,6 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                     borderSide: BorderSide.none,
                   ),
                 ),
-                onSubmitted: (_) => _sendMessage(),
               ),
             ),
             const SizedBox(width: 8),
@@ -334,9 +446,98 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
                 onPressed: _isSending ? null : _sendMessage,
                 icon: const Icon(Icons.arrow_upward_rounded),
                 color: Colors.white,
+                tooltip: 'Send message',
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ModeCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ModeCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 23),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StarterTile extends StatelessWidget {
+  final String text;
+  final VoidCallback onTap;
+
+  const _StarterTile({required this.text, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '“$text”',
+                  style: const TextStyle(
+                    color: AppTheme.textLight,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppTheme.textLight,
+              ),
+            ],
+          ),
         ),
       ),
     );

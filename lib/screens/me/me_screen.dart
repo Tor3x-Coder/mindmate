@@ -1,345 +1,253 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../services/app_settings_controller.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/app_theme.dart';
+import '../achievements_screen.dart';
+import '../professional/my_appointments_screen.dart';
+import '../progress/progress_screen.dart';
 import '../settings/settings_screen.dart';
-import '../onboarding_carousel_screen.dart';
+import '../auth/login_screen.dart';
 
-class MeScreen extends StatelessWidget {
+class MeScreen extends StatefulWidget {
   const MeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<MeScreen> createState() => _MeScreenState();
+}
+
+class _MeScreenState extends State<MeScreen> {
+  String _fullName = '';
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final auth = context.read<AuthService>();
+    final firestore = context.read<FirestoreService>();
+    final uid = auth.currentUser?.uid;
+
+    if (uid == null) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final profile = await firestore.getUserProfile(uid);
+      if (!mounted) return;
+      setState(() {
+        _fullName = profile?['fullName']?.toString().trim() ?? '';
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+    }
+  }
+
+  String _firstName(String fullName) {
+    if (fullName.trim().isEmpty) return 'there';
+    return fullName.trim().split(' ').first;
+  }
+
+  Future<void> _logout() async {
     final authService = context.read<AuthService>();
-    final firestoreService = context.read<FirestoreService>();
-    final uid = authService.currentUser?.uid;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Log out of MindMate?'),
+        content: const Text('You can log back in whenever you are ready.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.danger),
+            child: const Text('Log out'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await authService.logout();
+
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
+  void _open(Widget screen) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => screen),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final auth = context.watch<AuthService>();
+    final email = auth.currentUser?.email ?? '';
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Me'),
+        automaticallyImplyLeading: false,
       ),
-      body: SafeArea(
-        child: uid == null
-            ? const Center(child: Text('Please log in to view your space.'))
-            : FutureBuilder<Map<String, dynamic>?>(
-                future: firestoreService.getUserProfile(uid),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  final profile = snapshot.data ?? <String, dynamic>{};
-                  return _MeContent(profile: profile);
-                },
-              ),
-      ),
-    );
-  }
-}
-
-class _MeContent extends StatelessWidget {
-  final Map<String, dynamic> profile;
-
-  const _MeContent({required this.profile});
-
-  String _formatJoinedDate(DateTime date) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-final settings = context.watch<AppSettingsController>();
-    final authService = context.read<AuthService>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final heroTextColor = isDark ? Colors.white : AppTheme.textDark;
-
-    final fullName = profile['fullName']?.toString().trim().isNotEmpty == true
-        ? profile['fullName'].toString()
-        : 'MindMate User';
-    final email = profile['email']?.toString() ?? '';
-    final goals = List<String>.from(profile['goals'] ?? const []);
-    final createdAt = DateTime.tryParse(profile['createdAt']?.toString() ?? '');
-    final reminderTime =
-        profile['reminderTime']?.toString() ?? settings.checkInWindow;
-    final initials = fullName
-        .split(' ')
-        .where((part) => part.isNotEmpty)
-        .take(2)
-        .map((part) => part[0].toUpperCase())
-        .join();
-
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      children: [
-Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: AppTheme.heroGradientFor(Theme.of(context).brightness),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: AppTheme.surfaceBorder.withValues(alpha: 0.9),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: heroTextColor.withValues(alpha: 0.14),
-                    child: Text(
-                      initials.isEmpty ? 'M' : initials,
-                      style: TextStyle(
-                        color: heroTextColor,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildProfileCard(
+                      name: _firstName(_fullName),
+                      email: email,
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Your progress',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
                       children: [
-                        Text(
-                          fullName,
-                          style: TextStyle(
-                            color: heroTextColor,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
+                        Expanded(
+                          child: _MeLinkCard(
+                            icon: Icons.show_chart_rounded,
+                            title: 'Your story',
+                            color: AppTheme.primary,
+                            onTap: () => _open(const ProgressScreen()),
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          email,
-                          style: TextStyle(
-                            color: heroTextColor.withValues(alpha: 0.75),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _MeLinkCard(
+                            icon: Icons.emoji_events_outlined,
+                            title: 'Achievements',
+                            color: AppTheme.secondary,
+                            onTap: () => _open(const AchievementsScreen()),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  _InfoBadge(
-                    icon: Icons.schedule_rounded,
-                    label: reminderTime,
-                    isDark: isDark,
-                  ),
-                  _InfoBadge(
-                    icon: Icons.timer_outlined,
-                    label: '${settings.preferredSessionMinutes} min sessions',
-                    isDark: isDark,
-                  ),
-                  _InfoBadge(
-                    icon: Icons.auto_awesome_rounded,
-                    label: settings.themeMode.name,
-                    isDark: isDark,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-        _SectionCard(
-          title: 'Your rhythm',
-          child: Column(
-            children: [
-              _SummaryTile(
-                icon: Icons.wb_twilight_outlined,
-                title: 'Preferred check-in',
-                value: settings.checkInWindow,
-              ),
-              _SummaryTile(
-                icon: Icons.timelapse_rounded,
-                title: 'Go-to practice length',
-                value: '${settings.preferredSessionMinutes} minutes',
-              ),
-              _SummaryTile(
-                icon: Icons.calendar_month_outlined,
-                title: 'Joined',
-                value: createdAt == null
-                    ? 'Recently'
-                    : _formatJoinedDate(createdAt),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        _SectionCard(
-          title: 'Focus areas',
-          child: goals.isEmpty
-              ? const Text(
-                  'Your wellness goals will show up here once they are added.',
-                  style: TextStyle(color: AppTheme.textLight),
-                )
-              : Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: goals
-                      .map(
-                        (goal) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppTheme.surfaceAlt.withValues(alpha: 0.55),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: AppTheme.surfaceBorder.withValues(alpha: 0.9),
-                            ),
-                          ),
-                          child: Text(goal),
+                    const SizedBox(height: 10),
+                    _MeRow(
+                      icon: Icons.event_note_outlined,
+                      title: 'My support requests',
+                      subtitle: 'View pending and reviewed requests',
+                      color: AppTheme.accent,
+                      onTap: () => _open(const MyAppointmentsScreen()),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Privacy and settings',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 10),
+                    _MeRow(
+                      icon: Icons.tune_rounded,
+                      title: 'App settings',
+                      subtitle: 'Theme, text size, sound and preferences',
+                      color: AppTheme.primary,
+                      onTap: () => _open(const SettingsScreen()),
+                    ),
+                    const SizedBox(height: 10),
+                    _MeRow(
+                      icon: Icons.shield_outlined,
+                      title: 'Your privacy',
+                      subtitle: 'MindMate is a wellness support tool, not a diagnosis service',
+                      color: AppTheme.secondary,
+                      onTap: () => _showPrivacyNotice(context),
+                    ),
+                    const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: _logout,
+                      icon: const Icon(Icons.logout_rounded),
+                      label: const Text('Log out'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.danger,
+                        side: BorderSide(
+                          color: AppTheme.danger.withValues(alpha: 0.55),
                         ),
-                      )
-                      .toList(),
-                ),
-        ),
-        const SizedBox(height: 16),
-        _SectionCard(
-          title: 'Account',
-          child: Column(
-            children: [
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.tune_rounded, color: AppTheme.primary),
-                title: const Text('Open Settings'),
-                subtitle: const Text('Adjust theme, motion, and daily flow.'),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                  );
-                },
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    await authService.logout();
-                    if (!context.mounted) return;
-                      Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (_) => const OnboardingCarouselScreen()),
-                      (route) => false,
-                    );
-                  },
-                  icon: const Icon(Icons.logout_rounded),
-                  label: const Text('Log out'),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ],
+            ),
     );
   }
-}
 
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final Widget child;
-
-  const _SectionCard({
-    required this.title,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildProfileCard({required String name, required String email}) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppTheme.surfaceBorder.withValues(alpha: 0.75),
-        ),
+        gradient: AppTheme.heroGradientLight,
+        borderRadius: BorderRadius.circular(28),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 16),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _SummaryTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String value;
-
-  const _SummaryTile({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceAlt.withValues(alpha: 0.65),
-              borderRadius: BorderRadius.circular(14),
-            ),
+            width: 64,
+            height: 64,
             alignment: Alignment.center,
-            child: Icon(icon, color: AppTheme.primary),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.68),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.person_outline_rounded,
+              color: AppTheme.primary,
+              size: 34,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: AppTheme.textLight,
-                    fontSize: 13,
+                const Text(
+                  'YOUR SPACE',
+                  style: TextStyle(
+                    color: Color(0xFF59646F),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 7),
                 Text(
-                  value,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                  'Hey, $name',
+                  style: const TextStyle(
+                    color: AppTheme.textDark,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
+                if (email.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    email,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF59646F),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -347,41 +255,137 @@ class _SummaryTile extends StatelessWidget {
       ),
     );
   }
+
+  void _showPrivacyNotice(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Your privacy'),
+        content: const Text(
+          'MindMate is designed for wellness support and reflection. It does not diagnose conditions, replace professional care, or handle emergencies. You choose when to use AI-supported features.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _InfoBadge extends StatelessWidget {
+class _MeLinkCard extends StatelessWidget {
   final IconData icon;
-  final String label;
-  final bool isDark;
+  final String title;
+  final Color color;
+  final VoidCallback onTap;
 
-  const _InfoBadge({
+  const _MeLinkCard({
     required this.icon,
-    required this.label,
-    required this.isDark,
+    required this.title,
+    required this.color,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final color = isDark ? Colors.white : AppTheme.textDark;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.08 : 0.06),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w600,
-            ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
           ),
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color, size: 26),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MeRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _MeRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.13),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppTheme.textLight,
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.textLight,
+            ),
+          ],
+        ),
       ),
     );
   }

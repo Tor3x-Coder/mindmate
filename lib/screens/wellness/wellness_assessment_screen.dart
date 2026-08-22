@@ -4,6 +4,7 @@ import '../../models/wellness_assessment_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import 'wellness_result_screen.dart';
+import '../../utils/app_theme.dart';
 import '../../utils/pattern_insight.dart';
 
 class WellnessAssessmentScreen extends StatefulWidget {
@@ -15,15 +16,17 @@ class WellnessAssessmentScreen extends StatefulWidget {
 }
 
 class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
-  // Default starting values for each question.
-  double _sleepHours = 7;
-  bool _exercised = false;
-  bool _drankEnoughWater = false;
-  bool _socialized = false;
-  bool _ateHealthyMeals = false;
+  double? _sleepHours;
+  bool? _exercised;
+  bool? _drankEnoughWater;
+  bool? _socialized;
+  bool? _ateHealthyMeals;
 
-  // Stress quiz: each answer is 0–4 (Not at all → Extremely).
-  // null means the user hasn't answered that question yet.
+  int _currentStep = 0;
+  int _stressQuestionIndex = 0;
+  bool _isSaving = false;
+  String? _errorText;
+
   final List<_StressQuestion> _stressQuestions = const [
     _StressQuestion(
       id: 'sleepQuality',
@@ -31,19 +34,19 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
     ),
     _StressQuestion(
       id: 'racingThoughts',
-      prompt: 'Have you had racing or hard-to-quiet thoughts today?',
+      prompt: 'How hard was it to quiet your thoughts today?',
     ),
     _StressQuestion(
       id: 'tension',
-      prompt: 'How tense or tight has your body felt today?',
+      prompt: 'How tense did your body feel today?',
     ),
     _StressQuestion(
       id: 'irritability',
-      prompt: 'How irritable or easily frustrated have you felt?',
+      prompt: 'How irritable or easily frustrated did you feel?',
     ),
     _StressQuestion(
       id: 'overwhelm',
-      prompt: 'How overwhelmed by tasks or worries have you felt?',
+      prompt: 'How overwhelmed by tasks or worries did you feel?',
     ),
   ];
 
@@ -63,90 +66,179 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
     'Extremely',
   ];
 
-  bool _isSaving = false;
-  String? _errorText;
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
-  bool get _stressQuizComplete =>
-      _stressAnswers.values.every((answer) => answer != null);
+  _StressQuestion get _currentQuestion =>
+      _stressQuestions[_stressQuestionIndex];
 
-  // Maps the 5 quiz answers (each 0–4) onto the existing 1–10 stressLevel
-  // field so Progress and scoring keep working without a model change.
+  bool get _routineComplete =>
+      _exercised != null &&
+      _drankEnoughWater != null &&
+      _socialized != null &&
+      _ateHealthyMeals != null;
+
   int _computeStressLevel() {
     final answers = _stressAnswers.values.whereType<int>().toList();
     if (answers.isEmpty) return 5;
 
     final sum = answers.fold<int>(0, (total, value) => total + value);
-    // Max sum = 5 questions × 4 = 20. Map 0→1 and 20→10.
     return ((sum / 20) * 9).round() + 1;
   }
 
-  Future<void> _saveAssessment() async {
+  String get _stepEyebrow {
+    if (_currentStep == 0) return 'BODY';
+    if (_currentStep == 1) {
+      return 'MIND · ${_stressQuestionIndex + 1} OF ${_stressQuestions.length}';
+    }
+    if (_currentStep == 2) return 'ROUTINE';
+    return 'YOUR SNAPSHOT';
+  }
+
+  String get _stepTitle {
+    if (_currentStep == 0) return 'How did your body feel today?';
+    if (_currentStep == 1) return _currentQuestion.prompt;
+    if (_currentStep == 2) return 'What supported you today?';
+    return 'Your reflection is ready.';
+  }
+
+  String get _stepSubtitle {
+    if (_currentStep == 0) {
+      return 'Start with sleep, energy and how your body felt.';
+    }
+    if (_currentStep == 1) {
+      return 'Choose the description that feels closest. There is no perfect answer.';
+    }
+    if (_currentStep == 2) {
+      return 'These are observations, not a test. Choose what actually happened.';
+    }
+    return 'Take a look at what you entered before saving this check-in.';
+  }
+
+  void _nextStep() {
     setState(() => _errorText = null);
 
-    if (!_stressQuizComplete) {
+    if (_currentStep == 0) {
+      if (_sleepHours == null) {
+        setState(() => _errorText = 'Choose the sleep range that feels closest.');
+        return;
+      }
+      setState(() => _currentStep = 1);
+      return;
+    }
+
+    if (_currentStep == 1) {
+      if (_stressAnswers[_currentQuestion.id] == null) {
+        setState(() => _errorText = 'Choose one answer before continuing.');
+        return;
+      }
+
+      if (_stressQuestionIndex < _stressQuestions.length - 1) {
+        setState(() => _stressQuestionIndex++);
+      } else {
+        setState(() => _currentStep = 2);
+      }
+      return;
+    }
+
+    if (_currentStep == 2) {
+      if (!_routineComplete) {
+        setState(() => _errorText = 'Answer each routine question first.');
+        return;
+      }
+      setState(() => _currentStep = 3);
+      return;
+    }
+
+    _saveAssessment();
+  }
+
+  void _goBack() {
+    if (_currentStep == 0) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    if (_currentStep == 1 && _stressQuestionIndex > 0) {
+      setState(() => _stressQuestionIndex--);
+      return;
+    }
+
+    if (_currentStep == 2) {
       setState(() {
-        _errorText = 'Please answer all of the stress questions first.';
+        _currentStep = 1;
+        _stressQuestionIndex = _stressQuestions.length - 1;
       });
       return;
     }
 
-    final authService = context.read<AuthService>();
-    final firestoreService = context.read<FirestoreService>();
-    final uid = authService.currentUser?.uid;
+    setState(() => _currentStep--);
+  }
 
+  Future<void> _saveAssessment() async {
+    final uid = context.read<AuthService>().currentUser?.uid;
     if (uid == null) {
       setState(() => _errorText = 'You need to be logged in to save this.');
       return;
     }
 
-    final stressLevel = _computeStressLevel();
-    setState(() => _isSaving = true);
+    setState(() {
+      _isSaving = true;
+      _errorText = null;
+    });
+
+    final assessment = WellnessAssessmentModel(
+      id: '',
+      uid: uid,
+      sleepHours: _sleepHours!,
+      exercised: _exercised!,
+      drankEnoughWater: _drankEnoughWater!,
+      stressLevel: _computeStressLevel(),
+      socialized: _socialized!,
+      ateHealthyMeals: _ateHealthyMeals!,
+      date: DateTime.now(),
+    );
 
     try {
-      final assessment = WellnessAssessmentModel(
-        id: '', // Firestore assigns this automatically
-        uid: uid,
-        sleepHours: _sleepHours,
-        exercised: _exercised,
-        drankEnoughWater: _drankEnoughWater,
-        stressLevel: stressLevel,
-        socialized: _socialized,
-        ateHealthyMeals: _ateHealthyMeals,
-        date: DateTime.now(),
-      );
+      final firestore = context.read<FirestoreService>();
+      await firestore.addWellnessAssessment(assessment);
 
-      await firestoreService.addWellnessAssessment(assessment);
+      PatternInsight moodInsight = const PatternInsight();
+      PatternInsight scoreInsight = const PatternInsight();
 
-      final score = assessment.overallScorePercent;
+      // The assessment is already saved if these optional insight queries
+      // fail. Do not make a successful save look like a failed submission.
+      try {
+        final recentMoods = await firestore.moodLogsForUser(uid).first;
+        final recentAssessments =
+            await firestore.wellnessAssessmentsForUser(uid).first;
+        moodInsight = PatternInsight.fromRecentMoods(recentMoods);
+        scoreInsight = PatternInsight.fromRecentAssessments(recentAssessments);
+      } catch (_) {
+        // Keep the default empty insights and continue to the result screen.
+      }
 
-      // Look across recent history (not just this one entry) to see
-      // if a pattern-worthy insight should be surfaced.
-      final recentMoods = await firestoreService.moodLogsForUser(uid).first;
-      final recentAssessments =
-          await firestoreService.wellnessAssessmentsForUser(uid).first;
-
-      final moodInsight = PatternInsight.fromRecentMoods(recentMoods);
-      final scoreInsight =
-          PatternInsight.fromRecentAssessments(recentAssessments);
-
-      // Prefer whichever insight is more concerning; fall back to the
-      // score-based one (even if empty) so the screen always gets a
-      // valid PatternInsight object.
       final insight = scoreInsight.isConcerning
           ? scoreInsight
           : (moodInsight.message != null ? moodInsight : scoreInsight);
 
       if (!mounted) return;
-
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => WellnessResultScreen(score: score, insight: insight),
+          builder: (_) => WellnessResultScreen(
+            score: assessment.overallScorePercent,
+            insight: insight,
+          ),
         ),
       );
-    } catch (e) {
-      setState(() => _errorText = 'DEBUG ERROR: $e');
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+        _errorText = 'Could not save this reflection. Please try again.';
+      });
     }
   }
 
@@ -154,190 +246,384 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wellness Check'),
+        title: const Text('Daily snapshot'),
+        leading: IconButton(
+          onPressed: _isSaving ? null : _goBack,
+          icon: const Icon(Icons.arrow_back_rounded),
+        ),
       ),
       body: SafeArea(
-        child: _buildFormView(),
+        child: Column(
+          children: [
+            _buildProgressHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildStepHero(),
+                    const SizedBox(height: 22),
+                    if (_currentStep == 0) _buildSleepStep(),
+                    if (_currentStep == 1) _buildStressStep(),
+                    if (_currentStep == 2) _buildRoutineStep(),
+                    if (_currentStep == 3) _buildReviewStep(),
+                    if (_errorText != null) ...[
+                      const SizedBox(height: 15),
+                      Text(
+                        _errorText!,
+                        style: const TextStyle(
+                          color: AppTheme.danger,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            _buildBottomBar(),
+          ],
+        ),
       ),
     );
   }
 
-  // The actual question form.
-  Widget _buildFormView() {
-    return SingleChildScrollView(
+  Widget _buildProgressHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Row(
+        children: List.generate(4, (index) {
+          final active = index <= _currentStep;
+          return Expanded(
+            child: Container(
+              height: 5,
+              margin: EdgeInsets.only(right: index == 3 ? 0 : 7),
+              decoration: BoxDecoration(
+                color: active
+                    ? AppTheme.primary
+                    : AppTheme.surfaceBorder.withValues(alpha: 0.65),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildStepHero() {
+    return Container(
       padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: AppTheme.heroGradientLight,
+        borderRadius: BorderRadius.circular(27),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'A few quick questions about today',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-          const SizedBox(height: 24),
-
-          // ---- Sleep ----
           Text(
-            'Hours of sleep last night: ${_sleepHours.toStringAsFixed(1)}',
-            style: const TextStyle(fontWeight: FontWeight.w500),
-          ),
-          Slider(
-            value: _sleepHours,
-            min: 0,
-            max: 12,
-            divisions: 24,
-            activeColor: const Color(0xFF5B9A8B),
-            label: _sleepHours.toStringAsFixed(1),
-            onChanged: (value) => setState(() => _sleepHours = value),
-          ),
-          const SizedBox(height: 20),
-
-          // ---- Stress quiz (replaces the old 1–10 slider) ----
-          const Text(
-            'Stress check-in',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Answer these short questions and we\'ll estimate your stress level for you — no need to guess a number.',
-            style: TextStyle(fontSize: 13, color: Colors.grey),
-          ),
-          const SizedBox(height: 16),
-          ..._stressQuestions.map(_buildStressQuestion),
-          if (_stressQuizComplete) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Estimated stress level: ${_computeStressLevel()} / 10',
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Color(0xFF9B8ECF),
-              ),
+            _stepEyebrow,
+            style: const TextStyle(
+              color: Color(0xFF806B59),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1,
             ),
-            const SizedBox(height: 12),
+          ),
+          const SizedBox(height: 11),
+          Text(
+            _stepTitle,
+            style: const TextStyle(
+              color: AppTheme.textDark,
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            _stepSubtitle,
+            style: const TextStyle(
+              color: Color(0xFF59646F),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSleepStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'How many hours did you sleep?',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _ChoiceCard(
+              label: 'Less than 5',
+              subtitle: 'A short night',
+              selected: _sleepHours == 4,
+              onTap: () => setState(() => _sleepHours = 4),
+            ),
+            _ChoiceCard(
+              label: '5–6 hours',
+              subtitle: 'Some rest',
+              selected: _sleepHours == 5.5,
+              onTap: () => setState(() => _sleepHours = 5.5),
+            ),
+            _ChoiceCard(
+              label: '7–8 hours',
+              subtitle: 'A steadier night',
+              selected: _sleepHours == 7.5,
+              onTap: () => setState(() => _sleepHours = 7.5),
+            ),
+            _ChoiceCard(
+              label: '9+ hours',
+              subtitle: 'A longer rest',
+              selected: _sleepHours == 9,
+              onTap: () => setState(() => _sleepHours = 9),
+            ),
           ],
+        ),
+      ],
+    );
+  }
 
-          // ---- Yes/No questions (buttons instead of switches) ----
-          _buildYesNoQuestion(
-            title: 'Did you exercise today?',
-            value: _exercised,
-            onChanged: (value) => setState(() => _exercised = value),
-          ),
-          _buildYesNoQuestion(
-            title: 'Did you drink enough water today?',
-            value: _drankEnoughWater,
-            onChanged: (value) => setState(() => _drankEnoughWater = value),
-          ),
-          _buildYesNoQuestion(
-            title: 'Did you socialize with anyone today?',
-            value: _socialized,
-            onChanged: (value) => setState(() => _socialized = value),
-          ),
-          _buildYesNoQuestion(
-            title: 'Did you eat healthy meals today?',
-            value: _ateHealthyMeals,
-            onChanged: (value) => setState(() => _ateHealthyMeals = value),
-          ),
+  Widget _buildStressStep() {
+    final selected = _stressAnswers[_currentQuestion.id];
 
-          if (_errorText != null) ...[
-            const SizedBox(height: 14),
-            Text(
-              _errorText!,
-              style: const TextStyle(color: Colors.red, fontSize: 14),
-            ),
-          ],
-
-          const SizedBox(height: 28),
-
-          ElevatedButton(
-            onPressed: _isSaving ? null : _saveAssessment,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF5B9A8B),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Choose the closest description',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 9,
+          runSpacing: 9,
+          children: List.generate(_stressLabels.length, (index) {
+            final isSelected = selected == index;
+            return ChoiceChip(
+              label: Text(_stressLabels[index]),
+              selected: isSelected,
+              selectedColor: AppTheme.primary.withValues(alpha: 0.18),
+              labelStyle: TextStyle(
+                color: isSelected ? AppTheme.primary : AppTheme.textDark,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
-            ),
+              showCheckmark: false,
+              onSelected: (_) {
+                setState(() => _stressAnswers[_currentQuestion.id] = index);
+              },
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoutineStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _RoutineQuestion(
+          title: 'Did you exercise today?',
+          value: _exercised,
+          onChanged: (value) => setState(() => _exercised = value),
+        ),
+        _RoutineQuestion(
+          title: 'Did you drink enough water today?',
+          value: _drankEnoughWater,
+          onChanged: (value) => setState(() => _drankEnoughWater = value),
+        ),
+        _RoutineQuestion(
+          title: 'Did you connect with anyone today?',
+          value: _socialized,
+          onChanged: (value) => setState(() => _socialized = value),
+        ),
+        _RoutineQuestion(
+          title: 'Did you eat meals that supported you today?',
+          value: _ateHealthyMeals,
+          onChanged: (value) => setState(() => _ateHealthyMeals = value),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReviewStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ReviewRow(label: 'Sleep', value: _sleepLabel),
+        _ReviewRow(label: 'Stress snapshot', value: '${_computeStressLevel()} / 10'),
+        _ReviewRow(
+          label: 'Routine answers',
+          value: _routineComplete ? 'Complete' : 'Not complete',
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'This is a personal reflection based on what you entered. It is not a medical assessment.',
+          style: TextStyle(
+            color: AppTheme.textLight,
+            fontSize: 13,
+            height: 1.4,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String get _sleepLabel {
+    if (_sleepHours == 4) return 'Less than 5 hours';
+    if (_sleepHours == 5.5) return '5–6 hours';
+    if (_sleepHours == 7.5) return '7–8 hours';
+    if (_sleepHours == 9) return '9+ hours';
+    return 'Not chosen';
+  }
+
+  Widget _buildBottomBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _isSaving ? null : _nextStep,
             child: _isSaving
                 ? const SizedBox(
-                    height: 20,
-                    width: 20,
+                    height: 21,
+                    width: 21,
                     child: CircularProgressIndicator(
                       color: Colors.white,
                       strokeWidth: 2,
                     ),
                   )
-                : const Text('See My Score', style: TextStyle(fontSize: 16)),
+                : Text(_currentStep == 3 ? 'Save reflection' : 'Continue'),
           ),
-        ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildStressQuestion(_StressQuestion question) {
-    final selected = _stressAnswers[question.id];
+class _StressQuestion {
+  final String id;
+  final String prompt;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            question.prompt,
-            style: const TextStyle(fontWeight: FontWeight.w500),
+  const _StressQuestion({required this.id, required this.prompt});
+}
+
+class _ChoiceCard extends StatelessWidget {
+  final String label;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ChoiceCard({
+    required this.label,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: 160,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppTheme.primary.withValues(alpha: 0.13)
+              : Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? AppTheme.primary
+                : AppTheme.surfaceBorder.withValues(alpha: 0.78),
+            width: selected ? 2 : 1,
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: List.generate(_stressLabels.length, (index) {
-              final isSelected = selected == index;
-              return GestureDetector(
-                onTap: () {
-                  setState(() => _stressAnswers[question.id] = index);
-                },
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? const Color(0xFF9B8ECF)
-                        : Colors.grey.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected
-                          ? const Color(0xFF9B8ECF)
-                          : Colors.grey.withValues(alpha: 0.2),
-                    ),
-                  ),
-                  child: Text(
-                    _stressLabels[index],
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                ),
-              );
-            }),
-          ),
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: selected
+                    ? AppTheme.primary
+                    : Theme.of(context).colorScheme.onSurface,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                color: AppTheme.textLight,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildYesNoQuestion({
-    required String title,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+class _RoutineQuestion extends StatelessWidget {
+  final String title;
+  final bool? value;
+  final ValueChanged<bool> onChanged;
+
+  const _RoutineQuestion({
+    required this.title,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(
+          color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-          const SizedBox(height: 8),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 9),
           Row(
             children: [
               Expanded(
@@ -347,7 +633,7 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
                   onTap: () => onChanged(true),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 9),
               Expanded(
                 child: _YesNoButton(
                   label: 'No',
@@ -363,13 +649,6 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
   }
 }
 
-class _StressQuestion {
-  final String id;
-  final String prompt;
-
-  const _StressQuestion({required this.id, required this.prompt});
-}
-
 class _YesNoButton extends StatelessWidget {
   final String label;
   final bool selected;
@@ -383,29 +662,59 @@ class _YesNoButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(13),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 11),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF5B9A8B)
-              : Colors.grey.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
+              ? AppTheme.primary.withValues(alpha: 0.14)
+              : Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(13),
           border: Border.all(
             color: selected
-                ? const Color(0xFF5B9A8B)
-                : Colors.grey.withValues(alpha: 0.2),
+                ? AppTheme.primary
+                : AppTheme.surfaceBorder.withValues(alpha: 0.78),
           ),
         ),
+        alignment: Alignment.center,
         child: Text(
           label,
-          textAlign: TextAlign.center,
           style: TextStyle(
-            color: selected ? Colors.white : Colors.black87,
-            fontWeight: FontWeight.w600,
+            color: selected ? AppTheme.primary : AppTheme.textDark,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ReviewRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _ReviewRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+      margin: const EdgeInsets.only(bottom: 9),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(
+          color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: AppTheme.textLight)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
+        ],
       ),
     );
   }

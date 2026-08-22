@@ -135,10 +135,32 @@ class FirestoreService {
   // Users submit requests — never an instant booking, per the spec.
   // Status starts as 'pending'. Approve/decline UI is a stretch goal;
   // the status field is stored so that can be added later.
-  Future<void> requestAppointment(AppointmentModel appointment) async {
+    Future<void> requestAppointment(AppointmentModel appointment) async {
     await _db
         .collection(FirestoreCollections.appointments)
         .add(appointment.toMap());
+  }
+  
+  Stream<List<AppointmentModel>> allAppointmentsForAdmin() {
+    return _db
+        .collection(FirestoreCollections.appointments)
+        .orderBy('requestedAt', descending: true)
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map((doc) => AppointmentModel.fromMap(doc.data(), doc.id))
+              .toList(),
+        );
+  }
+
+  Future<void> updateAppointmentStatus(
+    String appointmentId,
+    String status,
+  ) async {
+    await _db
+        .collection(FirestoreCollections.appointments)
+        .doc(appointmentId)
+        .update({'status': status});
   }
 
   // REQUIRES a composite index in Firebase Console:

@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_theme.dart';
-import '../breathing/breathing_screen.dart';
-import '../journal/journal_screen.dart';
-import '../meditation/meditation_screen.dart';
-import '../emergency_support_screen.dart';
 import '../../utils/pattern_insight.dart';
+import '../breathing/breathing_screen.dart';
+import '../chat/chat_tab_screen.dart';
+import '../emergency_support_screen.dart';
+import '../journal/journal_screen.dart';
 
-// Shown right after a Wellness Assessment is saved. Same "never a dead
-// end" principle as MoodResultScreen — plus, if a PatternInsight was
-// found (looking across recent history, not just this one score), it
-// gets shown too.
 class WellnessResultScreen extends StatelessWidget {
   final int score;
   final PatternInsight insight;
@@ -20,180 +16,109 @@ class WellnessResultScreen extends StatelessWidget {
     required this.insight,
   });
 
-  Color get _scoreColor {
-    if (score >= 70) return AppTheme.success;
-    if (score >= 40) return Colors.orange;
-    return AppTheme.danger;
+  bool get _needsExtraSupport => score < 45 || insight.isConcerning;
+
+  String get _observation {
+    if (insight.message != null && insight.message!.trim().isNotEmpty) {
+      return insight.message!;
+    }
+
+    if (score >= 70) {
+      return 'You shared several signs of steadiness today. Keep noticing what supports you.';
+    }
+    if (score >= 40) {
+      return 'Your answers show a mixed day. A small reset or quiet reflection may help.';
+    }
+    return 'Your answers suggest today feels heavier than usual. Be gentle with yourself.';
   }
 
-  String get _baseMessage {
-    if (score >= 70) return 'You\'re doing great! Keep it up.';
-    if (score >= 40) return 'You\'re doing okay — small changes can help.';
-    return 'Things seem tough right now. Be kind to yourself.';
-  }
+  _ResultAction get _primaryAction {
+    if (score >= 70) {
+      return _ResultAction(
+        title: 'Keep the good going',
+        subtitle: 'Take a moment to notice what is supporting you today.',
+        icon: Icons.favorite_border_rounded,
+        color: AppTheme.secondary,
+        builder: (_) => const JournalScreen(),
+      );
+    }
 
-  bool get _isLowScore => score < 45;
+    if (_needsExtraSupport) {
+      return _ResultAction(
+        title: 'Talk it through',
+        subtitle: 'Share what is making today feel heavier than usual.',
+        icon: Icons.chat_bubble_outline_rounded,
+        color: AppTheme.primary,
+        builder: (_) => const ChatTabScreen(),
+      );
+    }
+
+    return _ResultAction(
+      title: 'Try a short breathing reset',
+      subtitle: 'Give yourself three quiet minutes before doing anything else.',
+      icon: Icons.air_rounded,
+      color: AppTheme.primary,
+      builder: (_) => const BreathingScreen(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Support options show for a low score OR when the pattern
-    // detector flagged something concerning across recent history,
-    // even if today's single score looks fine on its own.
-    final showSupport = _isLowScore || insight.isConcerning;
+    final action = _primaryAction;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Wellness Check')),
+      appBar: AppBar(title: const Text('Your reflection')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(
-                child: Column(
-                  children: [
-                    const Text(
-                      'Your Wellness Score',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      width: 140,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _scoreColor.withValues(alpha: 0.12),
-                        border: Border.all(color: _scoreColor, width: 4),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$score%',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: _scoreColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Text(
-                      _baseMessage,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 15),
-                    ),
-                  ],
-                ),
+              _buildReflectionHero(),
+              const SizedBox(height: 22),
+              const Text(
+                'What we noticed',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
-
-              // The personalization layer: only shows if a real
-              // pattern was detected across recent entries.
-              if (insight.message != null) ...[
-                const SizedBox(height: 20),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: insight.isConcerning
-                        ? AppTheme.danger.withValues(alpha: 0.08)
-                        : AppTheme.secondary.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: insight.isConcerning
-                          ? AppTheme.danger.withValues(alpha: 0.25)
-                          : AppTheme.secondary.withValues(alpha: 0.25),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.insights_rounded,
-                        color: insight.isConcerning ? AppTheme.danger : AppTheme.secondary,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          insight.message!,
-                          style: const TextStyle(fontSize: 13, height: 1.5),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-
-              const SizedBox(height: 28),
-              Text('What might help right now', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 12),
-              _ActionTile(
-                icon: Icons.air_rounded,
-                title: 'A few minutes of breathing',
-                subtitle: 'Reset with a short guided pattern.',
-                color: AppTheme.primary,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const BreathingScreen()),
-                ),
+              const SizedBox(height: 10),
+              _buildObservationCard(context),
+              const SizedBox(height: 22),
+              const Text(
+                'One gentle next step',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
-              _ActionTile(
-                icon: Icons.self_improvement_rounded,
-                title: 'A guided meditation',
-                subtitle: 'Slow down and sit with how you\'re feeling.',
-                color: AppTheme.secondary,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const MeditationScreen()),
-                ),
+              const SizedBox(height: 10),
+              _buildActionCard(context, action),
+              const SizedBox(height: 18),
+              const Text(
+                'Other ways to support yourself',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
               ),
+              const SizedBox(height: 10),
               _ActionTile(
                 icon: Icons.book_outlined,
-                title: 'Write it down',
-                subtitle: 'Reflect on what\'s behind today\'s score.',
-                color: AppTheme.accent,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const JournalScreen()),
-                ),
+                title: 'Write it out',
+                subtitle: 'Reflect on what is behind today’s snapshot.',
+                color: AppTheme.secondary,
+                onTap: () => _open(context, const JournalScreen()),
               ),
-
-              if (showSupport) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: AppTheme.danger.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppTheme.danger.withValues(alpha: 0.25)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'If this feeling is heavier than usual',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'There are real people ready to listen, any time.',
-                        style: TextStyle(color: AppTheme.textLight, fontSize: 13),
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const EmergencySupportScreen()),
-                        ),
-                        icon: const Icon(Icons.support_agent, color: AppTheme.danger),
-                        label: const Text('See who you can talk to'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.danger,
-                          side: const BorderSide(color: AppTheme.danger),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              _ActionTile(
+                icon: Icons.chat_bubble_outline_rounded,
+                title: 'Talk it through',
+                subtitle: 'Use MindMate as a supportive sounding board.',
+                color: AppTheme.accent,
+                onTap: () => _open(context, const ChatTabScreen()),
+              ),
+              if (_needsExtraSupport) ...[
+                const SizedBox(height: 10),
+                _buildSupportCard(context),
               ],
-
-              const SizedBox(height: 28),
+              const SizedBox(height: 22),
               ElevatedButton(
-                onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
-                child: const Text('Back to Dashboard'),
+                onPressed: () => Navigator.of(context).popUntil(
+                  (route) => route.isFirst,
+                ),
+                child: const Text('Back to Home'),
               ),
             ],
           ),
@@ -201,6 +126,208 @@ class WellnessResultScreen extends StatelessWidget {
       ),
     );
   }
+
+  void _open(BuildContext context, Widget screen) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => screen),
+    );
+  }
+
+  Widget _buildReflectionHero() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: AppTheme.heroGradientLight,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 58,
+            height: 58,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.68),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_rounded,
+              color: AppTheme.primary,
+              size: 32,
+            ),
+          ),
+          const SizedBox(width: 14),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'CHECK-IN COMPLETE',
+                  style: TextStyle(
+                    color: Color(0xFF806B59),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Thank you for checking in with yourself.',
+                  style: TextStyle(
+                    color: AppTheme.textDark,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildObservationCard(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(17),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppTheme.primary.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(Icons.insights_outlined, color: AppTheme.primary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              _observation,
+              style: const TextStyle(fontSize: 14, height: 1.45),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionCard(
+  BuildContext context,
+  _ResultAction action,
+) {
+    return InkWell(
+      onTap: () => _open(context, action.builder(context)),
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        padding: const EdgeInsets.all(17),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: action.color.withValues(alpha: 0.55),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: action.color.withValues(alpha: 0.13),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Icon(action.icon, color: action.color),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    action.title,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    action.subtitle,
+                    style: const TextStyle(
+                      color: AppTheme.textLight,
+                      fontSize: 12,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: action.color),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSupportCard(BuildContext context) {
+    return InkWell(
+      onTap: () => _open(context, const EmergencySupportScreen()),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.danger.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppTheme.danger.withValues(alpha: 0.32),
+          ),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.support_agent_rounded, color: AppTheme.danger),
+            SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'If today feels heavier than usual, see the human-support options.',
+                style: TextStyle(
+                  color: AppTheme.textLight,
+                  fontSize: 13,
+                  height: 1.35,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: AppTheme.danger),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ResultAction {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final WidgetBuilder builder;
+
+  const _ResultAction({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.builder,
+  });
 }
 
 class _ActionTile extends StatelessWidget {
@@ -220,42 +347,43 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppTheme.surfaceBorder.withValues(alpha: 0.6)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              alignment: Alignment.center,
-              child: Icon(icon, color: color),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 9),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(color: AppTheme.textLight, fontSize: 12)),
-                ],
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: AppTheme.textLight,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const Icon(Icons.chevron_right, color: AppTheme.textLight),
-          ],
+              const Icon(Icons.chevron_right_rounded, color: AppTheme.textLight),
+            ],
+          ),
         ),
       ),
     );

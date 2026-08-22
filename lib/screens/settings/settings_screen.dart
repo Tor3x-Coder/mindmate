@@ -9,183 +9,171 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final settings = context.watch<AppSettingsController>();
-    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
+      appBar: AppBar(title: const Text('App settings')),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
           children: [
-            Text(
-              'Tune the app to match your calm.',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textLight,
-              ),
-            ),
-            const SizedBox(height: 20),
-            _SectionCard(
-              title: 'Appearance',
-              subtitle: 'Set the mood and readability of your space.',
+            const _SectionTitle(title: 'Appearance'),
+            _SettingsCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Theme mode',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    'Theme',
+                    style: TextStyle(fontWeight: FontWeight.w800),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
-                      _ChoicePill(
-                        label: 'Dark',
-                        selected: settings.themeMode == ThemeMode.dark,
-                        onTap: () => settings.updateThemeMode(ThemeMode.dark),
-                      ),
-                      _ChoicePill(
+                      _ThemeChoice(
                         label: 'Light',
+                        icon: Icons.light_mode_outlined,
                         selected: settings.themeMode == ThemeMode.light,
                         onTap: () => settings.updateThemeMode(ThemeMode.light),
                       ),
-                      _ChoicePill(
+                      _ThemeChoice(
                         label: 'System',
+                        icon: Icons.brightness_auto_outlined,
                         selected: settings.themeMode == ThemeMode.system,
                         onTap: () => settings.updateThemeMode(ThemeMode.system),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 22),
-                  Row(
-                    children: [
-                      const Text(
-                        'Text size',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${settings.textScale.toStringAsFixed(2)}x',
-                        style: const TextStyle(color: AppTheme.textLight),
+                      _ThemeChoice(
+                        label: 'Dark',
+                        icon: Icons.dark_mode_outlined,
+                        selected: settings.themeMode == ThemeMode.dark,
+                        onTap: () => settings.updateThemeMode(ThemeMode.dark),
                       ),
                     ],
                   ),
-                  Slider(
+                  const SizedBox(height: 18),
+                  _SliderSetting(
+                    title: 'Text size',
+                    valueLabel: '${(settings.textScale * 100).round()}%',
                     value: settings.textScale,
                     min: 0.9,
                     max: 1.2,
                     divisions: 6,
-                    label: '${settings.textScale.toStringAsFixed(2)}x',
                     onChanged: settings.updateTextScale,
+                  ),
+                  _SliderSetting(
+                    title: 'Animation intensity',
+                    valueLabel: '${(settings.animationIntensity * 100).round()}%',
+                    value: settings.animationIntensity,
+                    min: 0.6,
+                    max: 1.3,
+                    divisions: 7,
+                    onChanged: settings.updateAnimationIntensity,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            _SectionCard(
-              title: 'Experience',
-              subtitle: 'Control how lively and sensory the app feels.',
+            const SizedBox(height: 22),
+            const _SectionTitle(title: 'Experience'),
+            _SettingsCard(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Animation intensity',
-                    style: TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      _ChoicePill(
-                        label: 'Low',
-                        selected: settings.animationIntensity == 0.6,
-                        onTap: () => settings.updateAnimationIntensity(0.6),
-                      ),
-                      _ChoicePill(
-                        label: 'Balanced',
-                        selected: settings.animationIntensity == 1.0,
-                        onTap: () => settings.updateAnimationIntensity(1.0),
-                      ),
-                      _ChoicePill(
-                        label: 'Full',
-                        selected: settings.animationIntensity == 1.3,
-                        onTap: () => settings.updateAnimationIntensity(1.3),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 22),
-                  SwitchListTile(
+                  _SwitchSetting(
+                    title: 'Haptics',
+                    subtitle: 'Use small vibrations during supported interactions.',
                     value: settings.hapticsEnabled,
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Haptics'),
-                    subtitle: const Text(
-                      'Gentle tactile feedback for taps and key moments.',
-                    ),
                     onChanged: settings.updateHapticsEnabled,
                   ),
-                  SwitchListTile(
+                  const Divider(height: 18),
+                  _SwitchSetting(
+                    title: 'Sound',
+                    subtitle: 'Allow guided audio when it becomes available.',
                     value: settings.soundEnabled,
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Ambient sounds'),
-                    subtitle: const Text(
-                      'Keep sound support ready for richer guided sessions.',
-                    ),
                     onChanged: settings.updateSoundEnabled,
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            _SectionCard(
-              title: 'Daily Flow',
-              subtitle: 'Set the rhythm for your check-ins and practice.',
+            const SizedBox(height: 22),
+            const _SectionTitle(title: 'Check-in routine'),
+            _SettingsCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Check-in window',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    'Preferred check-in window',
+                    style: TextStyle(fontWeight: FontWeight.w800),
                   ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: const ['Morning', 'Afternoon', 'Evening']
-                        .map(
-                          (window) => _ChoicePill(
-                            label: window,
-                            selected: settings.checkInWindow == window,
-                            onTap: () => settings.updateCheckInWindow(window),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 5),
                   const Text(
-                    'Preferred practice length',
-                    style: TextStyle(fontWeight: FontWeight.w600),
+                    'This saves your preference. Notifications will be connected in a later batch.',
+                    style: TextStyle(
+                      color: AppTheme.textLight,
+                      fontSize: 12,
+                      height: 1.35,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [3, 5, 10]
-                        .map(
-                          (minutes) => _ChoicePill(
-                            label: '$minutes min',
-                            selected:
-                                settings.preferredSessionMinutes == minutes,
-                            onTap: () => settings.updatePreferredSessionMinutes(
-                              minutes,
-                            ),
-                          ),
-                        )
-                        .toList(),
+                    spacing: 8,
+                    children: ['Morning', 'Afternoon', 'Evening'].map((time) {
+                      final selected = settings.checkInWindow == time;
+                      return ChoiceChip(
+                        label: Text(time),
+                        selected: selected,
+                        selectedColor: AppTheme.primary.withValues(alpha: 0.18),
+                        labelStyle: TextStyle(
+                          color: selected
+                              ? AppTheme.primary
+                              : AppTheme.textDark,
+                          fontWeight:
+                              selected ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                        showCheckmark: false,
+                        onSelected: (_) => settings.updateCheckInWindow(time),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'Preferred session length',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    children: [1, 3, 5].map((minutes) {
+                      final selected =
+                          settings.preferredSessionMinutes == minutes;
+                      return ChoiceChip(
+                        label: Text('$minutes min'),
+                        selected: selected,
+                        selectedColor: AppTheme.primary.withValues(alpha: 0.18),
+                        labelStyle: TextStyle(
+                          color: selected
+                              ? AppTheme.primary
+                              : AppTheme.textDark,
+                          fontWeight:
+                              selected ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                        showCheckmark: false,
+                        onSelected: (_) =>
+                            settings.updatePreferredSessionMinutes(minutes),
+                      );
+                    }).toList(),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            const _SectionTitle(title: 'About MindMate'),
+            const _SettingsCard(
+              child: Text(
+                'MindMate is a wellness support tool. It does not diagnose conditions, prescribe treatment, replace a professional, or handle emergencies directly.',
+                style: TextStyle(
+                  color: AppTheme.textLight,
+                  fontSize: 13,
+                  height: 1.45,
+                ),
               ),
             ),
           ],
@@ -195,55 +183,53 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
+class _SectionTitle extends StatelessWidget {
   final String title;
-  final String subtitle;
-  final Widget child;
 
-  const _SectionCard({
-    required this.title,
-    required this.subtitle,
-    required this.child,
-  });
+  const _SectionTitle({required this.title});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppTheme.surfaceBorder.withValues(alpha: 0.7),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            style: const TextStyle(color: AppTheme.textLight),
-          ),
-          const SizedBox(height: 18),
-          child,
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(left: 2, bottom: 10),
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
       ),
     );
   }
 }
 
-class _ChoicePill extends StatelessWidget {
+class _SettingsCard extends StatelessWidget {
+  final Widget child;
+
+  const _SettingsCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(17),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _ThemeChoice extends StatelessWidget {
   final String label;
+  final IconData icon;
   final bool selected;
   final VoidCallback onTap;
 
-  const _ChoicePill({
+  const _ThemeChoice({
     required this.label,
+    required this.icon,
     required this.selected,
     required this.onTap,
   });
@@ -252,28 +238,134 @@ class _ChoicePill extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          gradient: selected ? AppTheme.accentGradient : null,
-          color: selected ? null : AppTheme.surfaceAlt.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(18),
+          color: selected
+              ? AppTheme.primary.withValues(alpha: 0.13)
+              : Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected
-                ? Colors.transparent
-                : AppTheme.surfaceBorder.withValues(alpha: 0.85),
+                ? AppTheme.primary
+                : AppTheme.surfaceBorder.withValues(alpha: 0.8),
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 17,
+              color: selected ? AppTheme.primary : AppTheme.textLight,
+            ),
+            const SizedBox(width: 7),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected ? AppTheme.primary : AppTheme.textDark,
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _SliderSetting extends StatelessWidget {
+  final String title;
+  final String valueLabel;
+  final double value;
+  final double min;
+  final double max;
+  final int divisions;
+  final ValueChanged<double> onChanged;
+
+  const _SliderSetting({
+    required this.title,
+    required this.valueLabel,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.divisions,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+            Text(
+              valueLabel,
+              style: const TextStyle(
+                color: AppTheme.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        Slider(
+          value: value.clamp(min, max),
+          min: min,
+          max: max,
+          divisions: divisions,
+          activeColor: AppTheme.primary,
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+}
+
+class _SwitchSetting extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _SwitchSetting({
+    required this.title,
+    required this.subtitle,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: AppTheme.textLight,
+                  fontSize: 12,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Switch(
+          value: value,
+          activeThumbColor: AppTheme.primary,
+          onChanged: onChanged,
+        ),
+      ],
     );
   }
 }

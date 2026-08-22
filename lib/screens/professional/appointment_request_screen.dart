@@ -20,13 +20,14 @@ class AppointmentRequestScreen extends StatefulWidget {
 }
 
 class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
-  final _formKey = GlobalKey<FormState>();
   final _noteController = TextEditingController();
 
   String? _consultationType;
   DateTime? _preferredDate;
   TimeOfDay? _preferredTime;
+  int _currentStep = 0;
   bool _isSaving = false;
+  String? _errorText;
 
   List<String> get _availableTypes {
     final types = <String>[];
@@ -39,15 +40,51 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
   void initState() {
     super.initState();
     final types = _availableTypes;
-    if (types.length == 1) {
-      _consultationType = types.first;
-    }
+    if (types.length == 1) _consultationType = types.first;
   }
 
   @override
   void dispose() {
     _noteController.dispose();
     super.dispose();
+  }
+
+  bool _canContinueFromCurrentStep() {
+    if (_currentStep == 0) return _consultationType != null;
+    if (_currentStep == 1) {
+      return _preferredDate != null && _preferredTime != null;
+    }
+    return true;
+  }
+
+  void _nextStep() {
+    setState(() => _errorText = null);
+
+    if (!_canContinueFromCurrentStep()) {
+      setState(() {
+        _errorText = _currentStep == 0
+            ? 'Please choose Online or Physical.'
+            : 'Please choose a preferred date and time.';
+      });
+      return;
+    }
+
+    if (_currentStep < 2) {
+      setState(() => _currentStep++);
+    } else {
+      _handleSubmit();
+    }
+  }
+
+  void _previousStep() {
+    if (_currentStep == 0) {
+      Navigator.of(context).pop();
+    } else {
+      setState(() {
+        _currentStep--;
+        _errorText = null;
+      });
+    }
   }
 
   Future<void> _pickDate() async {
@@ -58,7 +95,7 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),
     );
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() => _preferredDate = picked);
     }
   }
@@ -68,7 +105,7 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
       context: context,
       initialTime: _preferredTime ?? const TimeOfDay(hour: 10, minute: 0),
     );
-    if (picked != null) {
+    if (picked != null && mounted) {
       setState(() => _preferredTime = picked);
     }
   }
@@ -87,37 +124,23 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
   }
 
   Future<void> _handleSubmit() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    if (_consultationType == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please choose Online or Physical.')),
-      );
-      return;
-    }
-    if (_preferredDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please pick a preferred date.')),
-      );
-      return;
-    }
-    if (_preferredTime == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please pick a preferred time.')),
-      );
-      return;
-    }
-
-    final authService = context.read<AuthService>();
-    final uid = authService.currentUser?.uid;
+    final uid = context.read<AuthService>().currentUser?.uid;
     if (uid == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please log in to send a request.')),
-      );
+      setState(() => _errorText = 'Please log in to send a request.');
       return;
     }
 
-    setState(() => _isSaving = true);
+    if (_consultationType == null ||
+        _preferredDate == null ||
+        _preferredTime == null) {
+      setState(() => _errorText = 'Please complete the request details.');
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _errorText = null;
+    });
 
     final appointment = AppointmentModel(
       id: '',
@@ -135,151 +158,490 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
     try {
       await context.read<FirestoreService>().requestAppointment(appointment);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Request sent. It stays pending until reviewed — this is not a confirmed booking.',
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
+          title: const Text('Request sent'),
+          content: const Text(
+            'Your request is pending review. This is not a confirmed booking yet.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Done'),
+            ),
+          ],
         ),
       );
+      if (!mounted) return;
       Navigator.of(context).pop();
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Something went wrong. Please try again.'),
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
+      setState(() {
+        _isSaving = false;
+        _errorText = 'Could not send the request. Please try again.';
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final professional = widget.professional;
-    final types = _availableTypes;
+    final title = _currentStep == 0
+        ? 'How would you like to meet?'
+        : _currentStep == 1
+            ? 'Choose a preferred time'
+            : 'Review your request';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Request Appointment'),
+        title: const Text('Request a session'),
+        leading: IconButton(
+          onPressed: _isSaving ? null : _previousStep,
+          icon: const Icon(Icons.arrow_back_rounded),
+        ),
       ),
       body: SafeArea(
-        child: types.isEmpty
-            ? const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: Text(
-                    'This professional has no session types listed yet.',
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              )
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
+        child: Column(
+          children: [
+            _buildStepHeader(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildProfessionalSummary(),
+                    const SizedBox(height: 24),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'A request is reviewed before anything is confirmed.',
+                      style: TextStyle(
+                        color: AppTheme.textLight,
+                        fontSize: 13,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    if (_currentStep == 0) _buildTypeStep(),
+                    if (_currentStep == 1) _buildTimeStep(),
+                    if (_currentStep == 2) _buildReviewStep(),
+                    if (_errorText != null) ...[
+                      const SizedBox(height: 16),
                       Text(
-                        'Request a session with ${professional.fullName}',
+                        _errorText!,
                         style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'This sends a request only — MindMate does not confirm bookings automatically.',
-                        style: TextStyle(
-                          color: AppTheme.textLight,
+                          color: AppTheme.danger,
                           fontSize: 13,
-                          height: 1.4,
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Consultation type',
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        children: types.map((type) {
-                          final selected = _consultationType == type;
-                          return ChoiceChip(
-                            label: Text(type),
-                            selected: selected,
-                            onSelected: (_) =>
-                                setState(() => _consultationType = type),
-                            selectedColor:
-                                AppTheme.primary.withValues(alpha: 0.2),
-                            labelStyle: TextStyle(
-                              color: selected
-                                  ? AppTheme.primary
-                                  : AppTheme.textDark,
-                              fontWeight: selected
-                                  ? FontWeight.w600
-                                  : FontWeight.w400,
-                            ),
-                            showCheckmark: false,
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 20),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.calendar_today_outlined,
-                            color: AppTheme.primary),
-                        title: Text(
-                          _preferredDate == null
-                              ? 'Preferred date'
-                              : _formatDate(_preferredDate!),
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: _pickDate,
-                      ),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.access_time,
-                            color: AppTheme.primary),
-                        title: Text(
-                          _preferredTime == null
-                              ? 'Preferred time'
-                              : _formatTime(_preferredTime!),
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: _pickTime,
-                      ),
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: _noteController,
-                        maxLines: 4,
-                        decoration: const InputDecoration(
-                          labelText: 'Note (optional)',
-                          alignLabelWithHint: true,
-                          hintText: 'Anything you\'d like them to know…',
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      ElevatedButton(
-                        onPressed: _isSaving ? null : _handleSubmit,
-                        child: _isSaving
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Send Request'),
                       ),
                     ],
-                  ),
+                  ],
                 ),
               ),
+            ),
+            _buildBottomBar(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Row(
+        children: List.generate(3, (index) {
+          final active = index <= _currentStep;
+          return Expanded(
+            child: Container(
+              height: 5,
+              margin: EdgeInsets.only(right: index == 2 ? 0 : 7),
+              decoration: BoxDecoration(
+                color: active
+                    ? AppTheme.primary
+                    : AppTheme.surfaceBorder.withValues(alpha: 0.65),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildProfessionalSummary() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: AppTheme.heroGradientLight,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.65),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.person_outline_rounded,
+              color: AppTheme.primary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'WITH',
+                  style: TextStyle(
+                    color: Color(0xFF59646F),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.professional.fullName,
+                  style: const TextStyle(
+                    color: AppTheme.textDark,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  '${widget.professional.category} · request-based support',
+                  style: const TextStyle(
+                    color: Color(0xFF59646F),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypeStep() {
+    final types = _availableTypes;
+
+    if (types.isEmpty) {
+      return const _InfoBox(
+        text: 'This professional has no session type listed yet.',
+      );
+    }
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: types.map((type) {
+        final selected = _consultationType == type;
+        return _ChoiceCard(
+          label: type,
+          subtitle: type == 'Online'
+              ? 'Talk from wherever you are'
+              : 'Meet in person',
+          icon: type == 'Online'
+              ? Icons.videocam_outlined
+              : Icons.place_outlined,
+          selected: selected,
+          onTap: () => setState(() => _consultationType = type),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildTimeStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _PickerRow(
+          icon: Icons.calendar_today_outlined,
+          title: _preferredDate == null
+              ? 'Choose a date'
+              : _formatDate(_preferredDate!),
+          onTap: _pickDate,
+        ),
+        const SizedBox(height: 10),
+        _PickerRow(
+          icon: Icons.access_time_rounded,
+          title: _preferredTime == null
+              ? 'Choose a time'
+              : _formatTime(_preferredTime!),
+          onTap: _pickTime,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReviewStep() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ReviewRow(
+          label: 'Type',
+          value: _consultationType ?? 'Not chosen',
+        ),
+        _ReviewRow(
+          label: 'Date',
+          value: _preferredDate == null
+              ? 'Not chosen'
+              : _formatDate(_preferredDate!),
+        ),
+        _ReviewRow(
+          label: 'Time',
+          value: _preferredTime == null
+              ? 'Not chosen'
+              : _formatTime(_preferredTime!),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Note (optional)',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _noteController,
+          maxLines: 4,
+          decoration: InputDecoration(
+            hintText: 'Anything you would like them to know...',
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _isSaving ? null : _nextStep,
+            child: _isSaving
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(_currentStep == 2 ? 'Send request' : 'Continue'),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChoiceCard extends StatelessWidget {
+  final String label;
+  final String subtitle;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ChoiceCard({
+    required this.label,
+    required this.subtitle,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(17),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppTheme.primary.withValues(alpha: 0.13)
+              : Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: selected
+                ? AppTheme.primary
+                : AppTheme.surfaceBorder.withValues(alpha: 0.78),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: selected ? AppTheme.primary : AppTheme.textLight,
+              size: 25,
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: selected
+                          ? AppTheme.primary
+                          : Theme.of(context).colorScheme.onSurface,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppTheme.textLight,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (selected)
+              const Icon(
+                Icons.check_circle_rounded,
+                color: AppTheme.primary,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PickerRow extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  const _PickerRow({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(19),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(19),
+          border: Border.all(
+            color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppTheme.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.textLight,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReviewRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _ReviewRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(17),
+        border: Border.all(
+          color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: AppTheme.textLight)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoBox extends StatelessWidget {
+  final String text;
+
+  const _InfoBox({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceAlt.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: AppTheme.textLight),
       ),
     );
   }

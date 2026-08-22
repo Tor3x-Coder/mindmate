@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/mood_log_model.dart';
 import '../../models/journal_entry_model.dart';
+import '../../models/mood_log_model.dart';
 import '../../models/wellness_assessment_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_theme.dart';
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({super.key});
@@ -22,46 +23,39 @@ class ProgressScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Your Progress'),
-      ),
-      // Three streams (mood, wellness, journal) are combined below so the
-      // whole screen updates live as new entries come in.
+      appBar: AppBar(title: const Text('Your progress')),
       body: SafeArea(
         child: StreamBuilder<List<MoodLogModel>>(
           stream: firestoreService.moodLogsForUser(uid),
           builder: (context, moodSnapshot) {
+            if (moodSnapshot.hasError) return _buildErrorState();
+
             return StreamBuilder<List<WellnessAssessmentModel>>(
               stream: firestoreService.wellnessAssessmentsForUser(uid),
               builder: (context, wellnessSnapshot) {
+                if (wellnessSnapshot.hasError) return _buildErrorState();
+
                 return StreamBuilder<List<JournalEntryModel>>(
                   stream: firestoreService.journalEntriesForUser(uid),
                   builder: (context, journalSnapshot) {
-                    final isLoading = moodSnapshot.connectionState ==
-                            ConnectionState.waiting ||
-                        wellnessSnapshot.connectionState ==
-                            ConnectionState.waiting ||
-                        journalSnapshot.connectionState ==
-                            ConnectionState.waiting;
+                    if (journalSnapshot.hasError) return _buildErrorState();
+
+                    final isLoading =
+                        moodSnapshot.connectionState == ConnectionState.waiting ||
+                        wellnessSnapshot.connectionState == ConnectionState.waiting ||
+                        journalSnapshot.connectionState == ConnectionState.waiting;
 
                     if (isLoading) {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    final moods = moodSnapshot.data ?? [];
-                    final assessments = wellnessSnapshot.data ?? [];
-                    final journalEntries = journalSnapshot.data ?? [];
-
-                    if (moods.isEmpty &&
-                        assessments.isEmpty &&
-                        journalEntries.isEmpty) {
-                      return _buildEmptyState();
-                    }
-
                     return _buildProgressView(
-                      moods: moods,
-                      assessments: assessments,
-                      journalEntries: journalEntries,
+                      context: context,
+                      moods: moodSnapshot.data ?? const <MoodLogModel>[],
+                      assessments: wellnessSnapshot.data ??
+                          const <WellnessAssessmentModel>[],
+                      journalEntries: journalSnapshot.data ??
+                          const <JournalEntryModel>[],
                     );
                   },
                 );
@@ -73,228 +67,325 @@ class ProgressScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.show_chart, size: 56, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              'No data yet',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Check in with your mood, journal, or take a wellness '
-              'assessment to start seeing your progress here.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildProgressView({
+    required BuildContext context,
     required List<MoodLogModel> moods,
     required List<WellnessAssessmentModel> assessments,
     required List<JournalEntryModel> journalEntries,
   }) {
+    final weekMoodCount = _countThisWeek(moods.map((mood) => mood.date));
+    final weekJournalCount =
+        _countThisWeek(journalEntries.map((entry) => entry.date));
+    final weekAssessmentCount =
+        _countThisWeek(assessments.map((assessment) => assessment.date));
+    final hasAnyData =
+        moods.isNotEmpty || assessments.isNotEmpty || journalEntries.isNotEmpty;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildSummaryRow(
-            moodCount: moods.length,
-            journalCount: journalEntries.length,
-            assessmentCount: assessments.length,
+          _buildWeeklyStory(
+            hasAnyData: hasAnyData,
+            moodCount: weekMoodCount,
+            journalCount: weekJournalCount,
+            assessmentCount: weekAssessmentCount,
           ),
           const SizedBox(height: 24),
-
-          if (assessments.isNotEmpty) ...[
-            const Text(
-              'Wellness Score Trend',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            _buildWellnessTrend(assessments),
-            const SizedBox(height: 28),
-          ],
-
+          _buildObservationCard(moods, journalEntries),
+          const SizedBox(height: 14),
+          _buildHelpfulCard(),
           if (moods.isNotEmpty) ...[
-            const Text(
-              'Recent Moods',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            _buildRecentMoods(moods),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
+            _buildMoodTrail(context, moods),
           ],
-
-          if (journalEntries.isNotEmpty) ...[
-            const Text(
-              'Journal Activity',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'You\'ve written ${journalEntries.length} '
-              '${journalEntries.length == 1 ? 'entry' : 'entries'} so far.',
-              style: const TextStyle(color: Colors.grey),
-            ),
+          if (assessments.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            _buildWellnessReflectionCard(assessments),
           ],
         ],
       ),
     );
   }
 
-  // Three little stat cards across the top.
-  Widget _buildSummaryRow({
+  int _countThisWeek(Iterable<DateTime> dates) {
+    final now = DateTime.now();
+    final start = now.subtract(const Duration(days: 6));
+    return dates.where((date) => !date.isBefore(start)).length;
+  }
+
+  Widget _buildWeeklyStory({
+    required bool hasAnyData,
     required int moodCount,
     required int journalCount,
     required int assessmentCount,
   }) {
-    return Row(
+    final summary = hasAnyData
+        ? 'You made space for yourself this week.'
+        : 'Your story can start with one small check-in.';
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: AppTheme.heroGradientLight,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'THIS WEEK',
+                  style: TextStyle(
+                    color: Color(0xFF59646F),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  summary,
+                  style: const TextStyle(
+                    color: AppTheme.textDark,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '$moodCount check-ins  •  $journalCount journal entries  •  $assessmentCount reflections',
+                  style: const TextStyle(
+                    color: Color(0xFF59646F),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 58,
+            height: 58,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.62),
+              shape: BoxShape.circle,
+            ),
+            child: const Text('✦', style: TextStyle(fontSize: 28, color: AppTheme.primary)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildObservationCard(
+    List<MoodLogModel> moods,
+    List<JournalEntryModel> journalEntries,
+  ) {
+    final observation = moods.isNotEmpty
+        ? 'Your most recent check-in was ${moods.first.label.toLowerCase()}. Keep noticing without judging yourself.'
+        : journalEntries.isNotEmpty
+            ? 'You have made space to reflect. Keep checking in when it feels useful.'
+            : 'As you check in, MindMate will help you notice patterns over time.';
+
+    return _ProgressCard(
+      eyebrow: 'WHAT YOU\'VE NOTICED',
+      icon: Icons.insights_outlined,
+      iconColor: AppTheme.primary,
+      title: observation,
+      subtitle: 'These are observations from your entries, not diagnoses.',
+    );
+  }
+
+  Widget _buildHelpfulCard() {
+    return const _ProgressCard(
+      eyebrow: 'WHAT SEEMS HELPFUL',
+      icon: Icons.auto_awesome_outlined,
+      iconColor: AppTheme.secondary,
+      title: 'We are still learning this with you.',
+      subtitle:
+          'After a practice, tell MindMate whether it felt better, the same, worse, or unclear.',
+      trailing: Text(
+        'Feedback will make future suggestions more personal.',
+        style: TextStyle(
+          color: AppTheme.primary,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoodTrail(BuildContext context, List<MoodLogModel> moods) {
+    final display = moods.take(7).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: _StatCard(
-            label: 'Mood Logs',
-            value: '$moodCount',
-            color: const Color(0xFF5B9A8B),
-          ),
+        const Text(
+          'Recent mood trail',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _StatCard(
-            label: 'Journal Entries',
-            value: '$journalCount',
-            color: const Color(0xFF9B8ECF),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _StatCard(
-            label: 'Assessments',
-            value: '$assessmentCount',
-            color: Colors.orange,
+          child: Row(
+            children: [
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: display
+                      .map(
+                        (mood) => Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(11),
+                          ),
+                          child: Text(
+                            mood.emoji,
+                            style: const TextStyle(fontSize: 22),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppTheme.textLight,
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  // A simple bar-per-entry trend view. No charting package needed —
-  // each bar's height is just proportional to that day's score.
-  Widget _buildWellnessTrend(List<WellnessAssessmentModel> assessments) {
-    // Streams come back newest-first; reverse so the trend reads left
-    // (oldest) to right (most recent), and cap at the most recent 10.
-    final recent = assessments.reversed.toList();
-    final display =
-        recent.length > 10 ? recent.sublist(recent.length - 10) : recent;
-
-    return Container(
-      height: 140,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: display.map((assessment) {
-          final score = assessment.overallScorePercent;
-          final barColor = score >= 70
-              ? Colors.green
-              : (score >= 40 ? Colors.orange : Colors.red);
-
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    '$score',
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    height: (score / 100) * 80,
-                    decoration: BoxDecoration(
-                      color: barColor,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }).toList(),
+  Widget _buildWellnessReflectionCard(
+    List<WellnessAssessmentModel> assessments,
+  ) {
+    return _ProgressCard(
+      eyebrow: 'WELLNESS REFLECTIONS',
+      icon: Icons.favorite_outline_rounded,
+      iconColor: AppTheme.danger,
+      title: '${assessments.length} reflection${assessments.length == 1 ? '' : 's'} saved',
+      subtitle:
+          'Use these check-ins to notice how your routines and feelings change over time.',
+      trailing: const Text(
+        'Not a medical score or diagnosis.',
+        style: TextStyle(
+          color: AppTheme.textLight,
+          fontSize: 12,
+        ),
       ),
     );
   }
 
-  // Shows the last several mood emojis in a row so patterns are easy
-  // to spot at a glance.
-  Widget _buildRecentMoods(List<MoodLogModel> moods) {
-    final display = moods.length > 14 ? moods.sublist(0, 14) : moods;
-
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: display.map((mood) {
-        return Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: const Color(0xFF5B9A8B).withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(mood.emoji, style: const TextStyle(fontSize: 22)),
-        );
-      }).toList(),
+  Widget _buildErrorState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Your progress could not load right now. Check your connection and try again.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: AppTheme.danger),
+        ),
+      ),
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
+class _ProgressCard extends StatelessWidget {
+  final String eyebrow;
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final Widget? trailing;
 
-  const _StatCard({
-    required this.label,
-    required this.value,
-    required this.color,
+  const _ProgressCard({
+    required this.eyebrow,
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      padding: const EdgeInsets.all(17),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(14),
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+        ),
       ),
-      child: Column(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: color,
+          Container(
+            width: 46,
+            height: 46,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.13),
+              borderRadius: BorderRadius.circular(15),
             ),
+            child: Icon(icon, color: iconColor),
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, color: Colors.grey),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  eyebrow,
+                  style: const TextStyle(
+                    color: AppTheme.textLight,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.7,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: AppTheme.textLight,
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
+                ),
+                if (trailing != null) ...[
+                  const SizedBox(height: 10),
+                  trailing!,
+                ],
+              ],
+            ),
           ),
         ],
       ),

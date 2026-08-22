@@ -1,60 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/mood_log_model.dart';
 import '../models/journal_entry_model.dart';
 import '../models/meditation_session_model.dart';
+import '../models/mood_log_model.dart';
 import '../models/wellness_assessment_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../utils/app_theme.dart';
 
-// A single badge definition: a milestone the user can unlock.
-// `isUnlocked` is computed live from the user's real data — nothing
-// is stored separately, so badges always reflect the truth.
 class _Badge {
   final String title;
   final String description;
   final IconData icon;
   final bool isUnlocked;
+  final int progress;
+  final int target;
 
   const _Badge({
     required this.title,
     required this.description,
     required this.icon,
     required this.isUnlocked,
+    required this.progress,
+    required this.target,
   });
 }
 
 class AchievementsScreen extends StatelessWidget {
   const AchievementsScreen({super.key});
 
-  // Looks at a list of dates and counts how many consecutive days
-  // (including today or yesterday) the person has shown up. This is
-  // the same idea as a "day streak" in habit apps like Duolingo.
   int _calculateStreak(List<DateTime> dates) {
     if (dates.isEmpty) return 0;
 
-    // Reduce every date down to just the day (ignore time-of-day),
-    // then remove duplicates so multiple check-ins on the same day
-    // only count once.
     final uniqueDays = dates
-        .map((d) => DateTime(d.year, d.month, d.day))
+        .map((date) => DateTime(date.year, date.month, date.day))
         .toSet()
         .toList()
-      ..sort((a, b) => b.compareTo(a)); // newest first
+      ..sort((a, b) => b.compareTo(a));
 
     final today = DateTime.now();
     final todayOnly = DateTime(today.year, today.month, today.day);
-
-    // The streak only counts if the most recent entry was today or
-    // yesterday — otherwise the streak has already been broken.
-    final mostRecent = uniqueDays.first;
-    final daysSinceLast = todayOnly.difference(mostRecent).inDays;
+    final daysSinceLast = todayOnly.difference(uniqueDays.first).inDays;
     if (daysSinceLast > 1) return 0;
 
     var streak = 1;
-    for (var i = 0; i < uniqueDays.length - 1; i++) {
-      final difference = uniqueDays[i].difference(uniqueDays[i + 1]).inDays;
+    for (var index = 0; index < uniqueDays.length - 1; index++) {
+      final difference =
+          uniqueDays[index].difference(uniqueDays[index + 1]).inDays;
       if (difference == 1) {
         streak++;
       } else {
@@ -63,6 +55,8 @@ class AchievementsScreen extends StatelessWidget {
     }
     return streak;
   }
+
+  int _progress(int value, int target) => value.clamp(0, target).toInt();
 
   @override
   Widget build(BuildContext context) {
@@ -77,23 +71,32 @@ class AchievementsScreen extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Your Progress')),
+      appBar: AppBar(title: const Text('Your wins')),
       body: SafeArea(
-        // Four streams combined, same pattern as the Progress screen —
-        // everything updates live as the user logs more activity.
         child: StreamBuilder<List<MoodLogModel>>(
           stream: firestoreService.moodLogsForUser(uid),
           builder: (context, moodSnapshot) {
+            if (moodSnapshot.hasError) return _buildErrorState();
+
             return StreamBuilder<List<JournalEntryModel>>(
               stream: firestoreService.journalEntriesForUser(uid),
               builder: (context, journalSnapshot) {
+                if (journalSnapshot.hasError) return _buildErrorState();
+
                 return StreamBuilder<List<MeditationSessionModel>>(
                   stream: firestoreService.meditationSessionsForUser(uid),
                   builder: (context, meditationSnapshot) {
+                    if (meditationSnapshot.hasError) return _buildErrorState();
+
                     return StreamBuilder<List<WellnessAssessmentModel>>(
                       stream: firestoreService.wellnessAssessmentsForUser(uid),
                       builder: (context, wellnessSnapshot) {
-                        final isLoading = moodSnapshot.connectionState ==
+                        if (wellnessSnapshot.hasError) {
+                          return _buildErrorState();
+                        }
+
+                        final isLoading =
+                            moodSnapshot.connectionState ==
                                 ConnectionState.waiting ||
                             journalSnapshot.connectionState ==
                                 ConnectionState.waiting ||
@@ -103,27 +106,27 @@ class AchievementsScreen extends StatelessWidget {
                                 ConnectionState.waiting;
 
                         if (isLoading) {
-                          return const Center(child: CircularProgressIndicator());
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
                         }
 
-                        final moods = moodSnapshot.data ?? [];
-                        final journalEntries = journalSnapshot.data ?? [];
-                        final meditationSessions = meditationSnapshot.data ?? [];
-                        final assessments = wellnessSnapshot.data ?? [];
+                        final moods = moodSnapshot.data ?? const <MoodLogModel>[];
+                        final journalEntries =
+                            journalSnapshot.data ?? const <JournalEntryModel>[];
+                        final meditationSessions = meditationSnapshot.data ??
+                            const <MeditationSessionModel>[];
+                        final assessments = wellnessSnapshot.data ??
+                            const <WellnessAssessmentModel>[];
 
-                        // Combine every activity type's dates into one
-                        // list so the streak reflects "showed up in the
-                        // app at all today," not just one specific
-                        // feature.
                         final allDates = <DateTime>[
-                          ...moods.map((m) => m.date),
-                          ...journalEntries.map((j) => j.date),
-                          ...meditationSessions.map((m) => m.date),
-                          ...assessments.map((a) => a.date),
+                          ...moods.map((mood) => mood.date),
+                          ...journalEntries.map((entry) => entry.date),
+                          ...meditationSessions.map((session) => session.date),
+                          ...assessments.map((assessment) => assessment.date),
                         ];
 
                         final streak = _calculateStreak(allDates);
-
                         final badges = _buildBadges(
                           moodCount: moods.length,
                           journalCount: journalEntries.length,
@@ -132,7 +135,11 @@ class AchievementsScreen extends StatelessWidget {
                           streak: streak,
                         );
 
-                        return _buildContent(context, streak, badges);
+                        return _buildContent(
+                          context,
+                          streak,
+                          badges,
+                        );
                       },
                     );
                   },
@@ -145,9 +152,6 @@ class AchievementsScreen extends StatelessWidget {
     );
   }
 
-  // The full set of possible badges. Each one checks against real
-  // counts, so it's easy to add more later — just add another _Badge
-  // with its own unlock condition.
   List<_Badge> _buildBadges({
     required int moodCount,
     required int journalCount,
@@ -157,147 +161,346 @@ class AchievementsScreen extends StatelessWidget {
   }) {
     return [
       _Badge(
-        title: 'First Check-In',
-        description: 'Logged your very first mood.',
+        title: 'First check-in',
+        description: 'You started noticing how you feel.',
         icon: Icons.mood_rounded,
         isUnlocked: moodCount >= 1,
+        progress: _progress(moodCount, 1),
+        target: 1,
       ),
       _Badge(
-        title: 'First Entry',
-        description: 'Wrote your first journal entry.',
+        title: 'First entry',
+        description: 'You made space to reflect.',
         icon: Icons.book_outlined,
         isUnlocked: journalCount >= 1,
+        progress: _progress(journalCount, 1),
+        target: 1,
       ),
       _Badge(
-        title: 'First Session',
-        description: 'Completed your first meditation.',
+        title: 'First session',
+        description: 'You tried a guided meditation.',
         icon: Icons.self_improvement_rounded,
         isUnlocked: meditationCount >= 1,
+        progress: _progress(meditationCount, 1),
+        target: 1,
       ),
       _Badge(
-        title: 'Self-Aware',
-        description: 'Completed your first wellness assessment.',
+        title: 'Self-aware',
+        description: 'You completed a wellness reflection.',
         icon: Icons.favorite_border_rounded,
         isUnlocked: wellnessCount >= 1,
+        progress: _progress(wellnessCount, 1),
+        target: 1,
       ),
       _Badge(
         title: 'Reflective',
-        description: 'Wrote 5 journal entries.',
+        description: 'Five private entries completed.',
         icon: Icons.edit_note_rounded,
         isUnlocked: journalCount >= 5,
+        progress: _progress(journalCount, 5),
+        target: 5,
       ),
       _Badge(
         title: 'Centered',
-        description: 'Completed 10 meditation sessions.',
+        description: 'Ten meditation sessions completed.',
         icon: Icons.spa_outlined,
         isUnlocked: meditationCount >= 10,
+        progress: _progress(meditationCount, 10),
+        target: 10,
       ),
       _Badge(
-        title: '3-Day Streak',
-        description: 'Showed up 3 days in a row.',
+        title: 'Three-day showing up',
+        description: 'You showed up three days in a row.',
         icon: Icons.local_fire_department_rounded,
         isUnlocked: streak >= 3,
+        progress: _progress(streak, 3),
+        target: 3,
       ),
       _Badge(
-        title: '7-Day Streak',
-        description: 'A full week of showing up for yourself.',
+        title: 'Seven-day showing up',
+        description: 'A full week of returning to yourself.',
         icon: Icons.local_fire_department_rounded,
         isUnlocked: streak >= 7,
+        progress: _progress(streak, 7),
+        target: 7,
       ),
       _Badge(
-        title: '30-Day Streak',
+        title: 'Thirty-day showing up',
         description: 'A month of consistent care.',
         icon: Icons.emoji_events_rounded,
         isUnlocked: streak >= 30,
+        progress: _progress(streak, 30),
+        target: 30,
       ),
     ];
   }
 
-  Widget _buildContent(BuildContext context, int streak, List<_Badge> badges) {
-    final unlockedCount = badges.where((b) => b.isUnlocked).length;
+  Widget _buildContent(
+    BuildContext context,
+    int streak,
+    List<_Badge> badges,
+  ) {
+    final unlocked = badges.where((badge) => badge.isUnlocked).toList();
+    final locked = badges.where((badge) => !badge.isUnlocked).toList();
+    final next = locked.isEmpty ? null : locked.first;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // The streak card — the headline number, front and center.
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: AppTheme.heroGradientFor(Theme.of(context).brightness),
-              borderRadius: BorderRadius.circular(28),
-              border: Border.all(
-                color: AppTheme.surfaceBorder.withValues(alpha: 0.9),
+          _buildWinsHero(unlocked.length, badges.length, streak),
+          const SizedBox(height: 22),
+          if (next != null) ...[
+            const Text(
+              'Next little win',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            _buildNextWin(context, next),
+            const SizedBox(height: 24),
+          ],
+          if (unlocked.isNotEmpty) ...[
+            const Text(
+              'Unlocked',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 130,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: unlocked.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 10),
+                itemBuilder: (context, index) => _UnlockedBadgeCard(
+                  badge: unlocked[index],
+                ),
               ),
             ),
-            child: Builder(
-              builder: (context) {
-                final isDark = Theme.of(context).brightness == Brightness.dark;
-                final textColor = isDark ? Colors.white : AppTheme.textDark;
-                return Column(
+            const SizedBox(height: 24),
+          ],
+          const Text(
+            'All milestones',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 10),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: badges.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.05,
+            ),
+            itemBuilder: (context, index) => _BadgeTile(badge: badges[index]),
+          ),
+          const SizedBox(height: 18),
+          const Text(
+            'No punishment for missed days. Come back when you are ready.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppTheme.textLight, fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWinsHero(int unlocked, int total, int streak) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: AppTheme.heroGradientLight,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'YOUR WINS',
+                  style: TextStyle(
+                    color: Color(0xFF806B59),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 11),
+                Text(
+                  '$unlocked of $total milestones unlocked',
+                  style: const TextStyle(
+                    color: AppTheme.textDark,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  streak == 0
+                      ? 'Your next step can be small.'
+                      : '$streak-day showing-up run. Keep it gentle.',
+                  style: const TextStyle(
+                    color: Color(0xFF59646F),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 58,
+            height: 58,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.68),
+              shape: BoxShape.circle,
+            ),
+            child: const Text(
+              '✦',
+              style: TextStyle(color: AppTheme.primary, fontSize: 28),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNextWin(BuildContext context, _Badge badge) {
+    final progress = badge.target == 0 ? 0.0 : badge.progress / badge.target;
+
+    return Container(
+      padding: const EdgeInsets.all(17),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppTheme.surfaceBorder.withValues(alpha: 0.78),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppTheme.secondary.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: Icon(badge.icon, color: AppTheme.secondary),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  badge.title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  badge.description,
+                  style: const TextStyle(
+                    color: AppTheme.textLight,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
                   children: [
-                    Icon(
-                      Icons.local_fire_department_rounded,
-                      color: streak > 0 ? Colors.orange : textColor.withValues(alpha: 0.3),
-                      size: 44,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '$streak',
-                      style: TextStyle(
-                        color: textColor,
-                        fontSize: 44,
-                        fontWeight: FontWeight.w800,
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(5),
+                        child: LinearProgressIndicator(
+                          value: progress.clamp(0, 1),
+                          minHeight: 7,
+                          backgroundColor: AppTheme.surfaceBorder,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppTheme.primary,
+                          ),
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 9),
                     Text(
-                      streak == 1 ? 'day streak' : 'day streak',
-                      style: TextStyle(
-                        color: textColor.withValues(alpha: 0.75),
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      streak == 0
-                          ? 'Log a mood, entry, or session today to start one.'
-                          : 'Keep it going — check in today to continue.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: textColor.withValues(alpha: 0.65),
-                        fontSize: 12,
+                      '${badge.progress}/${badge.target}',
+                      style: const TextStyle(
+                        color: AppTheme.primary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
-                );
-              },
+                ),
+              ],
             ),
           ),
+        ],
+      ),
+    );
+  }
 
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Badges', style: Theme.of(context).textTheme.titleLarge),
-              Text(
-                '$unlockedCount / ${badges.length} unlocked',
-                style: const TextStyle(color: AppTheme.textLight, fontSize: 13),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
+  Widget _buildErrorState() {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text(
+          'Your wins could not load right now. Check your connection and try again.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: AppTheme.danger),
+        ),
+      ),
+    );
+  }
+}
 
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.95,
-            children: badges.map((badge) => _BadgeTile(badge: badge)).toList(),
+class _UnlockedBadgeCard extends StatelessWidget {
+  final _Badge badge;
+
+  const _UnlockedBadgeCard({required this.badge});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 155,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppTheme.primary.withValues(alpha: 0.38),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              gradient: AppTheme.accentGradient,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(badge.icon, color: Colors.white, size: 21),
           ),
-          const SizedBox(height: 20),
+          const Spacer(),
+          Text(
+            badge.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 3),
+          const Text(
+            'Unlocked',
+            style: TextStyle(color: AppTheme.primary, fontSize: 11),
+          ),
         ],
       ),
     );
@@ -314,7 +517,7 @@ class _BadgeTile extends StatelessWidget {
     final locked = !badge.isUnlocked;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
@@ -326,13 +529,14 @@ class _BadgeTile extends StatelessWidget {
         ),
       ),
       child: Opacity(
-        opacity: locked ? 0.45 : 1,
+        opacity: locked ? 0.58 : 1,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 44,
-              height: 44,
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 gradient: badge.isUnlocked ? AppTheme.accentGradient : null,
                 color: badge.isUnlocked
@@ -340,21 +544,24 @@ class _BadgeTile extends StatelessWidget {
                     : AppTheme.surfaceAlt.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(14),
               ),
-              alignment: Alignment.center,
               child: Icon(
                 locked ? Icons.lock_outline : badge.icon,
                 color: badge.isUnlocked ? Colors.white : AppTheme.textLight,
-                size: 22,
+                size: 21,
               ),
             ),
             const Spacer(),
             Text(
               badge.title,
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
             ),
             const SizedBox(height: 4),
             Text(
               badge.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: AppTheme.textLight, fontSize: 11),
             ),
           ],

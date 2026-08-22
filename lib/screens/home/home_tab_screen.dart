@@ -6,6 +6,7 @@ import '../../services/firestore_service.dart';
 import '../../utils/app_theme.dart';
 import '../breathing/breathing_screen.dart';
 import '../chat/chat_tab_screen.dart';
+import '../emergency_support_screen.dart';
 import '../journal/journal_screen.dart';
 import '../mood/mood_checkin_screen.dart';
 import '../settings/settings_screen.dart';
@@ -138,6 +139,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                     ],
                     const SizedBox(height: 22),
                     _buildRightNowCard(),
+                    const SizedBox(height: 12),
+                    _buildNeedHelpCard(),
                     const SizedBox(height: 26),
                     Text(
                       'Quick starts',
@@ -275,6 +278,68 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             child: const Text('🌊', style: TextStyle(fontSize: 36)),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNeedHelpCard() {
+    return InkWell(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => const EmergencySupportScreen(),
+        ),
+      ),
+      borderRadius: BorderRadius.circular(21),
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: AppTheme.danger.withValues(alpha: 0.07),
+          borderRadius: BorderRadius.circular(21),
+          border: Border.all(
+            color: AppTheme.danger.withValues(alpha: 0.38),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppTheme.danger.withValues(alpha: 0.13),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.support_agent_rounded,
+                color: AppTheme.danger,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Need help right now?',
+                    style: TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Open emergency and human-support options.',
+                    style: TextStyle(
+                      color: AppTheme.textLight,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.danger,
+            ),
+          ],
+        ),
       ),
     );
   }
