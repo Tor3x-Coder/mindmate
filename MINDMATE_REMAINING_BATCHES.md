@@ -67,75 +67,94 @@ Exit criteria for moving to Batch 7:
 
 Release still requires a physical-device check; this constraint is deferred, not waived.
 
-### Batch 7 — Guided-audio MVP
+### Batch 7 — Full natural-voice guidance
 
-**Purpose:** Turn meditation and breathing from mainly visual timers into genuinely guided experiences.
+**Purpose:** Turn Meditation, Breathing, and Daily Snapshot from mainly visual/text experiences into consistently voiced guidance.
 
-A user decision is required before implementation.
+#### Approved direction
 
-#### Option A — Curated natural-voice launch pack `[RECOMMENDED]`
+The user selected:
 
-- Select one consistent narration voice.
-- Bundle spoken guidance for one flagship meditation in each of the six categories:
-  - Stress Relief — Quick Reset;
-  - Sleep — Wind Down;
-  - Focus — Clear Mind;
-  - Anxiety — Grounding;
-  - Gratitude — Small Joys;
-  - Morning — Fresh Start.
-- Bundle reusable breathing cues such as “Breathe in,” “Hold,” “Breathe out,” and completion guidance.
-- Keep narration offline in app assets for demo reliability.
-- Clearly label the remaining text-only meditation sessions rather than pretending every session has audio.
-- Add play/pause, mute, replay/restart, progress, and safe stop-on-exit behavior.
-- Keep written captions visible so audio is never required for accessibility.
+- one consistent natural MindMate narrator across the app;
+- unique words/scripts for every meditation session and breathing pattern;
+- segmented meditation prompts that remain correctly spaced for 1, 3, and 5-minute choices;
+- short voice guidance for each major Daily Snapshot step;
+- one of three safe Wellness Result narrations selected by the existing steady/mixed/heavier score bands;
+- written captions, replay, and mute controls throughout.
 
-Advantages:
+Natural pre-recorded audio will not read an arbitrary score or generated insight word-for-word. Result narration must avoid diagnosis and fake precision. The screen still displays the actual reflection; audio gives a short band-appropriate response and next-step invitation.
 
-- sounds more intentional and competitive;
-- reliable without internet;
-- one consistent voice and wording;
-- a realistic amount of content before feature freeze.
+#### Sub-batch 7A — Audio foundation and voice identity
 
-Trade-offs:
+- audition and approve one narrator;
+- add the chosen local audio-playback dependency;
+- define an audio service/controller with one active playback source;
+- connect the existing Sound preference to real behavior;
+- add replay/mute/play-pause controls where appropriate;
+- stop and dispose audio on exit, completion, navigation, and interruption;
+- keep all narration assets offline for reliable demos.
 
-- larger app download;
-- narration scripts and voice must be approved;
-- only the launch pack gets natural narration before the competition.
+#### Sub-batch 7B — Three unique breathing guides
 
-#### Option B — Device text-to-speech for all sessions
+Each breathing pattern gets its own wording and pacing rather than a recycled cue set:
 
-- Use device TTS to speak all current meditation lines and breathing phases.
-- Respect the existing Sound preference.
-- Add pause/stop and lifecycle handling.
-- Keep captions visible.
+- Box Breathing;
+- 4-7-8 Breathing;
+- Simple Calm.
 
-Advantages:
+Phase cues must stay synchronized with the timer. Guidance should be calm and concise so repeated cycles do not become noisy or annoying.
 
-- covers all 18 meditation sessions quickly;
-- minimal bundled audio size;
-- existing written guidance can be reused.
+#### Sub-batch 7C — All 18 meditation sessions
 
-Trade-offs:
+- every existing meditation session gets its own natural-voice prompt set;
+- each prompt set follows that session's existing purpose and written guidance;
+- segmented prompts are scheduled across 1, 3, or 5 minutes with natural quiet between them;
+- a single session never overlaps or restarts another clip accidentally;
+- selecting a different session uses different words, not a generic narration reused under another title.
 
-- voice quality differs by phone and installed TTS engine;
-- pronunciation, pacing, and offline availability can vary;
-- sounds less polished than curated narration;
-- more difficult to guarantee the judge hears the intended experience.
+This means 18 distinct narrated experiences, not only one flagship session per category.
 
-#### Post-competition audio option
+#### Sub-batch 7D — Daily Snapshot and Wellness Result
 
-Full natural narration for all 18 meditation sessions, multiple lengths, ambient soundscapes, downloads, and voice choices should be treated as a separate production-content programme. It should not be rushed into the competition build.
+When Sound is enabled:
 
-Exit criteria for either MVP option:
+- play one short guide once for each major Daily Snapshot stage: Body, Mind, Routine, and Review;
+- do not automatically read every answer choice or repeat audio after every tap;
+- provide a replay and mute control;
+- after Save, play one safe result narration for:
+  - steady day;
+  - mixed day;
+  - heavier day.
+
+The result voice must not say the score is a diagnosis, medical assessment, or certainty. It should thank the user, reflect the broad band gently, and point to the displayed next step.
+
+#### Sub-batch 7E — Audio validation
+
+- confirm all assets are declared and included in builds;
+- run analyzer and automated tests;
+- build Android and Web targets;
+- test Chrome playback behavior and browser autoplay restrictions;
+- test with an Android emulator later;
+- test physical-device interruption/routing when a device becomes available;
+- record any behavior that remains unverified because no phone is available.
+
+#### Exit criteria
 
 - Sound setting controls real behavior;
-- meditation guidance can be heard and controlled;
-- breathing phase cues remain synchronized;
+- all 18 meditations have distinct natural narration;
+- all 3 breathing patterns have distinct synchronized guidance;
+- all 4 Daily Snapshot stages and 3 result bands have appropriate guidance;
+- only one clip/source plays at once;
 - leaving a screen stops/disposes playback correctly;
-- a phone interruption does not leave overlapping audio;
 - captions and silent use still work;
 - analyzer/tests/build pass;
-- real-device audio test passes.
+- Chrome check passes;
+- emulator check passes when available;
+- physical-device audio remains a documented release gate until tested.
+
+#### Post-competition audio expansion
+
+Ambient soundscapes, optional downloads, multiple narrator choices, localization, and longer continuous recordings remain post-competition work. They should not be mixed into Batch 7.
 
 ### Batch 8 — Firestore integrity and authorization tests
 
@@ -305,6 +324,8 @@ Exit criteria:
 **Purpose:** Give judges and early users a fast, polished explanation of MindMate with a QR/link they can revisit after the demo.
 
 This is a useful competition asset, but it must not delay audio, safety, testing, or the release candidate. Build it after the app's visual/content claims are stable so screenshots and feature copy are accurate.
+
+The user already has landing-page code they want to provide. Inspect that code first and preserve the user's intended direction; do not replace it with a new design before reviewing it.
 
 #### Option A — Responsive static showcase `[RECOMMENDED]`
 

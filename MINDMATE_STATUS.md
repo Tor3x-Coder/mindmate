@@ -38,7 +38,7 @@ The developer also ran `flutter pub get`, `flutter analyze`, and `flutter test` 
 | Mode-aware AI Worker and safety route | Yes | Dart analysis and `node --check` passed; live tests pending | **Unconfirmed** | No |
 | Trusted contacts and support-event tracking | Yes | `flutter analyze` passed; runtime pending | Rules live; app build unverified | No |
 | State/international emergency-number UI | Yes | `flutter analyze` passed; device tests pending | N/A | No; resource verification required |
-| Guided meditation/breathing audio | **No** | Repository audit confirms no assets/package/playback | N/A | No; Batch 7 decision pending |
+| Guided audio: Meditation, Breathing, Daily Snapshot | **No** | Scope approved; assets/package/playback still absent | N/A | No; full natural-voice Batch 7 planned |
 | Android APK | No current verified build | Analysis + 1 smoke test passed; build pending | N/A | No phone available; emulator/device verification pending |
 
 ### Validation environment note
@@ -172,14 +172,18 @@ flutter build apk --debug
 
 If available, install/open it in an Android emulator. If no emulator is practical, a successful APK build is enough to proceed to audio implementation with a documented device-verification risk; a physical-device check is still required before the competition.
 
-### 2. Implement the approved guided-audio MVP
+### 2. Implement the approved full natural-voice guidance
 
-User choice is pending between:
+Approved scope:
 
-- **Option A `[RECOMMENDED]`:** a curated, offline natural-voice launch pack for six flagship meditations plus reusable breathing cues; or
-- **Option B:** device text-to-speech across all current sessions.
+- one consistent narrator with unique scripts;
+- all 18 meditation sessions using segmented prompts that fit 1, 3, and 5-minute choices;
+- unique synchronized guidance for Box Breathing, 4-7-8, and Simple Calm;
+- one short guide per Daily Snapshot major step;
+- three safe Wellness Result narrations for steady, mixed, and heavier bands;
+- real Sound-setting behavior, captions, replay/mute controls, and safe lifecycle handling.
 
-Both options must activate the existing Sound preference, preserve captions, provide playback controls, stop safely on exit/interruption, and pass analyzer/build/real-device tests. See `MINDMATE_REMAINING_BATCHES.md` for the full trade-off and acceptance criteria.
+Complete this as Sub-batches 7A–7E from `MINDMATE_REMAINING_BATCHES.md`. The debug APK build remains the gate before app-code implementation.
 
 ### 3. Test the deployed Firestore configuration
 
@@ -284,6 +288,7 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 22 Aug 2026 | Remaining-batch plan and competitive audit | Planning/docs only; audio confirmed missing | Repository audio/assets/dependency audit completed | Not applicable | Choose audio Option A or B; run Batch 6 baseline first |
 | 22 Aug 2026 | Local Flutter test | No code change | `flutter test`: 1 test passed; coverage is smoke-only | Not applicable | Build debug APK; use emulator/Chrome because no phone is available |
 | 22 Aug 2026 | Device-constraint and landing-page plan | Planning/docs only | No physical phone; emulator/Chrome fallback documented | Not applicable | Finish APK build; approve audio and optional landing-page options |
+| 22 Aug 2026 | Full natural-voice scope approval | Planning/docs only | One narrator, unique scripts, timed 1/3/5 prompts, and step-based wellness audio selected | Not applicable | Build debug APK, then audition narrator and start Sub-batch 7A |
 
 ## Rule for the next agent
 
@@ -291,6 +296,6 @@ Before editing code:
 
 1. run `git status --short --branch` and `git log --oneline -10`;
 2. read this file, `MINDMATE_CODING_GUIDE.md`, and `MINDMATE_REMAINING_BATCHES.md`;
-3. confirm whether the user has already run the pending local/deployment steps and which audio option was approved;
+3. confirm whether the debug APK build has passed and continue only with the approved full natural-voice audio scope;
 4. continue from **What remains**, not from an older chat transcript;
 5. update this file and the relevant Markdown documentation in the same batch as every fix.

@@ -108,7 +108,8 @@ Selected/implemented directions:
 
 ## Important implementation details
 
-- **Guided audio is currently missing and is competition-critical.** There are no audio assets or playback/TTS dependency; Meditation is timed text guidance, Breathing is visual/text guidance, and the Sound setting is only a placeholder. The user must choose the audio MVP option in `MINDMATE_REMAINING_BATCHES.md` before implementation.
+- **Guided audio is currently missing and is competition-critical.** There are no audio assets or playback dependency; Meditation is timed text guidance, Breathing is visual/text guidance, and the Sound setting is only a placeholder.
+- **Approved audio scope:** one consistent natural narrator with unique words for all 18 meditation sessions, segmented prompts for 1/3/5-minute choices, unique guidance for all 3 breathing patterns, one short guide per Daily Snapshot stage, and 3 safe Wellness Result band narrations. See Sub-batches 7A–7E in `MINDMATE_REMAINING_BATCHES.md`.
 - Mood impact uses words: A little, Somewhat, A lot, Overwhelming, Not sure yet.
 - CBT branches: Relationship, School/work, Mistake/regret, Future worry, Self-doubt, Sad/low, Angry/frustrated, Hurt/disappointed, Something else.
 - `Something else` uses a neutral fallback path.
@@ -190,12 +191,7 @@ Check in
 
 ## Immediate next action
 
-First, get the user's explicit audio decision from `MINDMATE_REMAINING_BATCHES.md`:
-
-- Option A — curated natural-voice launch pack `[RECOMMENDED]`; or
-- Option B — device text-to-speech for all current sessions.
-
-The smoke test passed. Finish the Batch 6 build gate so audio is not mixed with an unknown Android compilation failure:
+The full natural-voice scope is approved. The smoke test passed. Finish the Batch 6 build gate so audio is not mixed with an unknown Android compilation failure:
 
 ```bash
 flutter build apk --debug
@@ -203,4 +199,4 @@ flutter build apk --debug
 
 The developer has no physical phone. Use an Android emulator if practical and Chrome for broad UI/Firestore checks; keep phone-only behavior explicitly unverified until a borrowed or competition device is available.
 
-After recording the APK result, implement only the approved audio option in a controlled batch. An optional competition landing page is proposed as Batch 13A and must not delay core app release work.
+After recording the APK result, audition one narrator and begin audio Sub-batch 7A. An optional competition landing page is proposed as Batch 13A; the user will provide existing landing-page code for inspection, and it must not delay core app release work.

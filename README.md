@@ -34,7 +34,7 @@ Backend/integration batches 1–5 are implemented in the repository:
 
 They are **not yet considered release-complete**. The final Batch #5 Firestore rules compiled and were released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Local dependency resolution and static analysis passed with 0 errors, 0 warnings, and 21 non-blocking informational notices. `flutter test` also passed the repository's single basic smoke test; this is not meaningful end-to-end coverage.
 
-A repository audit confirmed a major missing experience: **there is currently no guided audio**. There are no audio assets or playback/TTS dependency; Meditation uses timed written guidance, Breathing uses visual/text cues, and the Sound setting is a placeholder. The guided-audio MVP is now competition-critical in `MINDMATE_REMAINING_BATCHES.md`.
+A repository audit confirmed a major missing experience: **there is currently no guided audio**. There are no audio assets or playback dependency; Meditation uses timed written guidance, Breathing uses visual/text cues, and the Sound setting is a placeholder. The approved competition-critical plan uses one consistent natural narrator with unique scripts for all 18 meditations, all 3 breathing patterns, Daily Snapshot stages, and 3 safe Wellness Result bands. See Sub-batches 7A–7E in `MINDMATE_REMAINING_BATCHES.md`.
 
 The debug APK build, meaningful tests, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. The developer currently has no physical test phone, so emulator/Chrome checks are the near-term fallback and real-device-only behavior remains a release risk. See `MINDMATE_STATUS.md` for the exact status table.
 
