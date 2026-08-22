@@ -1,15 +1,21 @@
 // MindMate AI Companion — Cloudflare Worker
-// Receives a chat message from the app, sends it to a free AI model
-// along with a mode-aware system prompt that keeps responses safe and
-// supportive, and returns the reply. The AI never has direct access to
-// the app — this Worker is the only thing that talks to it.
+// Receives a chat message from the app, sends it to a mode-aware AI model
+// that keeps responses safe and supportive, and returns the reply.
+// The AI never has direct access to the app — this Worker is the only
+// thing that talks to it.
 //
-// Changes in this version:
-//   - Structured modes (listen / calm / make_plan) from the app.
+// What this version adds:
+//   - Friendly "daily limit reached" fallback instead of a raw error.
+//   - Server-side structured logging for monitoring on Cloudflare.
+//   - Optional usage counter in a KV binding (if you add one).
+//   - Switchable AI model via an `AI_MODEL` environment variable.
+//
+// Existing safety features:
+//   - Structured modes (listen / calm / make_plan).
 //   - Deterministic crisis route BEFORE any AI generation.
 //   - History validation (roles, length, per-message size).
 //   - Message size limits.
-//   - Optional rate limiting (enable the binding below to turn it on).
+//   - Optional rate limiting (enable the binding to turn it on).
 //   - Provider errors are logged but never returned to the app user.
 
 const SYSTEM_PROMPT = `You are a warm, genuine, and down-to-earth human companion inside MindMate, a mental wellness app. Your goal is to be an authentic, supportive sounding board that people actually enjoy talking to.
@@ -75,6 +81,10 @@ const CRISIS_REPLY = `I am really glad you reached out right now. What you share
 
 Please open the Emergency Support section in the MindMate app now, or call a local emergency line. You deserve immediate, human support.`;
 
+const QUOTA_FALLBACK = `You have reached today\'s free chat limit for the AI companion. No worries — MindMate still has gentle guided practices you can use right now.
+
+Come back tomorrow, or try a breathing, meditation, or journaling exercise from the Practice tab in the meantime.`;
+
 function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
@@ -88,6 +98,26 @@ function jsonResponse(data, status) {
     status,
     headers: { 'Content-Type': 'application/json', ...corsHeaders() },
   });
+}
+
+// Structured logging for Cloudflare Workers Logs. Keeping it as a JSON
+// string makes it easy to read in the dashboard and to filter later.
+function log(level, event, fields) {
+  const line = {
+    service: 'mindmate-ai-chat',
+    ts: new Date().toISOString(),
+    level,
+    event,
+    ...fields,
+  };
+  const message = JSON.stringify(line);
+  if (level === 'error') {
+    console.error(message);
+  } else if (level === 'warn') {
+    console.warn(message);
+  } else {
+    console.log(message);
+  }
 }
 
 // Validate and clean history sent by the app.
@@ -111,8 +141,47 @@ function cleanHistory(history) {
   return cleaned.length > 16 ? cleaned.slice(cleaned.length - 16) : cleaned;
 }
 
+// Decide whether an AI error is really a quota/limit hit so we can give
+// the user the friendly fallback instead of a scary error.
+function looksLikeQuotaError(err) {
+  const message = `${err && err.message ? err.message : ''}`.toLowerCase();
+  const hints = [
+    'quota',
+    'limit',
+    'exceed',
+    'billing',
+    'out of',
+    'insufficient',
+    '429',
+    'rate',
+    'capacity',
+  ];
+  return hints.some((hint) => message.includes(hint));
+}
+
+// Optionally count today's requests in a KV namespace. If the binding is
+// missing this is silently skipped, so the Worker still runs fine.
+async function countUsage(env) {
+  if (!env.MINDMATE_METRICS) return;
+
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `usage:${today}`;
+    const current = Number(await env.MINDMATE_METRICS.get(key)) || 0;
+    await env.MINDMATE_METRICS.put(key, String(current + 1), {
+      expirationTtl: 60 * 60 * 24 * 2,
+    });
+    return { date: today, count: current + 1 };
+  } catch (err) {
+    log('warn', 'metric_write_failed', { reason: err.message });
+    return null;
+  }
+}
+
 export default {
   async fetch(request, env, ctx) {
+    const startedAt = Date.now();
+
     // Browsers send a preflight OPTIONS request before the real POST —
     // this just approves it so the real request can go through.
     if (request.method === 'OPTIONS') {
@@ -138,6 +207,12 @@ export default {
         return jsonResponse({ error: 'No message provided.' }, 400);
       }
 
+      const mode = (body.mode || '').toString().trim();
+      const history = cleanHistory(body.history);
+
+      // Optional: simple per-day usage counter (needs the KV binding).
+      ctx.waitUntil(countUsage(env));
+
       // Optional rate limiting using a Cloudflare Rate Limiting binding.
       // Add a binding named MINDMATE_RATE_LIMIT in the dashboard to enable it.
       if (env.MINDMATE_RATE_LIMIT) {
@@ -146,6 +221,7 @@ export default {
           key: request.headers.get('cf-connecting-ip') || 'unknown',
         });
         if (!success) {
+          log('warn', 'rate_limited', { messageLength: userMessage.length });
           return jsonResponse({
             error: 'You are sending messages too quickly. Please slow down and try again in a moment.',
           }, 429);
@@ -154,13 +230,12 @@ export default {
 
       // Deterministic safety route BEFORE the AI model runs.
       if (isCrisis(userMessage)) {
-        console.warn('MindMate crisis route triggered:', userMessage.slice(0, 120));
+        log('warn', 'crisis_route', {
+          mode,
+          messageLength: userMessage.length,
+        });
         return jsonResponse({ reply: CRISIS_REPLY }, 200);
       }
-
-      const mode = (body.mode || '').toString().trim();
-
-      const history = cleanHistory(body.history);
 
       const messages = [
         { role: 'system', content: SYSTEM_PROMPT },
@@ -172,22 +247,46 @@ export default {
         messages.splice(1, 0, { role: 'user', content: modePrompt(mode) });
       }
 
-      const aiResponse = await env.AI.run('@cf/meta/llama-3.1-8b-instruct-fast', {
-        messages,
-      });
+      // The model is configurable through the AI_MODEL env variable so you
+      // can switch free models without editing this file. The default keeps
+      // the current, budget-friendly model.
+      const model = env.AI_MODEL || '@cf/meta/llama-3.1-8b-instruct-fast';
+
+      const aiResponse = await env.AI.run(model, { messages });
 
       const reply = (aiResponse.response || '').trim();
       if (!reply) {
+        log('warn', 'empty_reply', { model });
         return jsonResponse({
           error: 'The AI companion returned an empty reply. Please try again.',
         }, 502);
       }
 
+      const durationMs = Date.now() - startedAt;
+      log('info', 'chat_reply', {
+        model,
+        mode,
+        messageLength: userMessage.length,
+        historyLength: history.length,
+        replyLength: reply.length,
+        durationMs,
+      });
+
       return jsonResponse({ reply }, 200);
     } catch (err) {
-      // Log the real error for the developer, but NEVER expose provider
-      // details or internal messages to the app user.
-      console.error('MindMate Worker error:', err);
+      const durationMs = Date.now() - startedAt;
+      log('error', 'worker_error', {
+        durationMs,
+        reason: err && err.message ? err.message : 'unknown',
+      });
+
+      // If this looks like a daily quota / rate limit hit, return the
+      // friendly fallback instead of a scary technical message.
+      if (looksLikeQuotaError(err)) {
+        return jsonResponse({ reply: QUOTA_FALLBACK }, 200);
+      }
+
+      // Generic friendly failure. Real provider details stay server-side.
       return jsonResponse({
         error: 'The AI companion is unavailable right now. Please try again in a moment.',
       }, 500);
