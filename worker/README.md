@@ -1,8 +1,18 @@
 # MindMate AI Worker
 
-> **Note (22 Aug 2026):** The AI model switch is intentionally the LAST
-> backend step before we call the backend finished. We will revisit the
-> model choice at that point. Everything else stays as it is for now.
+> **Note (22 Aug 2026):** The AI model switch is intentionally the last
+> backend decision before the prototype backend is called complete. Revisit
+> the model only after Flutter, live Worker, and safety-path testing.
+
+## Current status
+
+- Repository implementation: **implemented** in `worker/index.js`.
+- Syntax validation: `node --check worker/index.js` passed on 22 August 2026.
+- Live deployment: **unconfirmed**; compare the Cloudflare editor/deployment with this file.
+- End-to-end verification: pending.
+- Source-of-truth checkpoint: [`../MINDMATE_STATUS.md`](../MINDMATE_STATUS.md).
+
+Do not describe the Worker as deployed or verified merely because this source file exists. After every Worker change, update this README and `MINDMATE_STATUS.md` with checks, deployment state, and the next action.
 
 This folder is the source code for the Cloudflare Worker that backs the
 MindMate AI chat.
@@ -10,12 +20,13 @@ MindMate AI chat.
 - `index.js` — the Worker code.
 - `worker/README.md` — this file.
 
-The Worker is deployed on Cloudflare at:
-```
+The Flutter app is currently configured to call this Cloudflare URL:
+
+```text
 https://mindmate-ai-chat.tor3x-akachukwu.workers.dev
 ```
 
-The Flutter app calls this URL from `lib/services/chat_service.dart`.
+The URL is set in `lib/services/chat_service.dart`. Confirm the live deployment at that URL matches `worker/index.js` before release.
 
 ## What the Worker does
 
