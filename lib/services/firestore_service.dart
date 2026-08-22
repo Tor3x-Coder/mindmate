@@ -141,6 +141,24 @@ class FirestoreService {
         .collection(FirestoreCollections.appointments)
         .add(appointment.toMap());
   }
+
+  // Checks whether the user already has an active (pending) request to the
+  // same professional. Used by the request screen so a user cannot submit
+  // multiple requests to the same professional while one is still pending.
+  // Multiple equality filters do not need a composite index.
+  Future<bool> hasPendingAppointmentForProfessional(
+    String uid,
+    String professionalId,
+  ) async {
+    final snapshot = await _db
+        .collection(FirestoreCollections.appointments)
+        .where('uid', isEqualTo: uid)
+        .where('professionalId', isEqualTo: professionalId)
+        .where('status', isEqualTo: 'pending')
+        .limit(1)
+        .get();
+    return snapshot.docs.isNotEmpty;
+  }
   
   Stream<List<AppointmentModel>> allAppointmentsForAdmin() {
     return _db
