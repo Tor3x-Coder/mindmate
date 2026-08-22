@@ -173,6 +173,37 @@ The result voice must not say the score is a diagnosis, medical assessment, or c
 
 Ambient soundscapes, optional downloads, multiple narrator choices, localization, and longer continuous recordings remain post-competition work. They should not be mixed into Batch 7.
 
+### Batch 7.5 — Contextual first-use guide — approved, not implemented
+
+**Purpose:** Help new users understand the app without adding another long onboarding carousel or a distracting permanent mascot.
+
+Approved behavior:
+
+- four small contextual coach marks: Home, Practice, Chat, and Me;
+- one message at a time with clear `Got it`, `Next`, and `Skip tour` actions;
+- spotlight the relevant tab/action without blocking normal navigation;
+- store a local `tourVersion` so the tour runs once for new users and can be intentionally reset after major navigation changes;
+- add `Replay app tour` in Settings;
+- use a lightweight 2D MindMate figure drawn with Flutter widgets/CustomPainter, adding effectively no image-asset weight;
+- honor reduced-animation/animation-intensity preferences;
+- provide accessible semantics and keep text usable without animation;
+- never auto-show on Emergency Support;
+- never autoplay spoken guidance; a future tap-to-hear control is optional.
+
+Exit criteria:
+
+- existing users are not forced into the tour;
+- new users can skip immediately;
+- completed/skipped state persists;
+- replay works from Settings;
+- coach marks do not cover their target or critical controls at supported widths;
+- analyzer/tests/Web and Android builds pass.
+
+Implementation order:
+
+- do not start this batch until the audio pilot passes Android/Web builds and Chrome playback checks;
+- complete it before release UX rehearsal, but do not let it delay safety or build blockers.
+
 ### Batch 8 — Firestore integrity and authorization tests
 
 **Purpose:** Close the most important prototype security gaps in the currently deployed rules.
@@ -476,7 +507,7 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 
 ## MindMate weaknesses and risks
 
-1. **No guided audio today** — the largest obvious practice-experience gap.
+1. **Guided audio is only a pilot** — Quick Reset and Box Breathing exist, while the approved full coverage remains unfinished and unverified at runtime.
 2. **Very small content depth** — 18 short meditation outlines are far behind mature narrated libraries.
 3. **No evidence programme** — content and outcomes have not been clinically validated.
 4. **Minimal automated testing** — the existing smoke test does not exercise the real app.
@@ -491,15 +522,15 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 13. **Weak retention compared with habit specialists** — no strong personalized daily routine or reward loop.
 14. **No user data export/deletion flow** — a serious long-term privacy gap.
 15. **Account edge cases remain** — missing profile and partial registration failures need explicit handling.
-16. **No release proof yet** — no recorded test pass, debug APK result, installed-device matrix, or release candidate.
+16. **Release proof is incomplete** — the pre-audio debug APK built, but the post-audio build, Web build, runtime matrix, and release candidate remain pending.
 17. **Broad scope creates maintenance risk** — many feature areas can become shallow or inconsistent if polish is spread too thin.
-18. **Package upgrades are pending** — 22 newer versions exist outside current constraints, but upgrading before feature freeze could introduce breakage.
+18. **Package upgrades are pending** — 27 newer versions exist outside current constraints, but upgrading before feature freeze could introduce breakage.
 
-## Decision gate
+## Current execution gate
 
-Before Batch 7 app-code work begins, the user must choose:
+The natural-voice scope and contextual-guide design are approved. Before expanding narration or implementing the coach marks:
 
-- **A:** curated natural-voice launch pack `[RECOMMENDED]`; or
-- **B:** device text-to-speech across all current sessions.
-
-Regardless of the choice, Batch 6 baseline tests/build should happen first so new audio work is not mixed with unknown pre-existing failures.
+1. rerun the post-audio debug APK build after the power interruption;
+2. build Web;
+3. verify Quick Reset and Box Breathing playback in Chrome;
+4. record results and fix pilot blockers first.

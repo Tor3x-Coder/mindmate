@@ -110,6 +110,7 @@ Selected/implemented directions:
 
 - **Guided audio is competition-critical and now has a pilot.** A shared player, real Sound preference, 4 Quick Reset prompts, and 6 Box Breathing assets are implemented with preview/pause/replay/mute/lifecycle controls. The 10 MP3s total about 274 KB; local Flutter/Web validation is pending.
 - **Approved full audio scope:** one consistent natural narrator with unique words for all 18 meditation sessions, segmented prompts for 1/3/5-minute choices, unique guidance for all 3 breathing patterns, one short guide per Daily Snapshot stage, and 3 safe Wellness Result band narrations. Do not generate the remaining pack until the pilot passes. See Sub-batches 7A–7E in `MINDMATE_REMAINING_BATCHES.md`.
+- **Approved first-use guidance:** four small, one-time contextual coach marks for Home, Practice, Chat, and Me; include Skip/Got it, local tour versioning, and Replay tour in Settings. Use a lightweight 2D MindMate figure drawn in Flutter, not the heavy 3D meditation model. Never auto-show it on Emergency Support and do not autoplay speech.
 - Mood impact uses words: A little, Somewhat, A lot, Overwhelming, Not sure yet.
 - CBT branches: Relationship, School/work, Mistake/regret, Future worry, Self-doubt, Sad/low, Angry/frustrated, Hurt/disappointed, Something else.
 - `Something else` uses a neutral fallback path.
@@ -130,7 +131,7 @@ See `MINDMATE_STATUS.md` for exact files and status.
 4. **AI Worker** — modes, limits, crisis route, rate-limit hook, logging, quota fallback, and model configuration.
 5. **Trusted contacts/support events** — owner-only contact storage, explicit call/message actions, follow-up events, and expanded emergency UI.
 
-Important: implementation is not proof of end-to-end operation. The final Batch #5 Firestore rules were compiled and released successfully to `mindmate-app-fcf2d` on 22 August 2026. Before the audio pilot, local `flutter pub get`/analysis succeeded, the single basic smoke test passed, and `flutter build apk --debug` created an APK. The new audio pilot still needs dependency resolution, analysis, tests, Android/Web rebuilds, and Chrome playback checks. Firestore denial tests, Worker deployment, meaningful test coverage, emulator/device runtime, and physical-phone verification remain pending.
+Important: implementation is not proof of end-to-end operation. The final Batch #5 Firestore rules were compiled and released successfully to `mindmate-app-fcf2d` on 22 August 2026. Post-audio dependency resolution, analysis, and the single smoke test pass with no errors/warnings. The post-audio APK rebuild was interrupted by a NEPA outage before a result, so Android/Web builds and Chrome playback remain pending. Firestore denial tests, Worker deployment, meaningful test coverage, emulator/device runtime, and physical-phone verification also remain pending.
 
 ## Remaining backend/release work
 
@@ -169,7 +170,7 @@ Known backend/product limitations that may be deferred beyond the competition pr
 - Streams need consistent friendly loading, empty, and error states.
 - Some screens still have hardcoded legacy colours.
 - Current analyzer debt is non-blocking: 2 deprecated onboarding Radio API notices and 19 optional `const` notices.
-- `flutter pub get` reports 22 newer package versions outside current constraints; avoid major upgrades before the competition unless required and tested.
+- Post-audio `flutter pub get` reports 27 newer package versions outside current constraints; avoid major upgrades before the competition unless required and tested.
 - Some service comments are stale and can be cleaned during a controlled pass.
 
 ## Competition
@@ -191,16 +192,13 @@ Check in
 
 ## Immediate next action
 
-The pre-audio debug build passed and the first controlled audio pilot is implemented. Pull it, then run:
+Post-audio dependency resolution, analysis, and the smoke test passed. The APK attempt was interrupted only by power loss. When power is stable, rerun:
 
 ```bash
-flutter pub get
-flutter analyze
-flutter test
 flutter build apk --debug
 flutter build web
 ```
 
-Then run in Chrome and test Quick Reset plus Box Breathing with Guided voice on/off, preview, pause/resume, replay, early exit, and completion. Do not expand the narration pack until those results are recorded.
+Then run in Chrome and test Quick Reset plus Box Breathing with Guided voice on/off, preview, pause/resume, replay, early exit, and completion. Do not expand narration or implement the contextual guide until those results are recorded.
 
 The developer has no physical phone. Use an Android emulator later if practical and keep phone-only behavior explicitly unverified until a borrowed or competition device is available. The existing landing-page code is only a reference for future Batch 13A and must not distract from pilot validation.
