@@ -3,6 +3,7 @@ class MoodLogModel {
   final String uid;
   final String emoji;
   final String label;
+  final String? impactLabel;
   final String note;
   final DateTime date;
 
@@ -11,6 +12,7 @@ class MoodLogModel {
     required this.uid,
     required this.emoji,
     required this.label,
+    this.impactLabel,
     this.note = '',
     required this.date,
   });
@@ -21,6 +23,7 @@ class MoodLogModel {
       uid: map['uid'] ?? '',
       emoji: map['emoji'] ?? '😐',
       label: map['label'] ?? '',
+      impactLabel: map['impactLabel'],
       note: map['note'] ?? '',
       date: DateTime.tryParse(map['date'] ?? '') ?? DateTime.now(),
     );
@@ -31,6 +34,7 @@ class MoodLogModel {
       'uid': uid,
       'emoji': emoji,
       'label': label,
+      'impactLabel': impactLabel,
       'note': note,
       'date': date.toIso8601String(),
     };

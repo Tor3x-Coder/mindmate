@@ -8,6 +8,7 @@ class FirestoreCollections {
   static const String professionals = 'professionals';
   static const String appointments = 'appointments';
   static const String thoughtRecords = 'thought_records';
+  static const String feedbackRecords = 'feedback_records';
 }
 
 class MoodOption {

@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../models/feedback_record_model.dart';
+import '../services/auth_service.dart';
+import '../services/firestore_service.dart';
 import '../utils/app_theme.dart';
 import 'breathing/breathing_screen.dart';
 import 'cbt/cbt_thought_reframe_screen.dart';
@@ -40,6 +44,9 @@ class _NextStepScreenState extends State<NextStepScreen> {
   _ActionFeedback? _feedback;
   bool _hasOpenedAnActivity = false;
   bool _showFeedback = false;
+  bool _isSavingFeedback = false;
+  bool _hasSavedFeedback = false;
+  String? _saveFeedbackError;
 
   @override
   void initState() {
@@ -202,6 +209,8 @@ class _NextStepScreenState extends State<NextStepScreen> {
           (_selectedOptionIndex + 1) % _options.length;
       _feedback = null;
       _showFeedback = false;
+      _hasSavedFeedback = false;
+      _saveFeedbackError = null;
     });
 
     _scrollController.animateTo(
@@ -209,6 +218,50 @@ class _NextStepScreenState extends State<NextStepScreen> {
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOut,
     );
+  }
+
+  Future<void> _saveFeedback(_ActionFeedback feedback) async {
+    final uid = context.read<AuthService>().currentUser?.uid;
+    if (uid == null) {
+      if (!mounted) return;
+      setState(() => _saveFeedbackError = 'Please log in to save feedback.');
+      return;
+    }
+
+    final selected = _options[_selectedOptionIndex];
+
+    setState(() {
+      _feedback = feedback;
+      _isSavingFeedback = true;
+      _saveFeedbackError = null;
+    });
+
+    final record = FeedbackRecordModel(
+      id: '',
+      uid: uid,
+      moodLabel: widget.moodLabel,
+      moodEmoji: widget.moodEmoji,
+      moodImpact: widget.impactLabel,
+      activityId: selected.id,
+      activityTitle: selected.title,
+      feedback: _feedbackLabels[feedback] ?? '',
+      date: DateTime.now(),
+    );
+
+    try {
+      await context.read<FirestoreService>().addFeedbackRecord(record);
+      if (!mounted) return;
+      setState(() {
+        _isSavingFeedback = false;
+        _hasSavedFeedback = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isSavingFeedback = false;
+        _saveFeedbackError = 'Could not save your feedback. It may not have been saved.';
+      });
+    }
   }
 
   String get _momentTitle {
@@ -590,11 +643,51 @@ class _NextStepScreenState extends State<NextStepScreen> {
                 label: Text(entry.value),
                 selected: isSelected,
                 selectedColor: AppTheme.primary.withValues(alpha: 0.22),
-                onSelected: (_) => setState(() => _feedback = entry.key),
+                onSelected: (_) => _saveFeedback(entry.key),
               );
             }).toList(),
           ),
-          if (selectedFeedback != null) ...[
+          if (_saveFeedbackError != null) ...[
+            const SizedBox(height: 14),
+            Text(
+              _saveFeedbackError!,
+              style: const TextStyle(
+                color: AppTheme.danger,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ],
+          if (_isSavingFeedback) ...[
+            const SizedBox(height: 14),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 10),
+                Text('Saving your feedback...', style: TextStyle(fontSize: 13)),
+              ],
+            ),
+          ],
+          if (_hasSavedFeedback) ...[
+            const SizedBox(height: 14),
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_circle_rounded, color: AppTheme.success, size: 18),
+                SizedBox(width: 8),
+                Text(
+                  'Feedback saved',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ],
+          if (selectedFeedback != null && !_isSavingFeedback) ...[
             const SizedBox(height: 14),
             Text(
               _feedbackMessage,
