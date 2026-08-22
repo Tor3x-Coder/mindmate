@@ -6,6 +6,7 @@ import '../models/meditation_session_model.dart';
 import '../models/professional_model.dart';
 import '../models/appointment_model.dart';
 import '../models/thought_record_model.dart';
+import '../models/feedback_record_model.dart';
 import '../utils/constants.dart';
 
 class FirestoreService {
@@ -213,5 +214,14 @@ class FirestoreService {
         .map((snap) => snap.docs
             .map((d) => ThoughtRecordModel.fromMap(d.data(), d.id))
             .toList());
+  }
+
+  // ---- Activity Feedback Records ----
+  // Saves how an activity felt after the user tried it, along with the
+  // context (mood + impact) so the recommendation layer can learn.
+  Future<void> addFeedbackRecord(FeedbackRecordModel record) async {
+    await _db
+        .collection(FirestoreCollections.feedbackRecords)
+        .add(record.toMap());
   }
 }

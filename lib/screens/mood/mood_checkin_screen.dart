@@ -69,12 +69,11 @@ class _MoodCheckinScreenState extends State<MoodCheckinScreen> {
         uid: uid,
         emoji: _selectedEmoji!,
         label: _selectedLabel!,
+        impactLabel: _selectedImpact,
         note: _noteController.text.trim(),
         date: DateTime.now(),
       );
 
-      // The qualitative impact is currently frontend-only. We will add it
-      // to the model and Firestore in the backend batch later.
       await firestoreService.addMoodLog(log);
 
       if (!mounted) return;

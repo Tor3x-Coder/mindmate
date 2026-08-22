@@ -95,6 +95,17 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
+    // Activity feedback records ----------------------------------------------
+    // Same owner-only rules. Feedback is personal and should never be
+    // readable or writable by anyone else.
+    match /feedback_records/{docId} {
+      allow read: if isOwner();
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow update: if isOwner()
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if isOwner();
+    }
+
     // Appointments -----------------------------------------------------------
     // Users create requests to their own profile (pending status).
     // Owners can read their own requests and delete them.
