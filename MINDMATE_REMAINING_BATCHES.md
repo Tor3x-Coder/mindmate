@@ -36,9 +36,11 @@ Guided audio is now a **competition-critical gap**, not an optional post-competi
 
 Do these in order. Do not start several batches at once.
 
-### Batch 6 — Baseline test and build gate
+### Batch 6 — Baseline test and build gate — compile gate passed
 
 **Purpose:** Prove the recovered app works before adding audio or changing backend behavior.
+
+Current result: `flutter test` passed its single smoke test and `flutter build apk --debug` created the debug APK successfully on 22 August 2026. Emulator and physical-device runtime checks remain pending.
 
 Tasks:
 
@@ -52,7 +54,8 @@ Already complete:
 
 - `flutter pub get` succeeded;
 - `flutter analyze` completed with 0 errors, 0 warnings, and 21 informational notices;
-- `flutter test` passed its single smoke test.
+- `flutter test` passed its single smoke test;
+- `flutter build apk --debug` completed successfully in 159.6 seconds.
 
 Current device constraint:
 
@@ -84,7 +87,21 @@ The user selected:
 
 Natural pre-recorded audio will not read an arbitrary score or generated insight word-for-word. Result narration must avoid diagnosis and fake precision. The screen still displays the actual reflection; audio gives a short band-appropriate response and next-step invitation.
 
-#### Sub-batch 7A — Audio foundation and voice identity
+#### Current pilot checkpoint
+
+Implemented for validation before mass generation:
+
+- shared offline `just_audio` service/provider;
+- real Sound preference behavior in supported sessions;
+- one approved calm feminine narrator;
+- 4 unique Quick Reset prompts scheduled across 1/3/5 minutes;
+- Box Breathing introduction, separate inhale/full-hold/exhale/empty-hold cues, and completion;
+- preview, pause/resume, replay, mute, text fallback, and stop-on-exit controls;
+- 10 MP3s totaling 280,242 bytes (about 274 KB).
+
+Do not generate the remaining narration until local package resolution, analyzer, tests, Android/Web builds, and Chrome playback checks pass.
+
+#### Sub-batch 7A — Audio foundation and voice identity — pilot implemented, validation pending
 
 - audition and approve one narrator;
 - add the chosen local audio-playback dependency;

@@ -108,8 +108,8 @@ Selected/implemented directions:
 
 ## Important implementation details
 
-- **Guided audio is currently missing and is competition-critical.** There are no audio assets or playback dependency; Meditation is timed text guidance, Breathing is visual/text guidance, and the Sound setting is only a placeholder.
-- **Approved audio scope:** one consistent natural narrator with unique words for all 18 meditation sessions, segmented prompts for 1/3/5-minute choices, unique guidance for all 3 breathing patterns, one short guide per Daily Snapshot stage, and 3 safe Wellness Result band narrations. See Sub-batches 7A–7E in `MINDMATE_REMAINING_BATCHES.md`.
+- **Guided audio is competition-critical and now has a pilot.** A shared player, real Sound preference, 4 Quick Reset prompts, and 6 Box Breathing assets are implemented with preview/pause/replay/mute/lifecycle controls. The 10 MP3s total about 274 KB; local Flutter/Web validation is pending.
+- **Approved full audio scope:** one consistent natural narrator with unique words for all 18 meditation sessions, segmented prompts for 1/3/5-minute choices, unique guidance for all 3 breathing patterns, one short guide per Daily Snapshot stage, and 3 safe Wellness Result band narrations. Do not generate the remaining pack until the pilot passes. See Sub-batches 7A–7E in `MINDMATE_REMAINING_BATCHES.md`.
 - Mood impact uses words: A little, Somewhat, A lot, Overwhelming, Not sure yet.
 - CBT branches: Relationship, School/work, Mistake/regret, Future worry, Self-doubt, Sad/low, Angry/frustrated, Hurt/disappointed, Something else.
 - `Something else` uses a neutral fallback path.
@@ -130,14 +130,14 @@ See `MINDMATE_STATUS.md` for exact files and status.
 4. **AI Worker** — modes, limits, crisis route, rate-limit hook, logging, quota fallback, and model configuration.
 5. **Trusted contacts/support events** — owner-only contact storage, explicit call/message actions, follow-up events, and expanded emergency UI.
 
-Important: implementation is not proof of end-to-end operation. The final Batch #5 Firestore rules were compiled and released successfully to `mindmate-app-fcf2d` on 22 August 2026. Local `flutter pub get` and `flutter analyze` succeeded with 0 errors, 0 warnings, and 21 non-blocking informational notices. `flutter test` passed the repository's single basic smoke test. Firestore denial tests, Worker deployment, APK builds, meaningful test coverage, and runtime verification remain pending.
+Important: implementation is not proof of end-to-end operation. The final Batch #5 Firestore rules were compiled and released successfully to `mindmate-app-fcf2d` on 22 August 2026. Before the audio pilot, local `flutter pub get`/analysis succeeded, the single basic smoke test passed, and `flutter build apk --debug` created an APK. The new audio pilot still needs dependency resolution, analysis, tests, Android/Web rebuilds, and Chrome playback checks. Firestore denial tests, Worker deployment, meaningful test coverage, emulator/device runtime, and physical-phone verification remain pending.
 
 ## Remaining backend/release work
 
 Immediate prototype path:
 
-1. Complete Batch 6 baseline: build the debug APK and use an Android emulator for startup if practical; the smoke test already passed.
-2. Complete the user-approved Batch 7 guided-audio MVP; do not leave the Sound setting as a placeholder.
+1. Validate the Batch 7 audio pilot locally: dependency resolution, analyzer, smoke test, Android/Web builds, then Chrome playback; use an emulator later if practical.
+2. Only after the pilot passes, expand distinct narration to the remaining approved Meditation, Breathing, Daily Snapshot, and Result coverage.
 3. Harden/test the deployed Firestore rules and verify owner/admin denial cases; redeploy only after a rule change passes tests.
 4. Fix account/runtime reliability issues from Batch 9.
 5. Confirm/deploy `worker/index.js`, configure required bindings, test the live endpoint, and make the final AI model decision.
@@ -191,12 +191,16 @@ Check in
 
 ## Immediate next action
 
-The full natural-voice scope is approved. The smoke test passed. Finish the Batch 6 build gate so audio is not mixed with an unknown Android compilation failure:
+The pre-audio debug build passed and the first controlled audio pilot is implemented. Pull it, then run:
 
 ```bash
+flutter pub get
+flutter analyze
+flutter test
 flutter build apk --debug
+flutter build web
 ```
 
-The developer has no physical phone. Use an Android emulator if practical and Chrome for broad UI/Firestore checks; keep phone-only behavior explicitly unverified until a borrowed or competition device is available.
+Then run in Chrome and test Quick Reset plus Box Breathing with Guided voice on/off, preview, pause/resume, replay, early exit, and completion. Do not expand the narration pack until those results are recorded.
 
-After recording the APK result, audition one narrator and begin audio Sub-batch 7A. An optional competition landing page is proposed as Batch 13A; the user will provide existing landing-page code for inspection, and it must not delay core app release work.
+The developer has no physical phone. Use an Android emulator later if practical and keep phone-only behavior explicitly unverified until a borrowed or competition device is available. The existing landing-page code is only a reference for future Batch 13A and must not distract from pilot validation.

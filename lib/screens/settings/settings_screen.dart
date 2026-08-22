@@ -85,8 +85,8 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const Divider(height: 18),
                   _SwitchSetting(
-                    title: 'Sound',
-                    subtitle: 'Allow guided audio when it becomes available.',
+                    title: 'Guided voice',
+                    subtitle: 'Play natural voice prompts in supported sessions.',
                     value: settings.soundEnabled,
                     onChanged: settings.updateSoundEnabled,
                   ),

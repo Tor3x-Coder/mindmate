@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'services/app_settings_controller.dart';
+import 'services/audio_guide_service.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
 import 'utils/app_theme.dart';
@@ -25,6 +26,9 @@ class MindMateApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider<AppSettingsController>(
           create: (_) => AppSettingsController(),
+        ),
+        ChangeNotifierProvider<AudioGuideService>(
+          create: (_) => AudioGuideService(),
         ),
         Provider<AuthService>(create: (_) => AuthService()),
         Provider<FirestoreService>(create: (_) => FirestoreService()),

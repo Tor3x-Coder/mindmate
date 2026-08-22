@@ -34,9 +34,9 @@ Backend/integration batches 1–5 are implemented in the repository:
 
 They are **not yet considered release-complete**. The final Batch #5 Firestore rules compiled and were released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Local dependency resolution and static analysis passed with 0 errors, 0 warnings, and 21 non-blocking informational notices. `flutter test` also passed the repository's single basic smoke test; this is not meaningful end-to-end coverage.
 
-A repository audit confirmed a major missing experience: **there is currently no guided audio**. There are no audio assets or playback dependency; Meditation uses timed written guidance, Breathing uses visual/text cues, and the Sound setting is a placeholder. The approved competition-critical plan uses one consistent natural narrator with unique scripts for all 18 meditations, all 3 breathing patterns, Daily Snapshot stages, and 3 safe Wellness Result bands. See Sub-batches 7A–7E in `MINDMATE_REMAINING_BATCHES.md`.
+Guided audio now has a controlled pilot: one shared offline player, a working Sound preference, 4 distinct timed Quick Reset prompts, and 6 Box Breathing assets with preview/pause/replay/mute/lifecycle controls. The 10 pilot MP3s total about 274 KB. Local dependency resolution, Flutter checks, Android/Web rebuilds, and Chrome playback still need to pass before expanding to the approved full scope of all 18 meditations, all 3 breathing patterns, Daily Snapshot, and Wellness Result. See `assets/audio/README.md` and Sub-batches 7A–7E in `MINDMATE_REMAINING_BATCHES.md`.
 
-The debug APK build, meaningful tests, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. The developer currently has no physical test phone, so emulator/Chrome checks are the near-term fallback and real-device-only behavior remains a release risk. See `MINDMATE_STATUS.md` for the exact status table.
+The pre-audio debug APK build passed. Post-audio dependency resolution, analyzer/tests, Android/Web rebuilds, Chrome playback, meaningful test coverage, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. The developer currently has no physical test phone, so emulator/Chrome checks are the near-term fallback and real-device-only behavior remains a release risk. See `MINDMATE_STATUS.md` for the exact status table.
 
 ## Core experience
 
@@ -110,7 +110,7 @@ The current recommendation layer is still rule-based. Saved feedback does not ye
 - before/after thought-intensity reflection;
 - owner-only CBT thought-record persistence.
 
-Current limitation: meditation and breathing have no spoken guidance or ambient audio. Captions/timers exist, but the Sound preference does not yet control a real audio system.
+Current limitation: natural spoken guidance is a pilot only—Quick Reset and Box Breathing are integrated, while the remaining sessions and Wellness flow are not. No ambient audio is included.
 
 ### Reflection and progress
 
@@ -211,6 +211,7 @@ Before a public or competition build:
 - HTTP
 - Cloudflare Workers AI
 - `model_viewer_plus`
+- `just_audio` for bundled guided narration
 - `url_launcher`
 
 No AI provider key belongs in the Flutter app. The app talks only to the Cloudflare Worker, where the AI binding/model is configured.
@@ -224,6 +225,7 @@ lib/
   services/      Auth, Firestore, settings, and chat services
   utils/         Theme, constants, and pattern logic
 assets/
+  audio/         Offline guided narration and transcript/readme
   illustrations/ Onboarding and app illustrations
   models/        3D meditation guide assets
 worker/
