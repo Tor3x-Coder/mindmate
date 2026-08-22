@@ -31,7 +31,7 @@ Backend/integration batches 1–5 are implemented in the repository:
 - mode-aware AI Worker validation, safety routing, logging, and fallbacks;
 - trusted contacts, support-event tracking, and expanded emergency-resource UI.
 
-They are **not yet considered release-complete**. Flutter analysis/build tests, live Firestore deployment, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. See `MINDMATE_STATUS.md` for the exact status table.
+They are **not yet considered release-complete**. The final Batch #5 Firestore rules compiled and were released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Flutter analysis/build tests, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. See `MINDMATE_STATUS.md` for the exact status table.
 
 ## Core experience
 
@@ -184,7 +184,7 @@ Personal collections must remain owner-only. Updates must preserve the original 
 Before a public or competition build:
 
 - run Flutter analysis, tests, and Android builds;
-- test Firestore rules and deploy the current rule file;
+- test the deployed Firestore rules and redeploy after any rule change;
 - confirm/deploy the current Worker source;
 - test all owner/admin denial cases;
 - test every AI mode, safety route, limit, and failure state;
@@ -274,7 +274,9 @@ build/app/outputs/flutter-apk/app-release.apk
 
 ## Firebase deployment
 
-Review and test `firestore.rules`, then deploy:
+The final Batch #5 `firestore.rules` file compiled and was released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Emulator/denial testing is still required, and every future rule change must be redeployed.
+
+Review and test `firestore.rules`, then deploy changes with:
 
 ```bash
 firebase deploy --only firestore:rules
@@ -282,7 +284,7 @@ firebase deploy --only firestore:rules
 
 Queries combining `where()` and `orderBy()` may need composite indexes. Known examples include user appointment history (`uid`, `requestedAt`) and thought-record history (`uid`, `date`). Follow the Firebase error link to create the exact required index when testing.
 
-Never mark rules as deployed until the command succeeds against the intended Firebase project and denial cases have been tested.
+Do not mark a future rule revision as deployed until the command succeeds against the intended Firebase project. Deployment alone does not replace owner/admin denial tests.
 
 ## Cloudflare Worker
 

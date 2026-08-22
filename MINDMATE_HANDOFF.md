@@ -127,7 +127,7 @@ See `MINDMATE_STATUS.md` for exact files and status.
 4. **AI Worker** — modes, limits, crisis route, rate-limit hook, logging, quota fallback, and model configuration.
 5. **Trusted contacts/support events** — owner-only contact storage, explicit call/message actions, follow-up events, and expanded emergency UI.
 
-Important: implementation is not proof of deployment or end-to-end operation. Firestore deployment, Worker deployment, Flutter analysis, and device verification remain unconfirmed at this checkpoint.
+Important: implementation is not proof of end-to-end operation. The final Batch #5 Firestore rules were compiled and released successfully to `mindmate-app-fcf2d` on 22 August 2026. Firestore denial tests, Worker deployment, Flutter analysis, and device verification remain unconfirmed at this checkpoint.
 
 ## Remaining backend/release work
 
@@ -135,7 +135,7 @@ Immediate prototype path:
 
 1. Run `flutter pub get`, `flutter analyze`, `flutter test`, and `flutter build apk --debug` in a Flutter environment.
 2. Fix all analyzer/build errors and document each fix.
-3. Test Firestore rules, deploy them, and verify owner/admin denial cases.
+3. Test the deployed Firestore rules and verify owner/admin denial cases; redeploy only if the rule file changes.
 4. Confirm/deploy `worker/index.js`, configure required bindings, and test the live endpoint.
 5. Make the final AI model decision.
 6. Run the complete demo journey and emergency/appointment test matrix on Android.

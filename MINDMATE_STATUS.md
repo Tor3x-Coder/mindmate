@@ -24,14 +24,16 @@ Do not call a feature “finished” merely because it is implemented. State all
 
 The repository contains backend/integration batches 1–5. The work from the interrupted Arena session was recovered exactly and committed to the active Arena branch.
 
+The developer confirmed that the local checkout is on `arena/01a02a49-mindmate` at documentation commit `d9df21c`, tracks the matching remote branch, and has a clean working tree. The final Batch #5 Firestore rules were compiled and released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Those rules are byte-for-byte identical to the rules on the current branch.
+
 | Area | Implemented | Validated | Deployed | Verified end to end |
 |---|---:|---:|---:|---:|
-| Firestore owner/admin rules | Yes | Not yet with emulator/rules tests | **Unconfirmed** | No |
-| Mood impact and activity feedback persistence | Yes | Flutter analysis pending | Depends on rules deployment | No |
-| Appointment admin workflow | Yes | Flutter analysis pending | Depends on rules deployment | No |
+| Firestore owner/admin rules | Yes | Firebase CLI compilation passed; emulator/denial tests pending | **Yes — `mindmate-app-fcf2d`** | No |
+| Mood impact and activity feedback persistence | Yes | Flutter analysis pending | Rules live; app build unverified | No |
+| Appointment admin workflow | Yes | Flutter analysis pending | Rules live; app build unverified | No |
 | One-pending-request guard | Client/service guard only | Flutter analysis pending | N/A | No |
 | Mode-aware AI Worker and safety route | Yes | `node --check worker/index.js` passed | **Unconfirmed** | No |
-| Trusted contacts and support-event tracking | Yes | Flutter analysis pending | Depends on rules deployment | No |
+| Trusted contacts and support-event tracking | Yes | Flutter analysis pending | Rules live; app build unverified | No |
 | State/international emergency-number UI | Yes | Flutter analysis pending | N/A | No; resource verification required |
 | Android APK | No current verified build | No | N/A | No |
 
@@ -157,18 +159,25 @@ Requirements:
 - record warnings separately if they are intentionally deferred;
 - test on a real Android device, especially `tel:`, `sms:`, external links, Firestore streams, and dark/light modes.
 
-### 2. Test and deploy Firestore configuration
+### 2. Test the deployed Firestore configuration
+
+Deployment status:
+
+- `firebase deploy --only firestore:rules` compiled and released the final Batch #5 rules successfully to `mindmate-app-fcf2d` on 22 August 2026.
+- No redeployment is needed unless `firestore.rules` changes again.
+
+Still required:
 
 - Review `firestore.rules` against every collection used by the app.
-- Prefer Firebase Emulator rules tests before live deployment.
-- Deploy when ready:
+- Add Firebase Emulator rules tests where practical.
+- Confirm any required composite indexes, especially user appointment history and thought-record history.
+- Verify that ordinary users cannot read another user's data, set `isAdmin`, create a non-pending appointment, or update appointment status.
+
+After any future rules change, redeploy with:
 
 ```bash
 firebase deploy --only firestore:rules
 ```
-
-- Confirm any required composite indexes, especially user appointment history and thought-record history.
-- Verify that ordinary users cannot read another user's data, set `isAdmin`, or update appointment status.
 
 ### 3. Deploy and verify the AI Worker
 
@@ -243,8 +252,9 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 
 | Date | Batch/fix | Code status | Validation | Deployment | Next action |
 |---|---|---|---|---|---|
-| 22 Aug 2026 | Batches 1–5 recovered from interrupted Arena session | Implemented and committed | Worker syntax passed; Flutter checks unavailable | Unconfirmed | Run Flutter checks, then deploy/test rules and Worker |
+| 22 Aug 2026 | Batches 1–5 recovered from interrupted Arena session | Implemented and committed | Worker syntax passed; Flutter checks unavailable | Firestore now confirmed; Worker unconfirmed | Run Flutter checks, then test rules and deploy/test Worker |
 | 22 Aug 2026 | Documentation continuity policy and status refresh | Documentation updated | `git diff --check` and local Markdown-link check passed | Not applicable | Start validation step 1 |
+| 22 Aug 2026 | Local sync and Firestore deployment confirmation | Current branch pulled; working tree clean | Firebase CLI compiled rules successfully | Rules released to `mindmate-app-fcf2d` | Run `flutter pub get` and `flutter analyze` |
 
 ## Rule for the next agent
 
