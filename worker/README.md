@@ -1,5 +1,9 @@
 # MindMate AI Worker
 
+> **Note (22 Aug 2026):** The AI model switch is intentionally the LAST
+> backend step before we call the backend finished. We will revisit the
+> model choice at that point. Everything else stays as it is for now.
+
 This folder is the source code for the Cloudflare Worker that backs the
 MindMate AI chat.
 
