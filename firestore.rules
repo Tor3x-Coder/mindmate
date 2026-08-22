@@ -106,6 +106,28 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
+    // Trusted contacts -------------------------------------------------------
+    // Personal, owner-only. The app only ever opens tel:/sms: after the
+    // user taps, so these records still live securely per-user.
+    match /trusted_contacts/{docId} {
+      allow read: if isOwner();
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow update: if isOwner()
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if isOwner();
+    }
+
+    // Support events ---------------------------------------------------------
+    // Owner-only tracking of which support actions a user tapped and what
+    // they told us afterwards. Never readable by anyone else.
+    match /support_events/{docId} {
+      allow read: if isOwner();
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow update: if isOwner()
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if isOwner();
+    }
+
     // Appointments -----------------------------------------------------------
     // Users create requests to their own profile (pending status).
     // Owners can read their own requests and delete them.
