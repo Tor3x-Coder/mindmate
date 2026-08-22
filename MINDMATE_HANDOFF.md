@@ -127,14 +127,14 @@ See `MINDMATE_STATUS.md` for exact files and status.
 4. **AI Worker** — modes, limits, crisis route, rate-limit hook, logging, quota fallback, and model configuration.
 5. **Trusted contacts/support events** — owner-only contact storage, explicit call/message actions, follow-up events, and expanded emergency UI.
 
-Important: implementation is not proof of end-to-end operation. The final Batch #5 Firestore rules were compiled and released successfully to `mindmate-app-fcf2d` on 22 August 2026. Firestore denial tests, Worker deployment, Flutter analysis, and device verification remain unconfirmed at this checkpoint.
+Important: implementation is not proof of end-to-end operation. The final Batch #5 Firestore rules were compiled and released successfully to `mindmate-app-fcf2d` on 22 August 2026. Local `flutter pub get` and `flutter analyze` also succeeded with 0 errors, 0 warnings, and 21 non-blocking informational notices. Firestore denial tests, Worker deployment, Flutter tests/builds, and device verification remain pending.
 
 ## Remaining backend/release work
 
 Immediate prototype path:
 
-1. Run `flutter pub get`, `flutter analyze`, `flutter test`, and `flutter build apk --debug` in a Flutter environment.
-2. Fix all analyzer/build errors and document each fix.
+1. Run `flutter test` and `flutter build apk --debug` in the local Flutter environment.
+2. Fix any test/build errors and document each fix. Defer the 21 analyzer info notices unless they affect testing or release reliability.
 3. Test the deployed Firestore rules and verify owner/admin denial cases; redeploy only if the rule file changes.
 4. Confirm/deploy `worker/index.js`, configure required bindings, and test the live endpoint.
 5. Make the final AI model decision.
@@ -162,8 +162,9 @@ Known backend/product limitations that may be deferred beyond the competition pr
 - Wellness score components need capping at 100.
 - Streams need consistent friendly loading, empty, and error states.
 - Some screens still have hardcoded legacy colours.
-- Onboarding Radio API and some Flutter APIs are deprecated but may not block the prototype.
-- Some service comments are stale and should be cleaned during validation.
+- Current analyzer debt is non-blocking: 2 deprecated onboarding Radio API notices and 19 optional `const` notices.
+- `flutter pub get` reports 22 newer package versions outside current constraints; avoid major upgrades before the competition unless required and tested.
+- Some service comments are stale and can be cleaned during a controlled pass.
 
 ## Competition
 
@@ -184,13 +185,11 @@ Check in
 
 ## Immediate next action
 
-Do not start another feature. Begin **validation step 1** from `MINDMATE_STATUS.md`:
+Do not start another feature. Dependency resolution and static analysis passed. Continue **validation step 1** from `MINDMATE_STATUS.md`:
 
 ```bash
-flutter pub get
-flutter analyze
 flutter test
 flutter build apk --debug
 ```
 
-Record the results in `MINDMATE_STATUS.md`, fix any blocking issues in controlled batches, and update all relevant documentation with each fix.
+Record both results in `MINDMATE_STATUS.md`, fix any blocking issues in controlled batches, and update all relevant documentation with each fix.

@@ -24,22 +24,24 @@ Do not call a feature “finished” merely because it is implemented. State all
 
 The repository contains backend/integration batches 1–5. The work from the interrupted Arena session was recovered exactly and committed to the active Arena branch.
 
-The developer confirmed that the local checkout is on `arena/01a02a49-mindmate` at documentation commit `d9df21c`, tracks the matching remote branch, and has a clean working tree. The final Batch #5 Firestore rules were compiled and released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Those rules are byte-for-byte identical to the rules on the current branch.
+The developer confirmed that the local checkout is on `arena/01a02a49-mindmate`, tracks the matching remote branch, and has a clean working tree. The final Batch #5 Firestore rules were compiled and released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Those rules are byte-for-byte identical to the rules on the current branch.
+
+The developer also ran `flutter pub get` and `flutter analyze` successfully on 22 August 2026. Analysis completed with **0 errors, 0 warnings, and 21 informational notices**: 2 deprecated onboarding Radio API notices and 19 optional `const` style/performance notices.
 
 | Area | Implemented | Validated | Deployed | Verified end to end |
 |---|---:|---:|---:|---:|
 | Firestore owner/admin rules | Yes | Firebase CLI compilation passed; emulator/denial tests pending | **Yes — `mindmate-app-fcf2d`** | No |
-| Mood impact and activity feedback persistence | Yes | Flutter analysis pending | Rules live; app build unverified | No |
-| Appointment admin workflow | Yes | Flutter analysis pending | Rules live; app build unverified | No |
-| One-pending-request guard | Client/service guard only | Flutter analysis pending | N/A | No |
-| Mode-aware AI Worker and safety route | Yes | `node --check worker/index.js` passed | **Unconfirmed** | No |
-| Trusted contacts and support-event tracking | Yes | Flutter analysis pending | Rules live; app build unverified | No |
-| State/international emergency-number UI | Yes | Flutter analysis pending | N/A | No; resource verification required |
-| Android APK | No current verified build | No | N/A | No |
+| Mood impact and activity feedback persistence | Yes | `flutter analyze` passed; runtime pending | Rules live; app build unverified | No |
+| Appointment admin workflow | Yes | `flutter analyze` passed; runtime pending | Rules live; app build unverified | No |
+| One-pending-request guard | Client/service guard only | `flutter analyze` passed; runtime pending | N/A | No |
+| Mode-aware AI Worker and safety route | Yes | Dart analysis and `node --check` passed; live tests pending | **Unconfirmed** | No |
+| Trusted contacts and support-event tracking | Yes | `flutter analyze` passed; runtime pending | Rules live; app build unverified | No |
+| State/international emergency-number UI | Yes | `flutter analyze` passed; device tests pending | N/A | No; resource verification required |
+| Android APK | No current verified build | Analysis passed; build pending | N/A | No |
 
-### Tool limitation at this checkpoint
+### Validation environment note
 
-Flutter and Dart are not installed in the current Arena sandbox. Therefore, `flutter analyze`, `flutter test`, and APK builds have **not** been run here. They must run in a Flutter-enabled local environment before any release claim.
+Flutter and Dart are not installed in the current Arena sandbox, so Flutter commands cannot be repeated here. The successful `flutter pub get` and `flutter analyze` results above came from the developer's local Flutter environment. `flutter test` and APK builds are still pending.
 
 ## Backend/integration work implemented so far
 
@@ -144,20 +146,25 @@ Important limitation:
 
 Do these in order.
 
-### 1. Validate the recovered code in a Flutter environment
+### 1. Finish Flutter validation in the local environment
+
+Completed:
 
 ```bash
 flutter pub get
 flutter analyze
+```
+
+Result: **0 errors, 0 warnings, 21 informational notices**. The notices are non-blocking and may be cleaned later; do not perform major dependency upgrades immediately before the competition without a specific need.
+
+Run next:
+
+```bash
 flutter test
 flutter build apk --debug
 ```
 
-Requirements:
-
-- fix all analyzer errors before continuing;
-- record warnings separately if they are intentionally deferred;
-- test on a real Android device, especially `tel:`, `sms:`, external links, Firestore streams, and dark/light modes.
+Then install the debug APK on a real Android device and test `tel:`, `sms:`, external links, Firestore streams, and dark/light modes.
 
 ### 2. Test the deployed Firestore configuration
 
@@ -244,7 +251,9 @@ Also verify:
 - Wellness score components need capping at 100.
 - Streams need consistent loading, empty, and friendly error states.
 - Some screens still use hardcoded legacy colours.
-- Firestore comments in `lib/services/firestore_service.dart` contain some stale “later” wording and should be cleaned during the analyzer/fix pass.
+- Analyzer informational debt: 2 deprecated onboarding Radio API uses and 19 optional `const` notices.
+- `flutter pub get` reports 22 newer package versions outside current constraints; defer major upgrades unless a tested fix requires one.
+- Firestore comments in `lib/services/firestore_service.dart` contain some stale “later” wording and can be cleaned during a later controlled pass.
 
 ## Documentation update log
 
@@ -255,6 +264,7 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 22 Aug 2026 | Batches 1–5 recovered from interrupted Arena session | Implemented and committed | Worker syntax passed; Flutter checks unavailable | Firestore now confirmed; Worker unconfirmed | Run Flutter checks, then test rules and deploy/test Worker |
 | 22 Aug 2026 | Documentation continuity policy and status refresh | Documentation updated | `git diff --check` and local Markdown-link check passed | Not applicable | Start validation step 1 |
 | 22 Aug 2026 | Local sync and Firestore deployment confirmation | Current branch pulled; working tree clean | Firebase CLI compiled rules successfully | Rules released to `mindmate-app-fcf2d` | Run `flutter pub get` and `flutter analyze` |
+| 22 Aug 2026 | Local dependency resolution and static analysis | No code change | `flutter pub get` succeeded; `flutter analyze`: 0 errors, 0 warnings, 21 info | Not applicable | Run `flutter test`, then `flutter build apk --debug` |
 
 ## Rule for the next agent
 

@@ -31,7 +31,7 @@ Backend/integration batches 1–5 are implemented in the repository:
 - mode-aware AI Worker validation, safety routing, logging, and fallbacks;
 - trusted contacts, support-event tracking, and expanded emergency-resource UI.
 
-They are **not yet considered release-complete**. The final Batch #5 Firestore rules compiled and were released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Flutter analysis/build tests, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. See `MINDMATE_STATUS.md` for the exact status table.
+They are **not yet considered release-complete**. The final Batch #5 Firestore rules compiled and were released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Local dependency resolution and static analysis also passed with 0 errors, 0 warnings, and 21 non-blocking informational notices. Flutter tests/builds, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. See `MINDMATE_STATUS.md` for the exact status table.
 
 ## Core experience
 
@@ -183,7 +183,7 @@ Personal collections must remain owner-only. Updates must preserve the original 
 
 Before a public or competition build:
 
-- run Flutter analysis, tests, and Android builds;
+- keep the currently clean Flutter analysis result and run tests plus Android builds;
 - test the deployed Firestore rules and redeploy after any rule change;
 - confirm/deploy the current Worker source;
 - test all owner/admin denial cases;
