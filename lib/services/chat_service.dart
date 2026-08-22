@@ -24,6 +24,12 @@ class ChatService {
   // This matches exactly what the Worker expects and just gets passed
   // straight through to it.
   //
+  // [mode] is optional and tells the Worker the kind of reply to aim for:
+  //   'listen'    - reflective listening, minimal advice
+  //   'calm'      - grounding, calming language
+  //   'make_plan' - help make one small, realistic next step
+  //   null        - general supportive conversation
+  //
   // Returns the AI's reply as a plain string.
   // Throws an Exception with a human-readable message if anything goes
   // wrong (no internet, Worker down, bad response, etc.) — the screen
@@ -32,16 +38,46 @@ class ChatService {
   Future<String> sendMessage({
     required String userMessage,
     required List<Map<String, String>> history,
+    String? mode,
   }) async {
     try {
+      // Validate and sanitize the history before sending it to the Worker.
+      // Only user/assistant roles are accepted, content is trimmed to a
+      // reasonable size, and we keep at most 12 turns to avoid sending a
+      // huge payload to the AI.
+      final cleanHistory = history
+          .where((turn) {
+            final role = turn['role'];
+            return role == 'user' || role == 'assistant';
+          })
+          .where((turn) {
+            final content = turn['content']?.trim() ?? '';
+            return content.isNotEmpty;
+          })
+          .map((turn) {
+            return <String, String>{
+              'role': turn['role']!,
+              'content': turn['content']!.trim(),
+            };
+          })
+          .toList();
+      final limitedHistory = cleanHistory.length > 12
+          ? cleanHistory.sublist(cleanHistory.length - 12)
+          : cleanHistory;
+
+      final body = <String, dynamic>{
+        'message': userMessage.trim(),
+        'history': limitedHistory,
+      };
+      if (mode != null && mode.trim().isNotEmpty) {
+        body['mode'] = mode.trim();
+      }
+
       final response = await http
           .post(
             Uri.parse(_workerUrl),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'message': userMessage,
-              'history': history,
-            }),
+            body: jsonEncode(body),
           )
           // If the AI takes too long to respond, fail clearly instead of
           // leaving the user staring at a spinner forever.

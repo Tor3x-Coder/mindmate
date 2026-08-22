@@ -29,6 +29,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
 
   final List<_ChatMessage> _messages = [];
   bool _isSending = false;
+  String? _activeMode;
 
   @override
   void dispose() {
@@ -39,7 +40,10 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
   }
 
   void _useStarter(String starter) {
-    setState(() => _inputController.text = starter);
+    setState(() {
+      _activeMode = null;
+      _inputController.text = starter;
+    });
     _inputController.selection = TextSelection.fromPosition(
       TextPosition(offset: _inputController.text.length),
     );
@@ -58,6 +62,9 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
         _useStarter('Help me make a small plan for ');
         break;
     }
+    // The starter helper clears the mode; re-apply it afterwards so the
+    // chosen direction is actually sent with the first message.
+    setState(() => _activeMode = mode);
   }
 
   void _showAiBoundary() {
@@ -106,9 +113,11 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
             })
         .toList();
 
+    final modeToSend = _activeMode;
     setState(() {
       _messages.add(_ChatMessage(role: 'user', content: text));
       _isSending = true;
+      _activeMode = null;
       _inputController.clear();
     });
     _scrollToBottom();
@@ -117,6 +126,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
       final reply = await _chatService.sendMessage(
         userMessage: text,
         history: history,
+        mode: modeToSend,
       );
 
       if (!mounted) return;
