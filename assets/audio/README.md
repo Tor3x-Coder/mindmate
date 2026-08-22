@@ -52,10 +52,11 @@ Completed locally after the pilot:
 - `flutter analyze` reported 0 errors, 0 warnings, and the same 21 pre-existing informational notices;
 - the single smoke test passed.
 
+- the post-audio Android debug build passed in 411 seconds after recovering from stale depfiles left by the power interruption;
+- the Web build passed in 146.9 seconds and its WASM dry run succeeded.
+
 Still required:
 
-- rerun the Android build because the first post-audio attempt was interrupted by a power outage before producing a result;
-- build the Web target;
 - confirm prompt timing and no overlap in Chrome;
 - test an Android emulator;
 - test audio focus, routing, interruption, and volume on a physical phone before release;

@@ -27,7 +27,7 @@ The repository contains backend/integration batches 1–5. The work from the int
 
 The developer confirmed that the local checkout is on `arena/01a02a49-mindmate`, tracks the matching remote branch, and has a clean working tree. The final Batch #5 Firestore rules were compiled and released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Those rules are byte-for-byte identical to the rules on the current branch.
 
-Before the audio pilot, the developer successfully ran dependency resolution, analysis, the single smoke test, and a debug APK build. After pulling the audio pilot, `flutter pub get` succeeded, `flutter analyze` again reported **0 errors, 0 warnings, and the same 21 informational notices**, and `flutter test` passed its single smoke test. The post-audio APK rebuild was interrupted by a NEPA power outage before Gradle returned success or failure; treat it as incomplete, not failed.
+Before the audio pilot, the developer successfully ran dependency resolution, analysis, the single smoke test, and a debug APK build. After pulling the audio pilot, `flutter pub get` succeeded, `flutter analyze` again reported **0 errors, 0 warnings, and the same 21 informational notices**, and `flutter test` passed its single smoke test. The first post-audio APK attempt lost power; the rerun recovered from stale depfiles and successfully built `app-debug.apk` in 411 seconds. `flutter build web` also succeeded in 146.9 seconds, including its WASM dry run. Chrome playback remains untested.
 
 | Area | Implemented | Validated | Deployed | Verified end to end |
 |---|---:|---:|---:|---:|
@@ -38,13 +38,14 @@ Before the audio pilot, the developer successfully ran dependency resolution, an
 | Mode-aware AI Worker and safety route | Yes | Dart analysis and `node --check` passed; live tests pending | **Unconfirmed** | No |
 | Trusted contacts and support-event tracking | Yes | `flutter analyze` passed; runtime pending | Rules live; app build unverified | No |
 | State/international emergency-number UI | Yes | `flutter analyze` passed; device tests pending | N/A | No; resource verification required |
-| Guided audio: Meditation, Breathing, Daily Snapshot | Pilot implemented | Post-audio dependencies/analyzer/smoke test pass; builds/playback pending | N/A | Quick Reset + Box Breathing only; no runtime verification |
+| Guided audio: Meditation, Breathing, Daily Snapshot | Pilot implemented | Dependencies/analyzer/test + Android/Web builds pass; Chrome playback pending | N/A | Quick Reset + Box Breathing only; no runtime playback verification |
 | Contextual first-use guide | Design approved, not implemented | N/A | N/A | Four coach marks + lightweight 2D MindMate figure planned |
-| Android APK | Pre-audio debug APK built | Post-audio rebuild interrupted by power; rerun pending | N/A | No phone available; emulator/device verification pending |
+| Informational landing site | Direction approved, not implemented | N/A | N/A | Static product info + signed APK download; no hosted Flutter app |
+| Android APK | Post-audio debug APK built | Build passed in 411 seconds despite recovered stale-depfile warnings | N/A | No phone available; emulator/device verification pending |
 
 ### Validation environment note
 
-Flutter and Dart are not installed in the current Arena sandbox, so Flutter commands cannot be repeated here. Local post-audio dependency resolution, analysis, and the smoke test passed. Android/Web builds and playback remain pending; the Android build attempt ended only because power was lost.
+Flutter and Dart are not installed in the current Arena sandbox, so Flutter commands cannot be repeated here. Local post-audio dependency resolution, analysis, smoke test, Android build, and Web build all pass. Chrome playback, emulator runtime, and physical-device behavior remain pending.
 
 The developer currently has no physical Android phone for testing. Use Chrome for broad UI/Firestore checks and an Android emulator if the PC can support one. Physical-device-only behavior—especially `tel:`, `sms:`, audio interruption/routing, notifications, and final APK installation—must remain explicitly unverified until a borrowed or competition device is available.
 
@@ -149,7 +150,7 @@ Important limitation:
 
 ## What remains before calling the prototype complete
 
-The complete ordered plan is in `MINDMATE_REMAINING_BATCHES.md`. Guided audio is now explicitly competition-critical: repository inspection found no audio assets, playback/TTS dependency, or working audio behavior. The existing Sound preference is only a placeholder.
+The complete ordered plan is in `MINDMATE_REMAINING_BATCHES.md`. Guided audio is competition-critical and now has a build-valid pilot for Quick Reset and Box Breathing. Runtime playback must pass before the remaining narration is generated.
 
 Do these first, in order.
 
@@ -187,14 +188,7 @@ Pilot implementation now exists:
 - 10 MP3 files total **280,242 bytes (about 274 KB)**;
 - asset registry, relative imports, delimiters, and whitespace checks pass.
 
-Post-audio dependency resolution, analysis, and the smoke test now pass. Still required before expanding coverage:
-
-```bash
-flutter build apk --debug
-flutter build web
-```
-
-The APK command must be rerun because the prior attempt lost power before completion. Then test Quick Reset and Box Breathing in Chrome. See `assets/audio/README.md` for transcripts and exact validation gaps.
+Post-audio dependency resolution, analysis, the smoke test, Android build, and Web build pass. Before expanding coverage, run the app in Chrome and test Quick Reset plus Box Breathing for playback, timing, pause/resume, replay, mute, early exit, and completion. See `assets/audio/README.md` for transcripts and exact validation gaps.
 
 ### 3. Test the deployed Firestore configuration
 
@@ -302,8 +296,10 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 22 Aug 2026 | Full natural-voice scope approval | Planning/docs only | One narrator, unique scripts, timed 1/3/5 prompts, and step-based wellness audio selected | Not applicable | Build debug APK, then audition narrator and start Sub-batch 7A |
 | 22 Aug 2026 | Batch 6 debug build gate | No code change | `flutter build apk --debug` passed in 159.6 seconds | Debug APK created locally | Begin controlled audio pilot |
 | 22 Aug 2026 | Audio Sub-batch 7A pilot | Shared player + Quick Reset + Box Breathing + 10 MP3s implemented | Static registry/import/delimiter checks passed | Not deployed | Pull, resolve package, analyze/test/rebuild, then Chrome-test audio |
-| 22 Aug 2026 | Post-audio local validation | No code change | `pub get` passed; analyze 0 errors/0 warnings/21 info; 1 smoke test passed | Not deployed | Rerun APK build after power outage, then build/test Web |
-| 22 Aug 2026 | Contextual guide decision | Planning only | Four one-time coach marks + lightweight 2D Flutter-drawn guide approved | Not applicable | Implement only after audio pilot build/playback validation |
+| 22 Aug 2026 | Post-audio local validation | No code change | `pub get` passed; analyze 0 errors/0 warnings/21 info; 1 smoke test passed | Not deployed | Chrome-test audio after builds |
+| 22 Aug 2026 | Post-audio platform builds | No code change | Debug APK passed in 411s; Web passed in 146.9s; WASM dry run passed | Build artifacts local only | Run Chrome playback matrix |
+| 22 Aug 2026 | Contextual guide decision | Planning only | Four one-time coach marks + lightweight 2D Flutter-drawn guide approved | Not applicable | Implement only after audio pilot playback validation |
+| 22 Aug 2026 | Landing-site direction | Planning only | Separate informational static site; supplied page is design reference only | Not deployed | Build later with product copy + signed release APK download |
 
 ## Rule for the next agent
 
@@ -311,6 +307,6 @@ Before editing code:
 
 1. run `git status --short --branch` and `git log --oneline -10`;
 2. read this file, `MINDMATE_CODING_GUIDE.md`, and `MINDMATE_REMAINING_BATCHES.md`;
-3. confirm whether the audio pilot's local dependency resolution, analyzer, tests, Android/Web builds, and Chrome checks have passed before expanding narration coverage;
+3. treat dependency resolution, analyzer, smoke test, Android build, and Web build as passed; confirm Chrome playback before expanding narration coverage;
 4. continue from **What remains**, not from an older chat transcript;
 5. update this file and the relevant Markdown documentation in the same batch as every fix.

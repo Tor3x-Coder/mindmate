@@ -147,9 +147,15 @@ The result voice must not say the score is a diagnosis, medical assessment, or c
 
 #### Sub-batch 7E — Audio validation
 
-- confirm all assets are declared and included in builds;
-- run analyzer and automated tests;
-- build Android and Web targets;
+Completed:
+
+- all pilot assets are declared and included in successful Android/Web builds;
+- post-audio analyzer reports 0 errors and 0 warnings;
+- the single smoke test passes;
+- debug APK and Web builds pass; the WASM dry run also passes.
+
+Still required:
+
 - test Chrome playback behavior and browser autoplay restrictions;
 - test with an Android emulator later;
 - test physical-device interruption/routing when a device becomes available;
@@ -367,39 +373,30 @@ Exit criteria:
 - backend versions and test evidence are documented;
 - rollback/demo fallback is ready.
 
-### Optional Batch 13A — Competition landing page
+### Optional Batch 13A — Competition landing page — direction approved
 
-**Purpose:** Give judges and early users a fast, polished explanation of MindMate with a QR/link they can revisit after the demo.
+**Purpose:** Give judges and early users a fast, polished explanation of MindMate and a safe way to download the Android demo.
 
 This is a useful competition asset, but it must not delay audio, safety, testing, or the release candidate. Build it after the app's visual/content claims are stable so screenshots and feature copy are accurate.
 
-The user already has landing-page code they want to provide. Inspect that code first and preserve the user's intended direction; do not replace it with a new design before reviewing it.
+Approved direction:
 
-#### Option A — Responsive static showcase `[RECOMMENDED]`
-
-- lightweight HTML/CSS/JavaScript in a separate `landing/` directory;
-- Quiet Tide visual identity;
-- clear hero promise;
-- the check-in-to-action loop;
-- three to five real app screenshots;
-- safety boundary and privacy summary;
-- competition/demo status;
-- QR code and APK/demo link when available;
-- contact/project links;
-- responsive, accessible, and fast on weak connections.
-
-#### Option B — Interactive app-preview microsite
-
-- animated phone mockup;
-- clickable feature tour;
-- more motion and richer storytelling.
-
-Option B is more visually impressive but costs more time, has more accessibility/performance risk, and can distract from release work.
+- use the supplied Spouse Finder page only for layout, interaction, and visual inspiration;
+- replace all branding, copy, colors, images, fake phone content, claims, FAQ, navigation, and CTAs with truthful MindMate material;
+- build a lightweight static informational site in a separate `landing/` directory;
+- do **not** expose or host the Flutter app as a browser product;
+- do **not** include app Sign In/Register or route visitors into Flutter Web;
+- provide product information, the check-in-to-action loop, real screenshots, safety/privacy boundaries, FAQ, installation help, and an APK download button;
+- link only a signed, versioned release APK—not `app-debug.apk`;
+- add release version, file size, SHA-256 checksum, minimum Android requirement, and honest sideload instructions when known;
+- optionally add a QR code pointing to the landing page;
+- keep it responsive, accessible, and fast on weak connections.
 
 Technical note:
 
-- do not replace `web/index.html`, because that file is the Flutter Web app shell;
-- use a separate landing-page folder/deployment target;
+- keep `web/index.html` only as the Flutter Web shell used for development/testing; it is not the public landing page;
+- use a separate landing-page deployment target;
+- keep APK binaries out of ordinary Git history; a release-asset host such as GitHub Releases is preferred, but the final hosting choice is not yet approved;
 - Firebase Hosting is not currently configured in `firebase.json`, so hosting configuration and destination must be explicitly approved.
 
 Exit criteria:
@@ -528,9 +525,9 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 
 ## Current execution gate
 
-The natural-voice scope and contextual-guide design are approved. Before expanding narration or implementing the coach marks:
+The natural-voice scope, contextual-guide design, and informational landing-site direction are approved. Android/Web builds now pass. Before expanding narration or implementing the coach marks:
 
-1. rerun the post-audio debug APK build after the power interruption;
-2. build Web;
-3. verify Quick Reset and Box Breathing playback in Chrome;
-4. record results and fix pilot blockers first.
+1. verify Quick Reset and Box Breathing playback in Chrome;
+2. record results and fix pilot blockers first.
+
+The public landing site remains Batch 13A and must not replace or delay core app validation.
