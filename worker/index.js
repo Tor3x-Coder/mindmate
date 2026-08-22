@@ -1,0 +1,196 @@
+// MindMate AI Companion — Cloudflare Worker
+// Receives a chat message from the app, sends it to a free AI model
+// along with a mode-aware system prompt that keeps responses safe and
+// supportive, and returns the reply. The AI never has direct access to
+// the app — this Worker is the only thing that talks to it.
+//
+// Changes in this version:
+//   - Structured modes (listen / calm / make_plan) from the app.
+//   - Deterministic crisis route BEFORE any AI generation.
+//   - History validation (roles, length, per-message size).
+//   - Message size limits.
+//   - Optional rate limiting (enable the binding below to turn it on).
+//   - Provider errors are logged but never returned to the app user.
+
+const SYSTEM_PROMPT = `You are a warm, genuine, and down-to-earth human companion inside MindMate, a mental wellness app. Your goal is to be an authentic, supportive sounding board that people actually enjoy talking to.
+
+Guidelines:
+- Talk like a real, empathetic person — warm, conversational, and natural. Match the user's energy and way of speaking without forcing it.
+- NEVER use robotic therapy formulas like "It sounds like you're feeling...", "I hear that you...", or repeating what they just said back to them.
+- Focus on real comfort, validation, or gentle perspective first. Do not immediately grill them with standard interview questions.
+- Keep responses concise and easy to read (around 2 to 4 sentences).
+- Do not claim to be a licensed therapist or doctor, and do not give rigid clinical advice.
+- Do not diagnose or prescribe.
+- If strong clinical or emergency needs are clear, gently point to Emergency Support in the app or local emergency services. Do not try to handle a crisis as a normal conversation.
+- If the user expresses thoughts of self-harm, suicide, or immediate danger, respond with genuine warmth and immediately direct them to the Emergency Support resources in the app or local emergency services.`;
+
+function modePrompt(mode) {
+  switch (mode) {
+    case 'listen':
+      return `Current intent: LISTEN.
+- Prioritise genuine listening and validation first.
+- Keep it short (1-3 sentences). Mirror their feeling without copying their words.
+- Do not jump into solutions, advice, or a list of questions unless they ask.
+- End by inviting them to say more only if it feels natural.`;
+    case 'calm':
+      return `Current intent: CALM.
+- Help them slow down in the moment.
+- Use a warm, grounding tone. You may suggest one simple calming action (e.g. slow breathing, naming the feeling, gentle body scan).
+- Keep it short (1-3 sentences).
+- Do not use clinical language or claim anything is a diagnosis.`;
+    case 'make_plan':
+      return `Current intent: MAKE A SMALL PLAN.
+- Help them choose ONE small, realistic next step for right now or today.
+- Ask at most ONE simple question if you genuinely need it.
+- Avoid giving a long checklist or over-planning.
+- End with a tiny, doable action.`;
+    default:
+      return `Current intent: SUPPORTIVE CONVERSATION.
+- Be natural and present. Focus on what the person shared and only offer one gentle next step if it helps.
+- Keep it short (2-4 sentences).`;
+  }
+}
+
+// Keywords that should ALWAYS take the deterministic safety route before
+// the AI model is allowed to respond.
+function isCrisis(message) {
+  const text = (message || '').toLowerCase();
+  const patterns = [
+    // Self-harm / suicide
+    'kill myself', 'killing myself',
+    'suicide', 'suicidal', 'suicid',
+    'end my life', 'end it all',
+    'don\'t want to live', 'do not want to live', 'no reason to live',
+    'want to die', 'wish i was dead', 'i should die',
+    'hurt myself', 'harm myself', 'self harm', 'self-harm',
+    // Immediate danger / violence toward self or others
+    'emergency', 'i\'m going to hurt myself', 'i am going to hurt myself',
+    'i want to hurt someone', 'going to hurt someone',
+    'save me', 'help me right now',
+  ];
+  return patterns.some((pattern) => text.includes(pattern));
+}
+
+const CRISIS_REPLY = `I am really glad you reached out right now. What you shared is serious, and you should not carry it alone.
+
+Please open the Emergency Support section in the MindMate app now, or call a local emergency line. You deserve immediate, human support.`;
+
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+}
+
+function jsonResponse(data, status) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...corsHeaders() },
+  });
+}
+
+// Validate and clean history sent by the app.
+// Only user/assistant roles are allowed, content is trimmed and capped,
+// and the whole list is capped to the most recent 16 turns.
+function cleanHistory(history) {
+  if (!Array.isArray(history)) return [];
+
+  const cleaned = [];
+  for (const item of history) {
+    if (!item || typeof item !== 'object') continue;
+    const role = item.role;
+    if (role !== 'user' && role !== 'assistant') continue;
+    const content = typeof item.content === 'string'
+      ? item.content.trim().slice(0, 4000)
+      : '';
+    if (!content) continue;
+    cleaned.push({ role, content });
+  }
+
+  return cleaned.length > 16 ? cleaned.slice(cleaned.length - 16) : cleaned;
+}
+
+export default {
+  async fetch(request, env, ctx) {
+    // Browsers send a preflight OPTIONS request before the real POST —
+    // this just approves it so the real request can go through.
+    if (request.method === 'OPTIONS') {
+      return new Response(null, { headers: corsHeaders() });
+    }
+
+    if (request.method !== 'POST') {
+      return new Response('Send a POST request with a message.', {
+        status: 405,
+        headers: corsHeaders(),
+      });
+    }
+
+    try {
+      const body = await request.json();
+
+      if (!body || typeof body !== 'object') {
+        return jsonResponse({ error: 'Invalid request body.' }, 400);
+      }
+
+      const userMessage = (body.message || '').toString().trim().slice(0, 4000);
+      if (!userMessage) {
+        return jsonResponse({ error: 'No message provided.' }, 400);
+      }
+
+      // Optional rate limiting using a Cloudflare Rate Limiting binding.
+      // Add a binding named MINDMATE_RATE_LIMIT in the dashboard to enable it.
+      if (env.MINDMATE_RATE_LIMIT) {
+        const { success } = await env.MINDMATE_RATE_LIMIT.limit({
+          name: 'mindmate_ai_chat',
+          key: request.headers.get('cf-connecting-ip') || 'unknown',
+        });
+        if (!success) {
+          return jsonResponse({
+            error: 'You are sending messages too quickly. Please slow down and try again in a moment.',
+          }, 429);
+        }
+      }
+
+      // Deterministic safety route BEFORE the AI model runs.
+      if (isCrisis(userMessage)) {
+        console.warn('MindMate crisis route triggered:', userMessage.slice(0, 120));
+        return jsonResponse({ reply: CRISIS_REPLY }, 200);
+      }
+
+      const mode = (body.mode || '').toString().trim();
+
+      const history = cleanHistory(body.history);
+
+      const messages = [
+        { role: 'system', content: SYSTEM_PROMPT },
+        ...history,
+        { role: 'user', content: userMessage },
+      ];
+
+      if (mode) {
+        messages.splice(1, 0, { role: 'user', content: modePrompt(mode) });
+      }
+
+      const aiResponse = await env.AI.run('@cf/meta/llama-3.1-8b-instruct-fast', {
+        messages,
+      });
+
+      const reply = (aiResponse.response || '').trim();
+      if (!reply) {
+        return jsonResponse({
+          error: 'The AI companion returned an empty reply. Please try again.',
+        }, 502);
+      }
+
+      return jsonResponse({ reply }, 200);
+    } catch (err) {
+      // Log the real error for the developer, but NEVER expose provider
+      // details or internal messages to the app user.
+      console.error('MindMate Worker error:', err);
+      return jsonResponse({
+        error: 'The AI companion is unavailable right now. Please try again in a moment.',
+      }, 500);
+    }
+  },
+};
