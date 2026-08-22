@@ -16,8 +16,9 @@ Read these before making changes:
 
 1. [`MINDMATE_STATUS.md`](MINDMATE_STATUS.md) — current implementation, validation/deployment state, and exact next action.
 2. [`MINDMATE_CODING_GUIDE.md`](MINDMATE_CODING_GUIDE.md) — collaboration, code, UI, safety, and documentation rules.
-3. [`MINDMATE_HANDOFF.md`](MINDMATE_HANDOFF.md) — product decisions and broader handoff context.
-4. [`worker/README.md`](worker/README.md) — Cloudflare AI Worker configuration and deployment.
+3. [`MINDMATE_REMAINING_BATCHES.md`](MINDMATE_REMAINING_BATCHES.md) — remaining Batches 6–17, guided-audio options, competitive audit, strengths, and weaknesses.
+4. [`MINDMATE_HANDOFF.md`](MINDMATE_HANDOFF.md) — product decisions and broader handoff context.
+5. [`worker/README.md`](worker/README.md) — Cloudflare AI Worker configuration and deployment.
 
 The status file is the single source of truth. Do not infer current progress from an older chat transcript.
 
@@ -31,7 +32,11 @@ Backend/integration batches 1–5 are implemented in the repository:
 - mode-aware AI Worker validation, safety routing, logging, and fallbacks;
 - trusted contacts, support-event tracking, and expanded emergency-resource UI.
 
-They are **not yet considered release-complete**. The final Batch #5 Firestore rules compiled and were released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Local dependency resolution and static analysis also passed with 0 errors, 0 warnings, and 21 non-blocking informational notices. Flutter tests/builds, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. See `MINDMATE_STATUS.md` for the exact status table.
+They are **not yet considered release-complete**. The final Batch #5 Firestore rules compiled and were released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Local dependency resolution and static analysis also passed with 0 errors, 0 warnings, and 21 non-blocking informational notices.
+
+A repository audit confirmed a major missing experience: **there is currently no guided audio**. There are no audio assets or playback/TTS dependency; Meditation uses timed written guidance, Breathing uses visual/text cues, and the Sound setting is a placeholder. The guided-audio MVP is now competition-critical in `MINDMATE_REMAINING_BATCHES.md`.
+
+Flutter tests/builds, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. See `MINDMATE_STATUS.md` for the exact status table.
 
 ## Core experience
 
@@ -104,6 +109,8 @@ The current recommendation layer is still rule-based. Saved feedback does not ye
 - CBT thought-reframe wizard with nine branching categories and a neutral fallback path;
 - before/after thought-intensity reflection;
 - owner-only CBT thought-record persistence.
+
+Current limitation: meditation and breathing have no spoken guidance or ambient audio. Captions/timers exist, but the Sound preference does not yet control a real audio system.
 
 ### Reflection and progress
 
@@ -184,6 +191,7 @@ Personal collections must remain owner-only. Updates must preserve the original 
 Before a public or competition build:
 
 - keep the currently clean Flutter analysis result and run tests plus Android builds;
+- implement and real-device-test the approved guided-audio MVP;
 - test the deployed Firestore rules and redeploy after any rule change;
 - confirm/deploy the current Worker source;
 - test all owner/admin denial cases;

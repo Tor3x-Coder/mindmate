@@ -7,7 +7,8 @@ Every agent or developer continuing MindMate must read this file together with:
 
 1. `MINDMATE_CODING_GUIDE.md` — how to work on the project;
 2. `MINDMATE_HANDOFF.md` — product decisions and broader context;
-3. the relevant feature README, such as `worker/README.md`, before changing that feature.
+3. `MINDMATE_REMAINING_BATCHES.md` — ordered remaining batches, guided-audio decision, and competitive audit;
+4. the relevant feature README, such as `worker/README.md`, before changing that feature.
 
 ## Status words used in this project
 
@@ -37,6 +38,7 @@ The developer also ran `flutter pub get` and `flutter analyze` successfully on 2
 | Mode-aware AI Worker and safety route | Yes | Dart analysis and `node --check` passed; live tests pending | **Unconfirmed** | No |
 | Trusted contacts and support-event tracking | Yes | `flutter analyze` passed; runtime pending | Rules live; app build unverified | No |
 | State/international emergency-number UI | Yes | `flutter analyze` passed; device tests pending | N/A | No; resource verification required |
+| Guided meditation/breathing audio | **No** | Repository audit confirms no assets/package/playback | N/A | No; Batch 7 decision pending |
 | Android APK | No current verified build | Analysis passed; build pending | N/A | No |
 
 ### Validation environment note
@@ -142,9 +144,11 @@ Important limitation:
 
 - every emergency number, operating status, label, and external resource must be rechecked against authoritative current sources before a public build. Do not treat a code comment or an old search result as release verification.
 
-## What remains before calling the prototype backend complete
+## What remains before calling the prototype complete
 
-Do these in order.
+The complete ordered plan is in `MINDMATE_REMAINING_BATCHES.md`. Guided audio is now explicitly competition-critical: repository inspection found no audio assets, playback/TTS dependency, or working audio behavior. The existing Sound preference is only a placeholder.
+
+Do these first, in order.
 
 ### 1. Finish Flutter validation in the local environment
 
@@ -164,9 +168,18 @@ flutter test
 flutter build apk --debug
 ```
 
-Then install the debug APK on a real Android device and test `tel:`, `sms:`, external links, Firestore streams, and dark/light modes.
+Then install the debug APK on a real Android device and confirm the app opens before adding audio.
 
-### 2. Test the deployed Firestore configuration
+### 2. Implement the approved guided-audio MVP
+
+User choice is pending between:
+
+- **Option A `[RECOMMENDED]`:** a curated, offline natural-voice launch pack for six flagship meditations plus reusable breathing cues; or
+- **Option B:** device text-to-speech across all current sessions.
+
+Both options must activate the existing Sound preference, preserve captions, provide playback controls, stop safely on exit/interruption, and pass analyzer/build/real-device tests. See `MINDMATE_REMAINING_BATCHES.md` for the full trade-off and acceptance criteria.
+
+### 3. Test the deployed Firestore configuration
 
 Deployment status:
 
@@ -186,7 +199,7 @@ After any future rules change, redeploy with:
 firebase deploy --only firestore:rules
 ```
 
-### 3. Deploy and verify the AI Worker
+### 4. Deploy and verify the AI Worker
 
 - Compare the live Cloudflare Worker with `worker/index.js`.
 - Deploy the repository version if they differ.
@@ -197,7 +210,7 @@ firebase deploy --only firestore:rules
 
 See `worker/README.md` for deployment details.
 
-### 4. Run the end-to-end demo checklist
+### 5. Run the end-to-end demo checklist
 
 Required journey:
 
@@ -219,7 +232,7 @@ Also verify:
 - emergency location switching and every external resource;
 - AI modes, safety route, and friendly unavailable state.
 
-### 5. Build the competition APK and freeze features
+### 6. Build the competition APK and freeze features
 
 - fix critical reliability/accessibility issues found during testing;
 - produce and install a release candidate APK;
@@ -243,6 +256,7 @@ Also verify:
 
 ## Known issues still to review
 
+- Guided audio is unimplemented: no assets, playback/TTS package, controls, or lifecycle handling; the Sound setting is currently a placeholder.
 - Do not trim passwords.
 - Login must handle a missing Firestore profile safely.
 - Registration can leave an Auth account without a profile if the Firestore write fails.
@@ -265,13 +279,14 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 22 Aug 2026 | Documentation continuity policy and status refresh | Documentation updated | `git diff --check` and local Markdown-link check passed | Not applicable | Start validation step 1 |
 | 22 Aug 2026 | Local sync and Firestore deployment confirmation | Current branch pulled; working tree clean | Firebase CLI compiled rules successfully | Rules released to `mindmate-app-fcf2d` | Run `flutter pub get` and `flutter analyze` |
 | 22 Aug 2026 | Local dependency resolution and static analysis | No code change | `flutter pub get` succeeded; `flutter analyze`: 0 errors, 0 warnings, 21 info | Not applicable | Run `flutter test`, then `flutter build apk --debug` |
+| 22 Aug 2026 | Remaining-batch plan and competitive audit | Planning/docs only; audio confirmed missing | Repository audio/assets/dependency audit completed | Not applicable | Choose audio Option A or B; run Batch 6 baseline first |
 
 ## Rule for the next agent
 
 Before editing code:
 
 1. run `git status --short --branch` and `git log --oneline -10`;
-2. read this file and `MINDMATE_CODING_GUIDE.md`;
-3. confirm whether the user has already run the pending local/deployment steps;
+2. read this file, `MINDMATE_CODING_GUIDE.md`, and `MINDMATE_REMAINING_BATCHES.md`;
+3. confirm whether the user has already run the pending local/deployment steps and which audio option was approved;
 4. continue from **What remains**, not from an older chat transcript;
 5. update this file and the relevant Markdown documentation in the same batch as every fix.

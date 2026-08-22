@@ -6,8 +6,9 @@
 
 1. `MINDMATE_STATUS.md` — current implementation, validation, deployment state, and exact next action.
 2. `MINDMATE_CODING_GUIDE.md` — collaboration, coding, UI, safety, and documentation rules.
-3. This file — product direction, decisions, and broader context.
-4. `worker/README.md` before changing or deploying the AI Worker.
+3. `MINDMATE_REMAINING_BATCHES.md` — full ordered plan, guided-audio decision, competitive grade, strengths, and weaknesses.
+4. This file — product direction, decisions, and broader context.
+5. `worker/README.md` before changing or deploying the AI Worker.
 
 Do not use an old chat transcript as the status source. The repository documents must be updated in the same batch as every implementation or fix.
 
@@ -107,6 +108,7 @@ Selected/implemented directions:
 
 ## Important implementation details
 
+- **Guided audio is currently missing and is competition-critical.** There are no audio assets or playback/TTS dependency; Meditation is timed text guidance, Breathing is visual/text guidance, and the Sound setting is only a placeholder. The user must choose the audio MVP option in `MINDMATE_REMAINING_BATCHES.md` before implementation.
 - Mood impact uses words: A little, Somewhat, A lot, Overwhelming, Not sure yet.
 - CBT branches: Relationship, School/work, Mistake/regret, Future worry, Self-doubt, Sad/low, Angry/frustrated, Hurt/disappointed, Something else.
 - `Something else` uses a neutral fallback path.
@@ -133,13 +135,16 @@ Important: implementation is not proof of end-to-end operation. The final Batch 
 
 Immediate prototype path:
 
-1. Run `flutter test` and `flutter build apk --debug` in the local Flutter environment.
-2. Fix any test/build errors and document each fix. Defer the 21 analyzer info notices unless they affect testing or release reliability.
-3. Test the deployed Firestore rules and verify owner/admin denial cases; redeploy only if the rule file changes.
-4. Confirm/deploy `worker/index.js`, configure required bindings, and test the live endpoint.
-5. Make the final AI model decision.
-6. Run the complete demo journey and emergency/appointment test matrix on Android.
-7. Build a release candidate APK and freeze nonessential features.
+1. Complete Batch 6 baseline: `flutter test`, debug APK build, and startup check on Android.
+2. Complete the user-approved Batch 7 guided-audio MVP; do not leave the Sound setting as a placeholder.
+3. Harden/test the deployed Firestore rules and verify owner/admin denial cases; redeploy only after a rule change passes tests.
+4. Fix account/runtime reliability issues from Batch 9.
+5. Confirm/deploy `worker/index.js`, configure required bindings, test the live endpoint, and make the final AI model decision.
+6. Verify emergency resources and sensitive content.
+7. Run meaningful automated tests plus the complete device test matrix.
+8. Build a release candidate APK and freeze nonessential features.
+
+See `MINDMATE_REMAINING_BATCHES.md` for tasks and exit criteria for Batches 6–13.
 
 Known backend/product limitations that may be deferred beyond the competition prototype:
 
@@ -185,11 +190,16 @@ Check in
 
 ## Immediate next action
 
-Do not start another feature. Dependency resolution and static analysis passed. Continue **validation step 1** from `MINDMATE_STATUS.md`:
+First, get the user's explicit audio decision from `MINDMATE_REMAINING_BATCHES.md`:
+
+- Option A — curated natural-voice launch pack `[RECOMMENDED]`; or
+- Option B — device text-to-speech for all current sessions.
+
+Execution still starts with the Batch 6 baseline so audio is not mixed with an unknown build failure:
 
 ```bash
 flutter test
 flutter build apk --debug
 ```
 
-Record both results in `MINDMATE_STATUS.md`, fix any blocking issues in controlled batches, and update all relevant documentation with each fix.
+Record both results in `MINDMATE_STATUS.md`, then implement only the approved audio option in a controlled batch and update all relevant documentation.

@@ -1,6 +1,6 @@
 # MindMate coding guide
 
-Read this with `MINDMATE_STATUS.md` and `MINDMATE_HANDOFF.md` before making any MindMate change. This guide exists so a new chat/agent follows the same conventions, starts from the real current checkpoint, and does not introduce a different coding style.
+Read this with `MINDMATE_STATUS.md`, `MINDMATE_REMAINING_BATCHES.md`, and `MINDMATE_HANDOFF.md` before making any MindMate change. This guide exists so a new chat/agent follows the same conventions, starts from the real current checkpoint, and does not introduce a different coding style.
 
 ## Collaboration rules
 
