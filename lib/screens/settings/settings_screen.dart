@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/app_settings_controller.dart';
 import '../../utils/app_theme.dart';
+import 'delete_account_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -175,6 +176,26 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 22),
+            const _SectionTitle(title: 'Privacy and data'),
+            _SettingsCard(
+              child: _ActionSetting(
+                icon: Icons.delete_forever_outlined,
+                title: 'Delete account',
+                subtitle: 'Permanently delete your account and stored data.',
+                color: AppTheme.danger,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => DeleteAccountScreen(
+                        resumePendingDeletion:
+                            settings.accountDeletionPending,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 22),
             const _SectionTitle(title: 'About MindMate'),
             const _SettingsCard(
               child: Text(
@@ -340,6 +361,7 @@ class _ActionSetting extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final Color color;
   final VoidCallback onTap;
 
   const _ActionSetting({
@@ -347,6 +369,7 @@ class _ActionSetting extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.color = AppTheme.primary,
   });
 
   @override
@@ -363,10 +386,10 @@ class _ActionSetting extends StatelessWidget {
               height: 40,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: AppTheme.primary.withValues(alpha: 0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(13),
               ),
-              child: Icon(icon, color: AppTheme.primary, size: 20),
+              child: Icon(icon, color: color, size: 20),
             ),
             const SizedBox(width: 12),
             Expanded(

@@ -27,11 +27,13 @@ The repository contains backend/integration batches 1–5. The work from the int
 
 The developer confirmed that the local checkout tracks `arena/01a02a49-mindmate`. Batch 8 passed all 13 emulator cases, Flutter analysis/tests, compiled successfully, and was released to Firestore project `mindmate-app-fcf2d` on 23 August 2026. Brief normal-flow live smoke checks remain.
 
-Before the audio pilot, the developer successfully ran dependency resolution, analysis, the single smoke test, and a debug APK build. After pulling the audio pilot, `flutter pub get` succeeded, `flutter analyze` again reported **0 errors, 0 warnings, and the same 21 informational notices**, and `flutter test` passed its single smoke test. The first post-audio APK attempt lost power; the rerun recovered from stale depfiles and successfully built `app-debug.apk` in 411 seconds. `flutter build web` also succeeded in 146.9 seconds, including its WASM dry run. Chrome playback remains untested.
+Batch 9A account reliability is implemented locally on the Spark plan: in-app deletion with password reauthentication, repeatable deletion of every owned collection, profile/Auth ordering, interruption retry routing, missing-profile recovery, registration rollback, and no password trimming. The new profile-delete rule and client code are not yet validated/deployed.
+
+Audio, Floating Tide navigation, contextual tour, and the Modern Shell were confirmed working in Chrome. Post-audio Android/Web builds passed; physical-device validation remains open.
 
 | Area | Implemented | Validated | Deployed | Verified end to end |
 |---|---:|---:|---:|---:|
-| Firestore owner/admin rules | Batch 8 hardening implemented | **13/13 emulator tests** + Flutter gates passed | **Deployed — `mindmate-app-fcf2d`** | Normal-flow smoke pending |
+| Firestore owner/admin rules | Batch 8 hardening live; Batch 9 owner-profile-delete delta local | Batch 8 passed; updated rules retest pending | Batch 8 deployed; Batch 9 delta **not deployed** | Normal-flow smoke pending |
 | Mood impact and activity feedback persistence | Yes | Flutter analysis/tests pass; runtime pending | Batch 8 rules live | No |
 | Appointment admin workflow | Pending-only create + admin status-only rules/service guards implemented | Emulator + Flutter gates passed | **Batch 8 rules live** | Normal live request/admin smoke pending |
 | One-pending-request guard | Client/service guard only | `flutter analyze` passed; runtime pending | N/A | No |
@@ -42,7 +44,8 @@ Before the audio pilot, the developer successfully ran dependency resolution, an
 | Floating Tide Orb navigation | Polished implementation | User confirmed slower/lower four-tab behavior in Chrome | N/A | Physical-device layout still pending |
 | Contextual first-use guide | Implemented | User confirmed tour controls and Settings replay in Chrome | N/A | Fresh-account/physical-device release matrix still pending |
 | Quiet Tide modern shell | Focused shell polish implemented | User confirmed combined shell works in Chrome | N/A | Child-screen redesign intentionally deferred |
-| Informational landing site | Direction approved, not implemented | N/A | N/A | Static product info + signed APK download; no hosted Flutter app |
+| Account deletion/recovery | Spark-compatible implementation complete locally | Rules + Flutter + destructive-flow tests pending | **Not deployed/released** | In-app path exists; external web request page still required |
+| Informational landing site | Direction approved, not implemented | N/A | N/A | Must include functional `/delete-account` request resource + signed APK info |
 | Android APK | Post-audio debug APK built | Build passed in 411 seconds despite recovered stale-depfile warnings | N/A | No phone available; emulator/device verification pending |
 
 ### Validation environment note
@@ -228,7 +231,39 @@ Project: mindmate-app-fcf2d
 
 Batch 8 is now live. Remaining: brief normal user profile, trusted-contact/support-event, pending appointment, and admin status smoke checks against the intended project.
 
-### 4. Deploy and verify the AI Worker
+### 4. Validate Batch 9A account deletion and recovery
+
+Implemented locally for the Spark plan:
+
+- Settings → Privacy and data → Delete account;
+- type `DELETE`, password reauthentication, and final irreversible confirmation;
+- repeatable 200-document deletion batches across every UID-owned collection;
+- Firestore profile deletion last, Firebase Auth deletion after Firestore;
+- persistent local retry marker if deletion is interrupted;
+- Splash routes interrupted attempts back to deletion;
+- missing-profile recovery or deletion choice;
+- registration rollback when Firestore profile creation fails;
+- Login/Splash route incomplete profiles back through setup;
+- passwords are no longer trimmed;
+- local preferences clear only after confirmed Auth deletion.
+
+Important limitation: a trusted Cloud Function remains preferable but requires Blaze. This Spark-compatible flow is designed to be retryable rather than falsely claiming atomic deletion.
+
+Google Play also requires a functional external web resource where a user can request account/data deletion. The planned landing site must include a real `/delete-account` pathway before Play submission: https://support.google.com/googleplay/android-developer/answer/13327111
+
+Before enabling/releasing this flow:
+
+```bash
+cd firestore_tests
+npm test
+cd ..
+flutter analyze
+flutter test
+```
+
+Then deploy the owner-profile-delete rules delta and test destructive deletion only with a temporary account—not the developer/admin account.
+
+### 5. Deploy and verify the AI Worker
 
 - Compare the live Cloudflare Worker with `worker/index.js`.
 - Deploy the repository version if they differ.
@@ -239,7 +274,7 @@ Batch 8 is now live. Remaining: brief normal user profile, trusted-contact/suppo
 
 See `worker/README.md` for deployment details.
 
-### 5. Run the end-to-end demo checklist
+### 6. Run the end-to-end demo checklist
 
 Required journey:
 
@@ -261,7 +296,7 @@ Also verify:
 - emergency location switching and every external resource;
 - AI modes, safety route, and friendly unavailable state.
 
-### 6. Build the competition APK and freeze features
+### 7. Build the competition APK and freeze features
 
 - fix critical reliability/accessibility issues found during testing;
 - produce and install a release candidate APK;
@@ -277,18 +312,16 @@ Also verify:
 - push/email/SMS notifications;
 - persistent AI chat sessions and a past-chat screen;
 - opt-in journal AI reflection;
-- privacy export/deletion controls;
-- robust account-creation rollback/profile recovery;
+- privacy data export controls;
+- trusted-backend account deletion after a future Blaze upgrade;
 - scheduled check-in notifications;
 - a production moderation plan before any community feature.
 
 ## Known issues still to review
 
 - Guided audio is only a pilot: Quick Reset and Box Breathing are implemented, but 17 meditations, 2 breathing patterns, Daily Snapshot, and Wellness Result still need assets/integration after validation.
-- Do not trim passwords.
-- Login must handle a missing Firestore profile safely.
-- Registration can leave an Auth account without a profile if the Firestore write fails.
-- Audit async gaps for missing `mounted` checks.
+- Account deletion, missing-profile recovery, registration rollback, and no-password-trimming are implemented locally but still require validation.
+- Audit remaining async gaps for missing `mounted` checks.
 - Date models currently rely on ISO strings instead of Firestore `Timestamp` values.
 - Wellness score components need capping at 100.
 - Streams need consistent loading, empty, and friendly error states.
@@ -324,6 +357,7 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 22 Aug 2026 | Floating Tide Orb navigation | Replaced standard NavigationBar with animated four-tab orb/labels; IndexedStack preserved | User liked concept but reported fast/high positioning | Not deployed | Included in Modern Shell correction |
 | 22 Aug 2026 | Quiet Tide Modern shell + guide | Slowed/lowered nav; modern AppBar defaults; 2D guide; new-user four-step tour; persisted completion; Settings replay | User confirmed combined behavior works in Chrome | Not deployed | Move to Batch 8; keep physical/fresh-account matrix pending |
 | 23 Aug 2026 | Batch 8 Firestore integrity | Pending-only/status-only appointment boundary; user/admin hardening; trusted/support schemas; service guards; 13 emulator cases | **13/13 passed**; Flutter 0 errors/0 warnings; smoke test passed | **Deployed to `mindmate-app-fcf2d`** | Live-smoke normal profile/contact/request/admin flows |
+| 23 Aug 2026 | Batch 9A account deletion/recovery | Spark-compatible deletion, retry routing, missing-profile recovery, registration rollback, no password trimming, Settings UI | Static collection/import/delimiter checks pass; Flutter/rules/destructive temp-account tests pending | **Not deployed/released** | Rerun rules + Flutter gates; deploy delta; test only temporary account |
 
 ## Rule for the next agent
 
@@ -331,6 +365,7 @@ Before editing code:
 
 1. run `git status --short --branch` and `git log --oneline -10`;
 2. read this file, `MINDMATE_CODING_GUIDE.md`, and `MINDMATE_REMAINING_BATCHES.md`;
-3. treat the Modern Shell and Batch 8 validation/deployment gates as passed;
-4. finish brief Batch 8 live normal-flow smoke checks, then continue from **What remains**, not an older chat transcript;
-5. update this file and the relevant Markdown documentation in the same batch as every fix.
+3. treat the Modern Shell and Batch 8 deployment as passed;
+4. validate Batch 9A rules/Flutter code and use only a temporary account for destructive testing; do not deploy the profile-delete delta first;
+5. keep the external `/delete-account` web request resource as a Play release blocker; continue from **What remains**, not an older transcript;
+6. update this file and the relevant Markdown documentation in the same batch as every fix.

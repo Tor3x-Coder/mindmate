@@ -100,8 +100,8 @@ service cloud.firestore {
     }
 
     // Users ------------------------------------------------------------------
-    // Owners can read and update their profile, but cannot delete it, change
-    // their email, or add/change isAdmin. Users therefore cannot self-promote.
+    // Owners can read/update their profile and delete it only during account
+    // deletion. They cannot change email or add/change isAdmin.
     match /users/{userId} {
       allow read: if isSignedIn() && request.auth.uid == userId;
       allow create: if isSignedIn()
@@ -110,7 +110,9 @@ service cloud.firestore {
       allow update: if isSignedIn()
         && request.auth.uid == userId
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['email', 'isAdmin']);
-      // Intentionally no delete rule.
+      // Used only by the confirmed account-deletion flow. Another user can
+      // never delete this profile because the document id must match auth uid.
+      allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 
     // Personal collections ---------------------------------------------------

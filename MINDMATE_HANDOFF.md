@@ -113,7 +113,7 @@ Selected/implemented directions:
 - **Floating Tide Orb navigation is implemented, polished, and Chrome-validated:** four lower-positioned destinations, slower 520ms-base glide, restrained hop, visible labels, semantics, reduced-motion support, and existing IndexedStack state preservation.
 - **First-use guide is implemented and Chrome-validated:** four coach marks for Home, Practice, Chat, and Me with Skip/Next/Got it, `tourVersion = 1` persistence, Settings replay, and a lightweight Flutter-drawn 2D figure. Automatic display is requested only after new-user onboarding; Login/Splash do not force it. It never appears on Emergency Support or autoplays speech. Fresh-account and physical-device release checks remain.
 - **Quiet Tide Modern shell is focused, not a full redesign:** global app bars use consistent height/spacing and no scroll tint/elevation. The user confirmed the combined shell works; child-screen polish remains intentionally deferred.
-- **Approved landing direction:** use the supplied Spouse Finder page only as visual/interaction inspiration. Build a separate lightweight informational MindMate site, not a hosted Flutter version of the app. Replace every product claim and asset; provide real information, safety/privacy boundaries, screenshots, FAQ, and a download button for a signed release APK later—not the debug APK.
+- **Approved landing direction:** use the supplied Spouse Finder page only as visual/interaction inspiration. Build a separate lightweight informational MindMate site, not a hosted Flutter version of the app. It must include a functional `/delete-account` request resource for Google Play, plus truthful product/safety/privacy information, screenshots, FAQ, and a signed release APK download—not the debug APK.
 - Mood impact uses words: A little, Somewhat, A lot, Overwhelming, Not sure yet.
 - CBT branches: Relationship, School/work, Mistake/regret, Future worry, Self-doubt, Sad/low, Angry/frustrated, Hurt/disappointed, Something else.
 - `Something else` uses a neutral fallback path.
@@ -134,20 +134,22 @@ See `MINDMATE_STATUS.md` for exact files and status.
 4. **AI Worker** — modes, limits, crisis route, rate-limit hook, logging, quota fallback, and model configuration.
 5. **Trusted contacts/support events** — owner-only contact storage, explicit call/message actions, follow-up events, and expanded emergency UI.
 6. **Batch 8 Firestore integrity (validated and deployed)** — pending-only appointment creation, admin status-only updates, user/admin profile protection, trusted/support schemas, service guards, 13/13 emulator cases, Flutter gates, and successful release to `mindmate-app-fcf2d` on 23 August 2026.
+7. **Batch 9A account deletion/recovery (local, unvalidated)** — Spark-compatible in-app deletion, password reauthentication, repeatable owned-data batches, retry marker/routing, missing-profile recovery, registration rollback, and no password trimming.
 
-Important: deployment succeeded, but brief normal-flow live smoke checks remain before closing the batch completely.
+Important: Batch 9A adds an owner-profile-delete rule delta that is not deployed. The project remains on Spark, so a trusted Cloud Function is deferred unless billing is upgraded.
 
 ## Remaining backend/release work
 
 Immediate prototype path:
 
-1. Live-smoke normal profile, trusted-contact/support-event, appointment, and admin-status flows under deployed Batch 8 rules.
-2. Fix any normal flow denied by mistake; otherwise close Batch 8.
-3. Begin account/runtime reliability Batch 9.
-4. Confirm/deploy `worker/index.js`, configure required bindings, test the live endpoint, and make the final AI model decision.
-5. Verify emergency resources and sensitive content.
-6. Run meaningful automated tests plus the complete device test matrix.
-7. Build a release candidate APK and freeze nonessential features.
+1. Rerun Firestore Emulator and Flutter gates for Batch 9A's profile-delete delta.
+2. Deploy that rules delta only after tests pass.
+3. Test deletion with a temporary account only, including interruption/retry and missing-profile recovery.
+4. Continue remaining account/runtime reliability work.
+5. Confirm/deploy `worker/index.js`, configure required bindings, test the live endpoint, and make the final AI model decision.
+6. Verify emergency resources and sensitive content.
+7. Run meaningful automated tests plus the complete device test matrix.
+8. Build a release candidate APK and freeze nonessential features.
 
 See `MINDMATE_REMAINING_BATCHES.md` for tasks and exit criteria for Batches 6–13.
 
@@ -157,16 +159,14 @@ Known backend/product limitations that may be deferred beyond the competition pr
 - real professional accounts, roles, provider inboxes, notifications, and calendars;
 - persistent AI chats;
 - opt-in journal AI reflection;
-- privacy export/deletion controls;
-- registration rollback/profile recovery;
+- privacy data export controls;
+- trusted-backend deletion after a future Blaze upgrade;
 - production moderation and operational review.
 
 ## Known code issues already logged
 
-- Do not trim passwords.
-- Login must handle a missing Firestore profile.
-- Registration can create an Auth account without a profile if the Firestore write fails.
-- Several async catch blocks may still need mounted checks.
+- Account deletion, missing-profile recovery, registration rollback, and no-password-trimming are implemented locally but need validation.
+- Several remaining async catch blocks may still need mounted checks.
 - Date models currently assume ISO strings.
 - Wellness score components need capping at 100.
 - Streams need consistent friendly loading, empty, and error states.
@@ -194,4 +194,4 @@ Check in
 
 ## Immediate next action
 
-Batch 8 validation and deployment are green: 13/13 emulator cases, Flutter 0 errors/0 warnings, smoke test passed, rules compiled, and rules released to `mindmate-app-fcf2d`. Run brief normal-flow live checks, then close Batch 8 and move to Batch 9. Physical-device checks remain open.
+Batch 9A account deletion/recovery is implemented locally for Spark but unvalidated. Rerun emulator/Flutter gates, deploy only the owner-profile-delete delta after they pass, and perform destructive testing only with a temporary account. The landing site now has a mandatory functional `/delete-account` request path before Google Play submission.

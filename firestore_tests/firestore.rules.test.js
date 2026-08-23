@@ -113,6 +113,7 @@ describe('user profiles', () => {
         reminderTime: 'Evening',
       }),
     );
+    await assertSucceeds(deleteDoc(profileRef));
   });
 
   it('denies self-admin creation and later self-promotion', async () => {
@@ -148,9 +149,11 @@ describe('user profiles', () => {
     );
   });
 
-  it('denies reading another user profile', async () => {
+  it('denies reading or deleting another user profile', async () => {
     await seedUser('user-b');
-    await assertFails(getDoc(doc(dbFor('user-a'), 'users', 'user-b')));
+    const foreignPath = ['users', 'user-b'];
+    await assertFails(getDoc(doc(dbFor('user-a'), ...foreignPath)));
+    await assertFails(deleteDoc(doc(dbFor('user-a'), ...foreignPath)));
   });
 });
 

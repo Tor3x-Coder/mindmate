@@ -23,7 +23,8 @@ class AuthService {
       password: password,
     );
 
-    final uid = credential.user!.uid;
+    final firebaseUser = credential.user!;
+    final uid = firebaseUser.uid;
     final newUser = UserModel(
       uid: uid,
       fullName: fullName,
@@ -33,9 +34,23 @@ class AuthService {
       createdAt: DateTime.now(),
     );
 
-    await _firestore.collection(FirestoreCollections.users).doc(uid).set(newUser.toMap());
-
-    return newUser;
+    try {
+      await firebaseUser.updateDisplayName(fullName);
+      await _firestore
+          .collection(FirestoreCollections.users)
+          .doc(uid)
+          .set(newUser.toMap());
+      return newUser;
+    } catch (_) {
+      // Do not leave an Auth-only account when profile creation fails. A newly
+      // created user is recent enough to delete without another password ask.
+      try {
+        await firebaseUser.delete();
+      } catch (_) {
+        await _auth.signOut();
+      }
+      rethrow;
+    }
   }
 
   Future<UserModel?> login({
@@ -54,6 +69,39 @@ class AuthService {
 
     if (!doc.exists) return null;
     return UserModel.fromMap(doc.data()!, doc.id);
+  }
+
+  Future<UserModel?> getCurrentUserProfile() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+
+    final doc = await _firestore
+        .collection(FirestoreCollections.users)
+        .doc(user.uid)
+        .get();
+    if (!doc.exists) return null;
+    return UserModel.fromMap(doc.data()!, doc.id);
+  }
+
+  Future<UserModel> restoreMissingProfile({required String fullName}) async {
+    final user = _auth.currentUser;
+    final email = user?.email;
+    if (user == null || email == null || email.isEmpty) {
+      throw StateError('No signed-in email account is available to restore.');
+    }
+
+    final profile = UserModel(
+      uid: user.uid,
+      fullName: fullName.trim(),
+      email: email,
+      createdAt: DateTime.now(),
+    );
+    await user.updateDisplayName(profile.fullName);
+    await _firestore
+        .collection(FirestoreCollections.users)
+        .doc(user.uid)
+        .set(profile.toMap());
+    return profile;
   }
 
   Future<void> sendPasswordReset(String email) async {

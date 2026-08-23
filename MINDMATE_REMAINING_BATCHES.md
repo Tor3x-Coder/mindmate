@@ -267,26 +267,53 @@ Exit criteria:
 - changed rules compile and deploy;
 - denial cases are manually confirmed against the intended project.
 
-### Batch 9 — Account and runtime reliability
+### Batch 9 — Account and runtime reliability — Sub-batch 9A implemented locally
 
-**Purpose:** Fix known failures that static analysis does not detect.
+**Purpose:** Fix account lifecycle failures and provide permanent user-controlled deletion.
 
-Tasks:
+#### Sub-batch 9A — deletion and account recovery
 
-1. Handle login when Firebase Auth exists but the Firestore user profile is missing.
-2. Handle registration when Auth succeeds but profile creation fails.
-3. Audit async gaps for missing `mounted` checks.
-4. Cap wellness-score components at 100.
-5. Add consistent friendly loading, empty, and error states to critical streams.
-6. Clean stale service comments while touching the relevant code.
-7. Decide whether ISO date strings remain for the prototype; do not perform a risky Timestamp migration without a migration plan.
+Implemented locally for the Firebase Spark plan:
+
+- in-app Settings → Privacy and data → Delete account path;
+- type `DELETE`, password reauthentication, and irreversible confirmation;
+- repeatable 200-document batches for all UID-owned collections;
+- profile deletion last in Firestore and Firebase Auth deletion last overall;
+- local pending marker and Splash retry route after interruption;
+- missing-profile screen with Restore setup or Delete account;
+- Login/Splash checks for missing/incomplete profiles;
+- registration rollback if profile creation fails;
+- passwords are never trimmed;
+- local preferences clear only after confirmed deletion;
+- owner-profile-delete rule and emulator allow/deny coverage.
+
+Architecture note:
+
+- trusted Cloud Function deletion remains preferable but needs Blaze;
+- Spark-compatible client deletion is repeatable, not falsely described as atomic;
+- Google Play requires both the in-app path and a functional external web deletion request resource.
+
+Sub-batch 9A pending:
+
+1. Rerun Firestore Emulator tests for profile deletion.
+2. Run Flutter analyzer/tests/build.
+3. Deploy the profile-delete rule only after tests pass.
+4. Destructively test only a temporary account, including interruption/retry.
+5. Confirm missing-profile restoration and incomplete-onboarding routes.
+
+Remaining Batch 9 tasks:
+
+1. Audit other async gaps for missing `mounted` checks.
+2. Cap wellness-score components at 100.
+3. Add consistent friendly loading, empty, and error states to critical streams.
+4. Decide whether ISO date strings remain for the prototype; do not migrate without a data plan.
 
 Exit criteria:
 
-- each reproduced failure has a test or exact manual test path;
+- deletion/recovery has exact temporary-account test evidence;
 - no analyzer errors/warnings;
-- debug build passes;
-- documentation records intentionally deferred issues.
+- debug/Web builds pass;
+- external `/delete-account` web request remains an explicit Play release gate.
 
 ### Batch 10 — AI Worker live completion
 
@@ -413,6 +440,8 @@ Approved direction:
 - do **not** expose or host the Flutter app as a browser product;
 - do **not** include app Sign In/Register or route visitors into Flutter Web;
 - provide product information, the check-in-to-action loop, real screenshots, safety/privacy boundaries, FAQ, installation help, and an APK download button;
+- include a prominent functional `/delete-account` resource where former users can initiate account/data deletion without reinstalling the app;
+- identify the app/developer, explain what is deleted, and use a real support form/email workflow—not placeholder copy;
 - link only a signed, versioned release APK—not `app-debug.apk`;
 - add release version, file size, SHA-256 checksum, minimum Android requirement, and honest sideload instructions when known;
 - optionally add a QR code pointing to the landing page;
@@ -429,7 +458,8 @@ Exit criteria:
 
 - every claim matches the shipped prototype;
 - no diagnosis/therapy/emergency-service claim;
-- no broken download, privacy, or support link;
+- no broken download, privacy, support, or deletion-request link;
+- `/delete-account` works without requiring the app to be reinstalled;
 - responsive desktop/mobile checks pass;
 - Lighthouse-style accessibility/performance checks are acceptable;
 - deployed URL and hosting configuration are documented.
@@ -551,12 +581,12 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 
 ## Current execution gate
 
-Batch 8 validation and deployment passed: 13/13 emulator cases, Flutter 0 errors/0 warnings, smoke test passed, and the rules are live on `mindmate-app-fcf2d`.
+Batch 8 validation/deployment and live normal-flow checks passed. Batch 9A account deletion/recovery is implemented locally for Spark; its owner-profile-delete rule delta is not deployed.
 
 Current gate:
 
-1. run brief normal-flow live smoke checks;
-2. close Batch 8 if no expected flow is denied;
-3. then move to Batch 9 account/runtime reliability.
-
-Do not expand narration or start the landing site ahead of this final live-smoke check.
+1. rerun Firestore Emulator and Flutter gates;
+2. deploy only after they pass;
+3. use a temporary account for destructive deletion/retry/recovery tests;
+4. keep the landing page's functional `/delete-account` request resource as a Play release blocker;
+5. then continue remaining Batch 9 reliability work.

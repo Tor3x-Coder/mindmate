@@ -1,9 +1,16 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+
+import '../services/app_settings_controller.dart';
+import '../services/auth_service.dart';
 import '../utils/app_theme.dart';
+import 'auth/missing_profile_screen.dart';
 import 'main_nav_screen.dart';
+import 'onboarding/onboarding_screen.dart';
 import 'onboarding_carousel_screen.dart';
+import 'settings/delete_account_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -18,6 +25,7 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _slideAnimation;
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
+  Timer? _routeTimer;
 
   @override
   void initState() {
@@ -27,24 +35,18 @@ class _SplashScreenState extends State<SplashScreen>
       vsync: this,
     );
 
-    // Fly in from bottom (0% - 30%)
     _slideAnimation = Tween<double>(begin: 50, end: 0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.0, 0.3, curve: Curves.easeOut),
       ),
     );
-
-    // Stay visible (30% - 70%)
-
-    // Pop out: scale up and fade (70% - 100%)
     _scaleAnimation = Tween<double>(begin: 1.0, end: 1.5).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.7, 1.0, curve: Curves.easeIn),
       ),
     );
-
     _fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -53,23 +55,54 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward();
+    _routeTimer = Timer(
+      const Duration(milliseconds: 2800),
+      _routeAfterSplash,
+    );
+  }
 
-    Timer(const Duration(milliseconds: 2800), () {
-      if (!mounted) return;
-      final currentUser = FirebaseAuth.instance.currentUser;
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (_) => currentUser != null
-              ? const MainNavScreen()
-              : const OnboardingCarouselScreen(),
-        ),
-        (route) => false,
-      );
-    });
+  Future<void> _routeAfterSplash() async {
+    final settings = context.read<AppSettingsController>();
+    final auth = context.read<AuthService>();
+    await settings.loaded;
+    if (!mounted) return;
+
+    final currentUser = auth.currentUser;
+    Widget nextScreen;
+
+    if (currentUser == null) {
+      nextScreen = const OnboardingCarouselScreen();
+    } else if (settings.accountDeletionPending) {
+      nextScreen = const DeleteAccountScreen(resumePendingDeletion: true);
+    } else {
+      try {
+        final profile = await auth.getCurrentUserProfile();
+        if (!mounted) return;
+
+        if (profile == null) {
+          nextScreen = const MissingProfileScreen();
+        } else if (profile.goals.isEmpty || profile.reminderTime == null) {
+          nextScreen = const OnboardingScreen();
+        } else {
+          nextScreen = const MainNavScreen();
+        }
+      } catch (_) {
+        // A temporary profile read failure should not sign out a valid user.
+        // Home already has a friendly profile-unavailable state.
+        nextScreen = const MainNavScreen();
+      }
+    }
+
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => nextScreen),
+      (route) => false,
+    );
   }
 
   @override
   void dispose() {
+    _routeTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }

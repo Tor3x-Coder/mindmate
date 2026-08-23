@@ -33,13 +33,15 @@ Backend/integration batches 1–5 are implemented in the repository:
 - trusted contacts, support-event tracking, and expanded emergency-resource UI;
 - local Batch 8 Firestore hardening with pending-only appointments, status-only admin updates, strict trusted/support schemas, and 13 emulator authorization tests.
 
-They are **not yet considered release-complete**. Batch 8 passes all 13 Firestore Emulator cases, Flutter analysis has 0 errors/0 warnings, the smoke test passes, and the tested rules are deployed to `mindmate-app-fcf2d`. Brief live normal-flow verification remains.
+They are **not yet considered release-complete**. Batch 8 passes all 13 Firestore Emulator cases, Flutter analysis has 0 errors/0 warnings, the smoke test passes, and the rules/live normal flows work on `mindmate-app-fcf2d`.
 
-Guided audio has a controlled pilot: one shared offline player, separate Quick Reset welcome, 4 main prompts, 4 midpoint reassurance cues, and 6 Box assets. The 15 MP3s total about 370 KB. Core playback previously worked; the newest 8-cue timeline needs local validation. Literal breathing loops are not included, and later ambience must be optional/licensed with separate volume and voice ducking.
+Batch 9A account deletion/recovery is implemented locally for Spark but unvalidated: it reauthenticates, deletes every UID-owned collection in repeatable batches, deletes profile/Auth last, preserves a retry route, repairs missing profiles, rolls back failed registration, and never trims passwords. Google Play's external web deletion-request resource is still pending.
+
+Guided audio has a controlled pilot: one shared offline player, separate Quick Reset welcome, 4 main prompts, 4 midpoint reassurance cues, and 6 Box assets. The 15 MP3s total about 370 KB and the user confirmed the pilot works in Chrome. Literal breathing loops are not included, and later ambience must be optional/licensed with separate volume and voice ducking.
 
 The Quiet Tide Modern shell includes a lower/slower Floating Tide bar, consistent app-bar behavior, lightweight 2D guide, four-step first-use tour, persisted completion, and Settings replay. The user confirmed the combined shell, navigation, tour controls/replay, and 8-cue Quick Reset work in Chrome. Physical-device and fresh-registration release checks remain. See `assets/audio/README.md` and `MINDMATE_REMAINING_BATCHES.md`.
 
-Post-audio dependency resolution, analyzer/tests, Android debug build, and Web build pass. Chrome playback, meaningful test coverage, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. The developer currently has no physical test phone, so emulator/Chrome checks are the near-term fallback and real-device-only behavior remains a release risk. See `MINDMATE_STATUS.md` for the exact status table.
+Post-audio dependency resolution, analyzer/tests, Android/Web builds, Chrome pilot playback, and Batch 8 Firestore authorization checks pass. Batch 9A, live Worker deployment, broader automated/device testing, and emergency-resource verification remain pending. The developer currently has no physical test phone, so emulator/Chrome checks are the near-term fallback and real-device-only behavior remains a release risk. See `MINDMATE_STATUS.md` for the exact status table.
 
 ## Core experience
 
@@ -78,6 +80,7 @@ The AI companion is for supportive conversation and reflection. Clear crisis phr
 - light/dark/system theme, text-size, and animation preferences;
 - custom slower/lower Floating Tide Orb navigation for Home, Practice, Chat, and Me, preserving tab state with `IndexedStack`;
 - first-use four-step contextual tour with a Flutter-drawn 2D MindMate guide and Settings replay;
+- local Batch 9A in-app account deletion/retry and missing-profile recovery implementation (validation/deployment pending);
 
 ### Mood and next-step flow
 
@@ -183,8 +186,8 @@ Personal collections must remain owner-only. Updates must preserve the original 
 - provider inboxes, notifications, verified identity, availability, and calendars;
 - persistent chat sessions and history;
 - opt-in journal AI reflection;
-- account profile recovery/registration rollback;
-- privacy export and deletion controls;
+- privacy data export controls;
+- trusted-backend deletion after a future Blaze upgrade;
 - notification scheduling;
 - clinician/wellness review of CBT, meditation, breathing, AI, and crisis wording;
 - community features only after a moderation plan exists.
@@ -195,7 +198,8 @@ Before a public or competition build:
 
 - keep the currently clean Flutter analysis result and run tests plus Android builds;
 - implement and real-device-test the approved guided-audio MVP;
-- finish Batch 8's normal-flow live smoke checks under the deployed rules;
+- validate/deploy Batch 9A's owner-profile-delete delta and test only with a temporary account;
+- publish a functional external `/delete-account` request resource for Google Play;
 - confirm/deploy the current Worker source;
 - test all owner/admin denial cases;
 - test every AI mode, safety route, limit, and failure state;
@@ -288,7 +292,7 @@ build/app/outputs/flutter-apk/app-release.apk
 
 ## Firebase deployment
 
-Batch 8 is live on `mindmate-app-fcf2d`: 13/13 emulator cases and Flutter gates passed before Firebase compiled/released the rules on 23 August 2026. After future changes, redeploy with:
+Batch 8 is live on `mindmate-app-fcf2d`. Batch 9A locally adds owner profile deletion for the confirmed account-deletion flow; this delta is **not deployed** and must pass emulator/Flutter gates first. After validation, deploy with:
 
 ```bash
 firebase deploy --only firestore:rules

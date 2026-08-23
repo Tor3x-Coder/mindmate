@@ -40,7 +40,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await authService.register(
         fullName: _nameController.text.trim(),
         email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+        password: _passwordController.text,
       );
 
       if (!mounted) return;
@@ -48,6 +48,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         MaterialPageRoute(builder: (_) => const OnboardingScreen()),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = _friendlyError(e.toString());
       });

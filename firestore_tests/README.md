@@ -4,7 +4,7 @@ These tests run only against the local Firebase Firestore Emulator. They never r
 
 ## Covered authorization cases
 
-- owner profile creation and ordinary profile updates;
+- owner profile creation, ordinary updates, and account-deletion profile removal;
 - self-admin creation/promotion denial;
 - cross-user profile denial;
 - pending-only appointment creation;
@@ -54,4 +54,4 @@ Validated on 23 August 2026 with Android Studio Java 21:
 Script exited successfully (code 0)
 ```
 
-The `PERMISSION_DENIED` lines in the test log are expected attack attempts and count as successes when followed by a checkmark. Flutter analysis completed with 0 errors and 0 warnings, and the smoke test passed. Firebase then compiled and released the tested rules to `mindmate-app-fcf2d` on 23 August 2026. Re-run this suite before every future rules deployment.
+The `PERMISSION_DENIED` lines in the test log are expected attack attempts and count as successes when followed by a checkmark. Batch 8 was validated/deployed on 23 August 2026. Batch 9A now adds owner profile-deletion assertions for the in-app deletion flow; rerun all 13 cases before deploying this new delta.
