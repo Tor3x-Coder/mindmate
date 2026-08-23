@@ -57,6 +57,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Let\'s personalize MindMate')),
       body: SafeArea(
@@ -103,7 +105,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Text(
                         goal,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : AppTheme.textDark,
+                          color: isSelected ? Colors.white : onSurface,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -131,7 +133,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     onChanged: (value) => setState(() => _selectedReminderTime = value),
                     title: Text(
                       time,
-                      style: const TextStyle(color: AppTheme.textOnDark),
+                      style: TextStyle(color: onSurface),
                     ),
                     activeColor: AppTheme.primary,
                     tileColor: isSelected

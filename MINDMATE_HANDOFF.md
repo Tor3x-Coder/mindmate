@@ -115,6 +115,7 @@ Selected/implemented directions:
 - **Quiet Tide Modern shell is focused, not a full redesign:** global app bars use consistent height/spacing and no scroll tint/elevation. The user confirmed the combined shell works; child-screen polish remains intentionally deferred.
 - **Approved landing direction:** use the supplied Spouse Finder page only as visual/interaction inspiration. Build a separate lightweight informational MindMate site, not a hosted Flutter version of the app. It must include a functional `/delete-account` request resource for Google Play, plus truthful product/safety/privacy information, screenshots, FAQ, and a signed release APK download—not the debug APK.
 - **Light is the intended first-run/reset default.** Dark and System remain optional user choices.
+- **Registration text must match Login:** Name/Email/Password now explicitly use the same dark 16px input style; onboarding goals/reminder choices use theme surface text, never `textOnDark` on a light tile.
 - **Daily Snapshot progress uses 8 real units:** Body, 5 Mind questions, Routine, Review. Mind 5/5 must show Step 6 of 8 / 75%. Theme-aware colour fixes are local and awaiting validation.
 - Mood impact uses words: A little, Somewhat, A lot, Overwhelming, Not sure yet.
 - CBT branches: Relationship, School/work, Mistake/regret, Future worry, Self-doubt, Sad/low, Angry/frustrated, Hurt/disappointed, Something else.
@@ -196,4 +197,4 @@ Check in
 
 ## Immediate next action
 
-The disposable-account deletion path worked 100%. Next validate the Light default and Daily Snapshot's theme-aware 8-unit progress. Keep deletion retry/recovery and the landing site's functional `/delete-account` request path as open release checks.
+The disposable-account deletion path worked 100%. Next validate the registration/onboarding contrast, Light default, and Daily Snapshot's theme-aware 8-unit progress. Keep deletion retry/recovery and the landing site's functional `/delete-account` request path as open release checks.

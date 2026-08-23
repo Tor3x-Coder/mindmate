@@ -46,6 +46,7 @@ Audio, Floating Tide navigation, contextual tour, and the Modern Shell were conf
 | Quiet Tide modern shell | Focused shell polish implemented | User confirmed combined shell works in Chrome | N/A | Child-screen redesign intentionally deferred |
 | Account deletion/recovery | Spark-compatible implementation + rules deployed | User confirmed temporary-account happy-path deletion works | Rules live; retry/recovery proof pending | External web request page still required |
 | Daily Snapshot UI/progress | Theme/progress fix implemented locally | Flutter/Chrome retest pending | N/A | Light default + accurate 8-unit progress |
+| Registration/onboarding text | Login-matched dark input style implemented | Static checks pass; Chrome retest pending | N/A | Removed light-on-light reminder text |
 | Informational landing site | Direction approved, not implemented | N/A | N/A | Must include functional `/delete-account` request resource + signed APK info |
 | Android APK | Post-audio debug APK built | Build passed in 411 seconds despite recovered stale-depfile warnings | N/A | No phone available; emulator/device verification pending |
 
@@ -360,6 +361,7 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 23 Aug 2026 | Batch 8 Firestore integrity | Pending-only/status-only appointment boundary; user/admin hardening; trusted/support schemas; service guards; 13 emulator cases | **13/13 passed**; Flutter 0 errors/0 warnings; smoke test passed | **Deployed to `mindmate-app-fcf2d`** | Live-smoke normal profile/contact/request/admin flows |
 | 23 Aug 2026 | Batch 9A account deletion/recovery | Spark-compatible deletion, retry routing, missing-profile recovery, registration rollback, no password trimming, Settings UI | **13/13 rules passed**; Flutter gates passed; disposable-account deletion confirmed | **Profile-delete delta deployed** | Retry/recovery + external web request still pending |
 | 23 Aug 2026 | Light default + Daily Snapshot fix | Correct first-run/reset theme; theme-aware wellness colours; 8-unit progress | Static checks pass; Flutter/Chrome pending | N/A | Analyze/test and verify Mind 5/5 shows 6/8 (75%) |
+| 23 Aug 2026 | Registration/onboarding contrast fix | Register inputs match Login dark 16px style; onboarding options use surface text colour | Static checks pass; Chrome pending | N/A | Verify Name/Email/Password and reminder labels are readable |
 
 ## Rule for the next agent
 

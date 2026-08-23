@@ -71,7 +71,8 @@ The AI companion is for supportive conversation and reflection. Clear crisis phr
 
 ### Account and personalisation
 
-- Firebase email/password registration and login;
+- Firebase email/password registration and login with matching dark, readable input text;
+- readable theme-aware post-registration setup choices;
 - password visibility and password reset;
 - Terms and Privacy acknowledgement during registration;
 - illustration onboarding carousel;

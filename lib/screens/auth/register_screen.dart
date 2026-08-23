@@ -161,6 +161,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 32),
                 TextFormField(
                   controller: _nameController,
+                  style: const TextStyle(color: _textDark, fontSize: 16),
+                  cursorColor: _accentColor,
                   decoration: const InputDecoration(
                     filled: false,
                     hintText: 'Full Name',
@@ -183,6 +185,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  style: const TextStyle(color: _textDark, fontSize: 16),
+                  cursorColor: _accentColor,
                   decoration: const InputDecoration(
                     filled: false,
                     hintText: 'Email',
@@ -208,6 +212,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  style: const TextStyle(color: _textDark, fontSize: 16),
+                  cursorColor: _accentColor,
                   decoration: InputDecoration(
                     filled: false,
                     hintText: 'Password',

@@ -311,8 +311,10 @@ Sub-batch 9A pending:
 2. Confirm missing-profile restoration and incomplete-onboarding routes.
 3. Keep the external deletion-request web resource as a release blocker.
 
-#### Daily Snapshot/light-default reliability fix — implemented locally
+#### Registration contrast + Daily Snapshot/light-default reliability fix — implemented locally
 
+- registration Name/Email/Password match Login's dark 16px input style;
+- onboarding goals/reminder choices use readable theme surface text;
 - first-run and post-deletion reset default to Light; Dark/System remain optional;
 - wellness screens use theme-aware ink/surfaces instead of mixed hardcoded colours;
 - progress is 8 real units: Body + 5 Mind questions + Routine + Review;
@@ -602,8 +604,9 @@ Batch 9A's rules and normal disposable-account deletion path pass. Interruption/
 
 Current gate:
 
-1. pull and validate Light default + Daily Snapshot theme/progress;
-2. confirm Mind 5/5 shows Step 6 of 8 / 75%;
-3. confirm Dark/System still work when explicitly selected;
-4. continue remaining Batch 9 reliability work;
-5. keep the landing page's functional `/delete-account` request as a Play blocker.
+1. pull and verify registration inputs/reminder labels match Login contrast;
+2. validate Light default + Daily Snapshot theme/progress;
+3. confirm Mind 5/5 shows Step 6 of 8 / 75%;
+4. confirm Dark/System still work when explicitly selected;
+5. continue remaining Batch 9 reliability work;
+6. keep the landing page's functional `/delete-account` request as a Play blocker.
