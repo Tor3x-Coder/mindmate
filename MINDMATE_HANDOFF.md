@@ -108,7 +108,7 @@ Selected/implemented directions:
 
 ## Important implementation details
 
-- **Guided audio is competition-critical and now has a pilot.** A shared player, real Sound preference, a separate Quick Reset welcome, 4 timed prompts, and 6 Box Breathing assets are implemented. The 11 MP3s total about 320 KB. Analyzer/tests/builds pass; Chrome loads audio, but the serialized cue-switching fix still needs runtime confirmation.
+- **Guided audio is competition-critical and now has a pilot.** A shared player, separate Quick Reset welcome, 4 timed prompts, and 6 Box assets are implemented. Preview is stopped before breathing timing, phase cues are concise, Meditation plays at `0.88x`, and Breathing at `0.92x`. The 11 MP3s total about 314 KB. Analyzer/tests/builds pass; latest sync/pacing changes need Chrome confirmation.
 - **Approved full audio scope:** one consistent natural narrator with unique words for all 18 meditation sessions, segmented prompts for 1/3/5-minute choices, unique guidance for all 3 breathing patterns, one short guide per Daily Snapshot stage, and 3 safe Wellness Result band narrations. Do not generate the remaining pack until the pilot passes. See Sub-batches 7A–7E in `MINDMATE_REMAINING_BATCHES.md`.
 - **Approved first-use guidance:** four small, one-time contextual coach marks for Home, Practice, Chat, and Me; include Skip/Got it, local tour versioning, and Replay tour in Settings. Use a lightweight 2D MindMate figure drawn in Flutter, not the heavy 3D meditation model. Never auto-show it on Emergency Support and do not autoplay speech.
 - **Approved landing direction:** use the supplied Spouse Finder page only as visual/interaction inspiration. Build a separate lightweight informational MindMate site, not a hosted Flutter version of the app. Replace every product claim and asset; provide real information, safety/privacy boundaries, screenshots, FAQ, and a download button for a signed release APK later—not the debug APK.
@@ -193,6 +193,6 @@ Check in
 
 ## Immediate next action
 
-Chrome now loads audio, but the first clip repeated as visual prompts/phases advanced. Pull the serialized source-switching and separate-introduction fix, fully stop/restart Flutter Chrome, and retest Quick Reset plus Box Breathing. Confirm terminal logs show different asset paths for each cue. Do not expand narration or implement the contextual guide until switching/timing succeeds.
+Chrome loads audio. Pull the latest preview-stop, concise-cue, and slower-meditation fix; fully stop/restart Flutter Chrome; then retest Quick Reset and Box Breathing. Confirm the preview introduction ends when Start is pressed, each phase says its short matching cue, no cue is cut off, and meditation feels calm at `0.88x`. Do not expand narration or implement the contextual guide until this passes.
 
 The developer has no physical phone. Use an Android emulator later if practical and keep phone-only behavior explicitly unverified until a borrowed or competition device is available. The existing landing-page code is only a reference for future Batch 13A and must not distract from pilot validation.

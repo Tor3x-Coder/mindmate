@@ -14,7 +14,7 @@ The Audio Sub-batch 7A pilot contains 11 MP3 files:
 - 4 distinct Box Breathing phase cues;
 - 1 Box Breathing completion cue.
 
-Total pilot MP3 size: **327,279 bytes (about 320 KB)**.
+Total pilot MP3 size after the breathing-timing revision: **321,231 bytes (about 314 KB)**.
 
 The current pilot does not yet cover the other 17 meditation sessions, 4-7-8 Breathing, Simple Calm, Daily Snapshot, or Wellness Result. Do not describe the full audio feature as complete until those assets and integrations exist.
 
@@ -25,8 +25,9 @@ The current pilot does not yet cover the other 17 meditation sessions, 4-7-8 Bre
 - `lib/utils/audio_assets.dart` is the central asset-path registry.
 - `AppSettingsController.soundEnabled` controls whether narration plays.
 - Written guidance remains visible for accessibility and silent use.
-- Quick Reset schedules four prompt clips across the selected 1, 3, or 5-minute duration.
-- Box Breathing maps a different cue to each phase index, including separate full-lung and empty-lung hold wording.
+- Quick Reset schedules four prompt clips across the selected 1, 3, or 5-minute duration and plays at `0.88x` for a calmer pace.
+- Box Breathing maps a short, different cue to each phase index, including separate full-lung and empty-lung hold wording, and plays at `0.92x`.
+- starting a breathing session stops any preview introduction, loads the first phase cue, and only then starts the countdown.
 
 ## Pilot transcript
 
@@ -41,11 +42,11 @@ The current pilot does not yet cover the other 17 meditation sessions, 4-7-8 Bre
 
 ### Box Breathing
 
-- Introduction: “We will breathe in four equal parts. Keep every breath comfortable. If holding your breath feels strained, return to your normal breathing at any time.”
-- Inhale: “Breathe in slowly and steadily.”
-- Full hold: “Hold gently. Keep your face and shoulders soft.”
-- Exhale: “Breathe out at the same steady pace.”
-- Empty hold: “Rest here for a moment before the next breath begins.”
+- Introduction: “We’ll use a steady box rhythm: in, hold, out, and rest. Keep every breath comfortable. If a hold feels strained, return to your natural breathing.”
+- Inhale: “Breathe in, slowly.”
+- Full hold: “Hold gently.”
+- Exhale: “Breathe out, slowly.”
+- Empty hold: “Rest here. Stay soft.”
 - Completion: “Let your breathing return to its natural rhythm. Notice any steadiness you found, even if it was small.”
 
 ## Validation status
@@ -61,7 +62,9 @@ Completed locally after the pilot:
 
 Initial Chrome playback exposed an asset-packaging bug: Flutter did not include deeply nested MP3 directories from the parent `assets/audio/` entry. Explicit declarations fixed loading.
 
-The next Chrome test confirmed playback but exposed source switching: phase/prompt text changed while the first loaded clip repeated. Source replacement is now serialized with an explicit stop, and debug builds log every loaded asset path. Quick Reset also has a separate welcome clip so preview never plays Prompt 1. Revalidation is pending.
+The next Chrome test confirmed playback but exposed source switching: phase/prompt text changed while the first loaded clip repeated. Source replacement is serialized with an explicit stop, and debug builds log every loaded asset path. Quick Reset also has a separate welcome clip so preview never plays Prompt 1.
+
+A later timing test showed the Box introduction could continue into the active timer and long phase sentences could be cut off. Start now stops the preview and waits for Cue 1 before beginning; all four phase clips were regenerated as concise commands. Meditation playback is slowed to `0.88x`. Revalidation is pending.
 
 Still required:
 

@@ -38,7 +38,7 @@ Before the audio pilot, the developer successfully ran dependency resolution, an
 | Mode-aware AI Worker and safety route | Yes | Dart analysis and `node --check` passed; live tests pending | **Unconfirmed** | No |
 | Trusted contacts and support-event tracking | Yes | `flutter analyze` passed; runtime pending | Rules live; app build unverified | No |
 | State/international emergency-number UI | Yes | `flutter analyze` passed; device tests pending | N/A | No; resource verification required |
-| Guided audio: Meditation, Breathing, Daily Snapshot | Pilot + load/switch fixes implemented | Chrome loads/plays; repeated-first-clip bug serialized; retest pending | N/A | Quick Reset + Box Breathing only; timing/control verification incomplete |
+| Guided audio: Meditation, Breathing, Daily Snapshot | Pilot + sync/pacing fixes implemented | Chrome loads/plays; short phase cues + 0.88x meditation added; retest pending | N/A | Quick Reset + Box Breathing only; final timing/control verification incomplete |
 | Contextual first-use guide | Design approved, not implemented | N/A | N/A | Four coach marks + lightweight 2D MindMate figure planned |
 | Informational landing site | Direction approved, not implemented | N/A | N/A | Static product info + signed APK download; no hosted Flutter app |
 | Android APK | Post-audio debug APK built | Build passed in 411 seconds despite recovered stale-depfile warnings | N/A | No phone available; emulator/device verification pending |
@@ -188,7 +188,7 @@ Pilot implementation now exists:
 - 10 MP3 files total **280,242 bytes (about 274 KB)**;
 - asset registry, relative imports, delimiters, and whitespace checks pass.
 
-Post-audio dependency resolution, analysis, the smoke test, Android build, and Web build pass. Chrome now loads and plays MP3s, but repeated the first loaded clip while visual phases/prompts advanced. The player now serializes source changes, explicitly stops the active source, and logs each loaded path. Quick Reset preview uses a new separate welcome clip. Pull, fully restart Chrome, and retest before expanding coverage. See `assets/audio/README.md` for details.
+Post-audio dependency resolution, analysis, the smoke test, Android build, and Web build pass. Chrome loads and plays MP3s. The latest runtime feedback found a breathing preview/timer race, phase sentences too long for 4 seconds, and meditation pacing too fast. Start now stops preview and loads Cue 1 before timing; four concise Box cues were regenerated; meditation uses `0.88x` playback and breathing `0.92x`. Pull, fully restart Chrome, and retest before expanding coverage. See `assets/audio/README.md`.
 
 ### 3. Test the deployed Firestore configuration
 
@@ -301,7 +301,8 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 22 Aug 2026 | Contextual guide decision | Planning only | Four one-time coach marks + lightweight 2D Flutter-drawn guide approved | Not applicable | Implement only after audio pilot playback validation |
 | 22 Aug 2026 | Landing-site direction | Planning only | Separate informational static site; supplied page is design reference only | Not deployed | Build later with product copy + signed release APK download |
 | 22 Aug 2026 | Chrome audio asset-load fix | Explicit nested asset directories + debug-only load/play logs | Initial preview failed safely; loading later confirmed | Not deployed | Continue playback matrix |
-| 22 Aug 2026 | Audio cue-switching + intro fix | Serialized source replacement; distinct Quick Reset welcome asset/copy | MP3 hashes/registry differ; runtime retest pending | Not deployed | Pull, fully restart Chrome, verify changing cues |
+| 22 Aug 2026 | Audio cue-switching + intro fix | Serialized source replacement; distinct Quick Reset welcome asset/copy | MP3 hashes/registry differ; loading/speech confirmed | Not deployed | Continue timing/pacing test |
+| 22 Aug 2026 | Breathing sync + narration pacing | Preview-stop/start synchronization; 4 concise Box cues; meditation 0.88x, breathing 0.92x | Static checks pass; runtime retest pending | Not deployed | Pull, restart Chrome, verify no cutoffs and calmer pace |
 
 ## Rule for the next agent
 

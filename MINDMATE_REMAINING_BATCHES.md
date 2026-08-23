@@ -525,11 +525,12 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 
 ## Current execution gate
 
-The natural-voice scope, contextual-guide design, and informational landing-site direction are approved. Android/Web builds pass and Chrome loads audio. The current gate is cue switching: the first clip repeated while visual states advanced. A serialized source queue and separate Quick Reset introduction are implemented. Before expanding narration or implementing coach marks:
+The natural-voice scope, contextual-guide design, and informational landing-site direction are approved. Android/Web builds pass and Chrome loads audio. Latest feedback found breathing preview/timer overlap, overlong 4-second cues, and fast meditation delivery. Preview-stop/start synchronization, concise phase clips, and slower playback are implemented. Before expanding narration or implementing coach marks:
 
-1. pull the fix and fully restart the Flutter Chrome process;
-2. confirm terminal logs load different asset paths as prompts/phases change;
-3. verify Quick Reset and Box Breathing words match their visible states;
-4. record results and fix any remaining pilot blocker first.
+1. pull the fix and fully restart Flutter Chrome;
+2. confirm Start immediately ends the breathing introduction;
+3. confirm each Box phase says its matching short cue without cutoff;
+4. confirm Quick Reset changes prompts and feels calm at `0.88x`;
+5. record results and fix any remaining pilot blocker first.
 
 The public landing site remains Batch 13A and must not replace or delay core app validation.

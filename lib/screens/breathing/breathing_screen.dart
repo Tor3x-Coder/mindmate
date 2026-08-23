@@ -45,6 +45,8 @@ class BreathingScreen extends StatefulWidget {
 
 class _BreathingScreenState extends State<BreathingScreen>
     with SingleTickerProviderStateMixin {
+  static const double _narrationSpeed = 0.92;
+
   final List<_BreathingPattern> _patterns = const [
     _BreathingPattern(
       name: 'Box Breathing',
@@ -80,6 +82,7 @@ class _BreathingScreenState extends State<BreathingScreen>
 
   bool _isRunning = false;
   bool _isPaused = false;
+  bool _isPreparingSession = false;
   int _currentPhaseIndex = 0;
   int _secondsRemainingInPhase = 0;
   int _secondsRemainingTotal = 0;
@@ -114,25 +117,54 @@ class _BreathingScreenState extends State<BreathingScreen>
     super.dispose();
   }
 
-  void _startSession() {
+  Future<void> _startSession() async {
+    if (_isPreparingSession) return;
+
     final totalSeconds = _selectedDurationMinutes * 60;
+    final audioGuide = _audioGuide;
+    setState(() => _isPreparingSession = true);
 
-    setState(() {
-      _isRunning = true;
-      _isPaused = false;
-      _currentPhaseIndex = 0;
-      _completedCycles = 0;
-      _totalSessionSeconds = totalSeconds;
-      _secondsRemainingTotal = totalSeconds;
-      _secondsRemainingInPhase = _selectedPattern.phaseSeconds[0];
-    });
+    try {
+      // A preview introduction may still be playing. Stop it completely before
+      // showing or timing the first breathing phase.
+      if (audioGuide?.hasLoadedAudio == true) {
+        await audioGuide?.stop();
+      }
+      if (!mounted) return;
 
-    _animateCircleForCurrentPhase();
-    if (context.read<AppSettingsController>().soundEnabled &&
-        _selectedPattern.hasGuidedAudio) {
-      unawaited(_playCurrentBreathingCue(showError: true));
+      setState(() {
+        _isRunning = true;
+        _isPaused = false;
+        _isPreparingSession = false;
+        _currentPhaseIndex = 0;
+        _completedCycles = 0;
+        _totalSessionSeconds = totalSeconds;
+        _secondsRemainingTotal = totalSeconds;
+        _secondsRemainingInPhase = _selectedPattern.phaseSeconds[0];
+      });
+
+      _animateCircleForCurrentPhase();
+      if (context.read<AppSettingsController>().soundEnabled &&
+          _selectedPattern.hasGuidedAudio) {
+        // Wait only until the first cue is loaded and started. The countdown
+        // then begins in sync instead of racing the audio source change.
+        await _playCurrentBreathingCue(showError: true);
+      }
+      if (!mounted) return;
+      _tick();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isPreparingSession = false;
+        _isRunning = false;
+        _isPaused = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('The session could not start. Please try again.'),
+        ),
+      );
     }
-    _tick();
   }
 
   void _stopSession() {
@@ -192,7 +224,10 @@ class _BreathingScreenState extends State<BreathingScreen>
     final audioGuide = _audioGuide;
     if (audioGuide == null) return;
 
-    final played = await audioGuide.playAsset(assetPath);
+    final played = await audioGuide.playAsset(
+      assetPath,
+      speed: _narrationSpeed,
+    );
     if (!played && showError && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -625,8 +660,21 @@ class _BreathingScreenState extends State<BreathingScreen>
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _startSession,
-                child: const Text('Start session'),
+                onPressed: _isPreparingSession ? null : _startSession,
+                child: _isPreparingSession
+                    ? const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          SizedBox(width: 10),
+                          Text('Preparing guide...'),
+                        ],
+                      )
+                    : const Text('Start session'),
               ),
             ],
           ),
@@ -667,13 +715,13 @@ class _BreathingScreenState extends State<BreathingScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasAudio ? 'Natural voice cues' : 'Visual guidance',
+                  hasAudio ? 'Meet your breathing guide' : 'Visual guidance',
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   hasAudio
-                      ? 'Distinct prompts stay synchronized with each phase.'
+                      ? 'Hear a short introduction. Phase cues begin after Start.'
                       : 'Natural narration is still being added to this pattern.',
                   style: const TextStyle(
                     color: AppTheme.textLight,
@@ -686,7 +734,7 @@ class _BreathingScreenState extends State<BreathingScreen>
           ),
           if (hasAudio && settings.soundEnabled)
             IconButton(
-              tooltip: previewPlaying ? 'Stop introduction' : 'Preview guide',
+              tooltip: previewPlaying ? 'Stop introduction' : 'Hear introduction',
               onPressed: () {
                 if (previewPlaying) {
                   unawaited(audioGuide.stop());

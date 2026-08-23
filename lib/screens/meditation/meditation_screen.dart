@@ -53,6 +53,8 @@ class MeditationScreen extends StatefulWidget {
 
 class _MeditationScreenState extends State<MeditationScreen>
     with SingleTickerProviderStateMixin {
+  static const double _narrationSpeed = 0.88;
+
   final List<_MeditationCategory> _categories = const [
     _MeditationCategory(
       name: 'Stress Relief',
@@ -397,7 +399,10 @@ class _MeditationScreenState extends State<MeditationScreen>
     final audioGuide = _audioGuide;
     if (introAsset == null || audioGuide == null) return;
 
-    final played = await audioGuide.playAsset(introAsset);
+    final played = await audioGuide.playAsset(
+      introAsset,
+      speed: _narrationSpeed,
+    );
     if (!played && showError && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -421,7 +426,10 @@ class _MeditationScreenState extends State<MeditationScreen>
       return;
     }
 
-    final played = await audioGuide.playAsset(session.audioPrompts[index]);
+    final played = await audioGuide.playAsset(
+      session.audioPrompts[index],
+      speed: _narrationSpeed,
+    );
     if (!played && showError && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

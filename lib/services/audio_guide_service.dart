@@ -38,8 +38,12 @@ class AudioGuideService extends ChangeNotifier {
   /// Source changes are serialized. Without this queue, a timer can request a
   /// new prompt while the previous setAsset/play operation is still settling,
   /// which caused Web to keep replaying the first loaded clip.
-  Future<bool> playAsset(String assetPath) {
+  Future<bool> playAsset(
+    String assetPath, {
+    double speed = 1.0,
+  }) {
     final generation = ++_requestGeneration;
+    final playbackSpeed = speed.clamp(0.5, 2.0).toDouble();
 
     return _enqueueSourceOperation(() async {
       if (generation != _requestGeneration || _isDisposed) return false;
@@ -53,9 +57,13 @@ class AudioGuideService extends ChangeNotifier {
 
         _currentAsset = null;
         if (kDebugMode) {
-          debugPrint('AudioGuideService loading $assetPath');
+          debugPrint(
+            'AudioGuideService loading $assetPath at ${playbackSpeed}x',
+          );
         }
         await _player.setAsset(assetPath);
+        if (generation != _requestGeneration || _isDisposed) return false;
+        await _player.setSpeed(playbackSpeed);
         if (generation != _requestGeneration || _isDisposed) return false;
 
         _currentAsset = assetPath;
