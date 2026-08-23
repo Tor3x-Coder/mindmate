@@ -41,7 +41,7 @@ Guided audio has a controlled pilot: one shared offline player, separate Quick R
 
 The Quiet Tide Modern shell includes a lower/slower Floating Tide bar, consistent app-bar behavior, lightweight 2D guide, four-step first-use tour, persisted completion, and Settings replay. The user confirmed the combined shell, navigation, tour controls/replay, and 8-cue Quick Reset work in Chrome. Physical-device and fresh-registration release checks remain. See `assets/audio/README.md` and `MINDMATE_REMAINING_BATCHES.md`.
 
-Post-audio builds/Chrome pilot, Batch 8 authorization, and Batch 9A normal deletion pass. The new Light-default/Daily Snapshot progress-colour fix, retry/recovery, live Worker deployment, broader automated/device testing, and emergency-resource verification remain pending. The developer currently has no physical test phone, so emulator/Chrome checks are the near-term fallback. See `MINDMATE_STATUS.md` for exact status.
+Post-audio builds/Chrome pilot, Batch 8 authorization, Batch 9A normal deletion, registration contrast, Light default, and Daily Snapshot progress all pass. Retry/recovery, remaining Batch 9 reliability, live Worker deployment, broader device testing, and emergency-resource verification remain pending. The developer currently has no physical test phone. See `MINDMATE_STATUS.md` for exact status.
 
 ## Core experience
 
@@ -202,7 +202,7 @@ Before a public or competition build:
 - keep the currently clean Flutter analysis result and run tests plus Android builds;
 - implement and real-device-test the approved guided-audio MVP;
 - verify Batch 9A interruption/retry and missing-profile restoration without risking the real/admin account;
-- validate Light-default/Daily Snapshot theme and 8-unit progress;
+- complete remaining Batch 9 reliability checks;
 - publish a functional external `/delete-account` request resource for Google Play;
 - confirm/deploy the current Worker source;
 - test all owner/admin denial cases;

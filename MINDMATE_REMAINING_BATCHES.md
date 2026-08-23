@@ -311,15 +311,14 @@ Sub-batch 9A pending:
 2. Confirm missing-profile restoration and incomplete-onboarding routes.
 3. Keep the external deletion-request web resource as a release blocker.
 
-#### Registration contrast + Daily Snapshot/light-default reliability fix — implemented locally
+#### Registration contrast + Daily Snapshot/light-default reliability fix — Chrome-validated
 
 - registration Name/Email/Password match Login's dark 16px input style;
 - onboarding goals/reminder choices use readable theme surface text;
 - first-run and post-deletion reset default to Light; Dark/System remain optional;
 - wellness screens use theme-aware ink/surfaces instead of mixed hardcoded colours;
 - progress is 8 real units: Body + 5 Mind questions + Routine + Review;
-- Mind 5/5 displays Step 6 of 8 and 75%; Routine 7/8; Review 8/8;
-- Flutter/Chrome validation is pending.
+- user confirmed Mind 5/5 displays Step 6 of 8 / 75% and the full flow works.
 
 Remaining Batch 9 tasks:
 
@@ -604,9 +603,7 @@ Batch 9A's rules and normal disposable-account deletion path pass. Interruption/
 
 Current gate:
 
-1. pull and verify registration inputs/reminder labels match Login contrast;
-2. validate Light default + Daily Snapshot theme/progress;
-3. confirm Mind 5/5 shows Step 6 of 8 / 75%;
-4. confirm Dark/System still work when explicitly selected;
-5. continue remaining Batch 9 reliability work;
-6. keep the landing page's functional `/delete-account` request as a Play blocker.
+1. treat registration contrast, Light default, Daily Snapshot, and normal deletion as Chrome-validated;
+2. continue remaining Batch 9 reliability: wellness score cap, async mounted audit, critical stream states, and timestamp decision;
+3. keep deletion interruption/recovery and physical-device evidence open;
+4. keep the landing page's functional `/delete-account` request as a Play blocker.

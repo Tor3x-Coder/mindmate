@@ -45,8 +45,8 @@ Audio, Floating Tide navigation, contextual tour, and the Modern Shell were conf
 | Contextual first-use guide | Implemented | User confirmed tour controls and Settings replay in Chrome | N/A | Fresh-account/physical-device release matrix still pending |
 | Quiet Tide modern shell | Focused shell polish implemented | User confirmed combined shell works in Chrome | N/A | Child-screen redesign intentionally deferred |
 | Account deletion/recovery | Spark-compatible implementation + rules deployed | User confirmed temporary-account happy-path deletion works | Rules live; retry/recovery proof pending | External web request page still required |
-| Daily Snapshot UI/progress | Theme/progress fix implemented locally | Flutter/Chrome retest pending | N/A | Light default + accurate 8-unit progress |
-| Registration/onboarding text | Login-matched dark input style implemented | Static checks pass; Chrome retest pending | N/A | Removed light-on-light reminder text |
+| Daily Snapshot UI/progress | Theme/progress fix implemented | User confirmed Light/default colours + 8-unit progress in Chrome | N/A | Physical-device check pending |
+| Registration/onboarding text | Login-matched dark input style implemented | User confirmed inputs/setup choices readable in Chrome | N/A | Physical-device check pending |
 | Informational landing site | Direction approved, not implemented | N/A | N/A | Must include functional `/delete-account` request resource + signed APK info |
 | Android APK | Post-audio debug APK built | Build passed in 411 seconds despite recovered stale-depfile warnings | N/A | No phone available; emulator/device verification pending |
 
@@ -262,7 +262,7 @@ Validation passed on the developer PC:
 
 The tested profile-delete rules delta compiled/released successfully, and the user confirmed the disposable-account happy path works end to end. Keep interruption/retry and missing-profile restoration in the release matrix; never repeat destructive testing with the developer/admin account.
 
-The next local reliability fix makes Light the true default and changes Daily Snapshot to accurate 8-unit progress (Body + 5 Mind questions + Routine + Review) with theme-aware colours. Flutter/Chrome validation is pending.
+The user confirmed the Light default, Login-matched registration text, readable post-registration choices, theme-aware Daily Snapshot colours, and accurate 8-unit progress all work in Chrome. Mind 5/5 correctly shows Step 6 of 8 / 75%.
 
 ### 5. Deploy and verify the AI Worker
 
@@ -322,7 +322,7 @@ Also verify:
 
 - Guided audio is only a pilot: Quick Reset and Box Breathing are implemented, but 17 meditations, 2 breathing patterns, Daily Snapshot, and Wellness Result still need assets/integration after validation.
 - Account deletion happy path is proven; interruption/retry and missing-profile restoration still need runtime evidence.
-- Light-default and Daily Snapshot progress/colour fixes are implemented locally but need Flutter/Chrome validation.
+- Light-default, registration contrast, and Daily Snapshot progress/colour fixes are Chrome-validated; physical-device checks remain.
 - Audit remaining async gaps for missing `mounted` checks.
 - Date models currently rely on ISO strings instead of Firestore `Timestamp` values.
 - Wellness score components need capping at 100.
@@ -360,8 +360,8 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 22 Aug 2026 | Quiet Tide Modern shell + guide | Slowed/lowered nav; modern AppBar defaults; 2D guide; new-user four-step tour; persisted completion; Settings replay | User confirmed combined behavior works in Chrome | Not deployed | Move to Batch 8; keep physical/fresh-account matrix pending |
 | 23 Aug 2026 | Batch 8 Firestore integrity | Pending-only/status-only appointment boundary; user/admin hardening; trusted/support schemas; service guards; 13 emulator cases | **13/13 passed**; Flutter 0 errors/0 warnings; smoke test passed | **Deployed to `mindmate-app-fcf2d`** | Live-smoke normal profile/contact/request/admin flows |
 | 23 Aug 2026 | Batch 9A account deletion/recovery | Spark-compatible deletion, retry routing, missing-profile recovery, registration rollback, no password trimming, Settings UI | **13/13 rules passed**; Flutter gates passed; disposable-account deletion confirmed | **Profile-delete delta deployed** | Retry/recovery + external web request still pending |
-| 23 Aug 2026 | Light default + Daily Snapshot fix | Correct first-run/reset theme; theme-aware wellness colours; 8-unit progress | Static checks pass; Flutter/Chrome pending | N/A | Analyze/test and verify Mind 5/5 shows 6/8 (75%) |
-| 23 Aug 2026 | Registration/onboarding contrast fix | Register inputs match Login dark 16px style; onboarding options use surface text colour | Static checks pass; Chrome pending | N/A | Verify Name/Email/Password and reminder labels are readable |
+| 23 Aug 2026 | Light default + Daily Snapshot fix | Correct first-run/reset theme; theme-aware wellness colours; 8-unit progress | User confirmed correct Light colours and 6/8 (75%) at Mind 5/5 | N/A | Keep physical-device check pending |
+| 23 Aug 2026 | Registration/onboarding contrast fix | Register inputs match Login dark 16px style; onboarding options use surface text colour | User confirmed all registration/setup text is readable | N/A | Keep physical-device check pending |
 
 ## Rule for the next agent
 
@@ -371,5 +371,5 @@ Before editing code:
 2. read this file, `MINDMATE_CODING_GUIDE.md`, and `MINDMATE_REMAINING_BATCHES.md`;
 3. treat the Modern Shell and Batch 8 deployment as passed;
 4. treat Batch 9A normal deletion as passed; keep retry/recovery evidence open and never use the developer/admin account for destructive tests;
-5. validate the Light-default/Daily Snapshot fix, and keep `/delete-account` web requests as a Play blocker; continue from **What remains**, not an older transcript;
+5. treat Light-default/registration/Daily Snapshot Chrome validation as passed, and keep `/delete-account` web requests as a Play blocker; continue from **What remains**, not an older transcript;
 6. update this file and the relevant Markdown documentation in the same batch as every fix.
