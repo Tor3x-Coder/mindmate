@@ -39,8 +39,9 @@ Before the audio pilot, the developer successfully ran dependency resolution, an
 | Trusted contacts and support-event tracking | Yes | `flutter analyze` passed; runtime pending | Rules live; app build unverified | No |
 | State/international emergency-number UI | Yes | `flutter analyze` passed; device tests pending | N/A | No; resource verification required |
 | Guided audio: Meditation, Breathing, Daily Snapshot | Pilot + reassurance cues implemented | Prior voice/switching worked; 8-cue Quick Reset timeline needs retest | N/A | Quick Reset + Box Breathing only; ambience deferred |
-| Floating Tide Orb navigation | Implemented | Static checks pass; Flutter/Chrome validation pending | N/A | Four tabs; runtime layout/motion unverified |
-| Contextual first-use guide | Design approved, not implemented | N/A | N/A | Four coach marks + lightweight 2D MindMate figure planned |
+| Floating Tide Orb navigation | Polished implementation | Slower/lower pure-Flutter bar; local Flutter/Chrome retest pending | N/A | Four tabs; final layout/motion unverified |
+| Contextual first-use guide | Implemented | Static checks pass; first-use/replay runtime test pending | N/A | Four coach marks + lightweight 2D Flutter-drawn guide |
+| Quiet Tide modern shell | Focused shell polish implemented | App bars/navigation/settings flow need local visual check | N/A | Child-screen redesign intentionally deferred |
 | Informational landing site | Direction approved, not implemented | N/A | N/A | Static product info + signed APK download; no hosted Flutter app |
 | Android APK | Post-audio debug APK built | Build passed in 411 seconds despite recovered stale-depfile warnings | N/A | No phone available; emulator/device verification pending |
 
@@ -189,7 +190,7 @@ Pilot implementation now exists:
 - 15 MP3 files total **379,299 bytes (about 370 KB)**;
 - asset registry, file uniqueness, imports, delimiters, and whitespace checks pass.
 
-Prior Chrome feedback confirmed loading, voice playback, and the latest switching fix. The new gate is the 8-cue Quick Reset timeline and custom Floating Tide Orb navigation. Literal breathing loops and background music are not included: later ambience must be optional, licensed, loop-safe, separately volume-controlled, and duck under narration.
+Prior Chrome feedback confirmed loading, voice playback, and source switching. The current shell batch lowers/slows the Floating Tide bar, modernizes app-bar behavior, adds a Flutter-drawn 2D guide, shows four coach marks only after new-user setup, persists completion with `tourVersion = 1`, and adds Replay app tour in Settings. The 8-cue Quick Reset timeline remains part of the same local retest. Literal breathing loops/background music remain deferred behind optional licensed ambience.
 
 ### 3. Test the deployed Firestore configuration
 
@@ -305,7 +306,8 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 22 Aug 2026 | Audio cue-switching + intro fix | Serialized source replacement; distinct Quick Reset welcome asset/copy | MP3 hashes/registry differ; loading/speech confirmed | Not deployed | Continue timing/pacing test |
 | 22 Aug 2026 | Breathing sync + narration pacing | Preview-stop/start synchronization; 4 concise Box cues; meditation 0.88x, breathing 0.92x | User confirmed core playback works; no major blocker reported | Not deployed | Keep physical-device test pending |
 | 22 Aug 2026 | Quick Reset reassurance timeline | Added 4 unique midpoint cues with matching captions; 15 MP3s total | Registry/hash/delimiter checks pass; runtime retest pending | Not deployed | Verify 8-cue timing at 1/3/5 minutes |
-| 22 Aug 2026 | Floating Tide Orb navigation | Replaced standard NavigationBar with animated four-tab orb/labels; IndexedStack preserved | Static delimiter/import checks pass; Flutter/Chrome test pending | Not deployed | Pull, analyze, and test layout/motion |
+| 22 Aug 2026 | Floating Tide Orb navigation | Replaced standard NavigationBar with animated four-tab orb/labels; IndexedStack preserved | User liked concept but reported fast/high positioning | Not deployed | Included in Modern Shell correction |
+| 22 Aug 2026 | Quiet Tide Modern shell + guide | Slowed/lowered nav; modern AppBar defaults; 2D guide; new-user four-step tour; persisted completion; Settings replay | Static import/delimiter/diff checks pass; Flutter/Chrome pending | Not deployed | Pull, analyze/test/build, then test automatic and replay tours |
 
 ## Rule for the next agent
 
@@ -313,6 +315,6 @@ Before editing code:
 
 1. run `git status --short --branch` and `git log --oneline -10`;
 2. read this file, `MINDMATE_CODING_GUIDE.md`, and `MINDMATE_REMAINING_BATCHES.md`;
-3. treat the earlier dependency/analyzer/test/build gates as passed; validate the new Floating Tide navigation and 8-cue Quick Reset timeline before expanding narration coverage;
+3. treat earlier dependency/analyzer/test/build gates as passed; validate the Modern Shell navigation, automatic/replay tour, and 8-cue Quick Reset timeline before expanding scope;
 4. continue from **What remains**, not from an older chat transcript;
 5. update this file and the relevant Markdown documentation in the same batch as every fix.

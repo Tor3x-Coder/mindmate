@@ -97,7 +97,11 @@ class AppTheme {
       fontFamily: 'Poppins',
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 68,
+        titleSpacing: 20,
         centerTitle: false,
         iconTheme: IconThemeData(color: onSurface),
         titleTextStyle: TextStyle(

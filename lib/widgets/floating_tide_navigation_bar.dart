@@ -34,9 +34,9 @@ class FloatingTideNavigationBar extends StatelessWidget {
     this.animationIntensity = 1,
   }) : assert(destinations.length > 1);
 
-  static const double _horizontalMargin = 12;
+  static const double _horizontalMargin = 10;
   static const double _orbSize = 48;
-  static const double _barHeight = 84;
+  static const double _barHeight = 92;
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +46,7 @@ class FloatingTideNavigationBar extends StatelessWidget {
     final duration = reduceMotion
         ? Duration.zero
         : Duration(
-            milliseconds: (300 / animationIntensity.clamp(0.6, 1.3)).round(),
+            milliseconds: (520 / animationIntensity.clamp(0.6, 1.3)).round(),
           );
 
     return ColoredBox(
@@ -69,7 +69,7 @@ class FloatingTideNavigationBar extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Positioned(
-                    top: 14,
+                    top: 4,
                     left: _horizontalMargin,
                     right: _horizontalMargin,
                     bottom: 2,
@@ -96,9 +96,9 @@ class FloatingTideNavigationBar extends StatelessWidget {
                   ),
                   AnimatedPositioned(
                     duration: duration,
-                    curve: Curves.easeOutBack,
+                    curve: Curves.easeInOutCubic,
                     left: orbLeft,
-                    top: 0,
+                    top: 8,
                     width: _orbSize,
                     height: _orbSize,
                     child: TweenAnimationBuilder<double>(
@@ -108,7 +108,7 @@ class FloatingTideNavigationBar extends StatelessWidget {
                       builder: (context, value, child) {
                         final hop = reduceMotion
                             ? 0.0
-                            : -math.sin(value * math.pi) * 5;
+                            : -math.sin(value * math.pi) * 2;
                         return Transform.translate(
                           offset: Offset(0, hop),
                           child: child,
@@ -130,6 +130,7 @@ class FloatingTideNavigationBar extends StatelessWidget {
                     ),
                   ),
                   Positioned.fill(
+                    top: 8,
                     left: _horizontalMargin,
                     right: _horizontalMargin,
                     child: Row(

@@ -34,7 +34,9 @@ Backend/integration batches 1–5 are implemented in the repository:
 
 They are **not yet considered release-complete**. The final Batch #5 Firestore rules compiled and were released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Local dependency resolution and static analysis passed with 0 errors, 0 warnings, and 21 non-blocking informational notices. `flutter test` also passed the repository's single basic smoke test; this is not meaningful end-to-end coverage.
 
-Guided audio has a controlled pilot: one shared offline player, separate Quick Reset welcome, 4 main prompts, 4 midpoint reassurance cues, and 6 Box assets. The 15 MP3s total about 370 KB. Core playback previously worked; the newest 8-cue timeline and Floating Tide Orb navigation need analyzer/build/Chrome validation. Literal breathing loops are not included, and later ambience must be optional/licensed with separate volume and voice ducking. See `assets/audio/README.md` and `MINDMATE_REMAINING_BATCHES.md`.
+Guided audio has a controlled pilot: one shared offline player, separate Quick Reset welcome, 4 main prompts, 4 midpoint reassurance cues, and 6 Box assets. The 15 MP3s total about 370 KB. Core playback previously worked; the newest 8-cue timeline needs local validation. Literal breathing loops are not included, and later ambience must be optional/licensed with separate volume and voice ducking.
+
+The Quiet Tide Modern shell now includes a lower/slower Floating Tide bar, consistent app-bar behavior, a lightweight 2D guide, automatic four-step tour only after new-user onboarding, persisted completion, and Settings replay. This combined shell still needs analyzer/build/Chrome validation. See `assets/audio/README.md` and `MINDMATE_REMAINING_BATCHES.md`.
 
 Post-audio dependency resolution, analyzer/tests, Android debug build, and Web build pass. Chrome playback, meaningful test coverage, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. The developer currently has no physical test phone, so emulator/Chrome checks are the near-term fallback and real-device-only behavior remains a release risk. See `MINDMATE_STATUS.md` for the exact status table.
 
@@ -73,7 +75,8 @@ The AI companion is for supportive conversation and reflection. Clear crisis phr
 - goals and preferred check-in window;
 - session persistence through Firebase Auth;
 - light/dark/system theme, text-size, and animation preferences;
-- custom Floating Tide Orb navigation for Home, Practice, Chat, and Me, preserving tab state with `IndexedStack`;
+- custom slower/lower Floating Tide Orb navigation for Home, Practice, Chat, and Me, preserving tab state with `IndexedStack`;
+- first-use four-step contextual tour with a Flutter-drawn 2D MindMate guide and Settings replay;
 
 ### Mood and next-step flow
 

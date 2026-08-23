@@ -37,9 +37,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         reminderTime: _selectedReminderTime!,
       );
 
-if (!mounted) return;
+      if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const MainNavScreen()),
+        MaterialPageRoute(
+          builder: (_) => const MainNavScreen(showFirstUseGuide: true),
+        ),
         (route) => false,
       );
     } catch (_) {

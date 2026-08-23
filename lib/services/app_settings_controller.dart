@@ -9,6 +9,7 @@ class AppSettingsController extends ChangeNotifier {
   static const _soundEnabledKey = 'sound_enabled';
   static const _checkInWindowKey = 'check_in_window';
   static const _preferredSessionMinutesKey = 'preferred_session_minutes';
+  static const _completedTourVersionKey = 'completed_tour_version';
 
   ThemeMode _themeMode = ThemeMode.light;
   double _textScale = 1.0;
@@ -17,6 +18,8 @@ class AppSettingsController extends ChangeNotifier {
   bool _soundEnabled = false;
   String _checkInWindow = 'Evening';
   int _preferredSessionMinutes = 5;
+  int _completedTourVersion = 0;
+  int _tourReplayRequest = 0;
   bool _isLoaded = false;
 
   AppSettingsController() {
@@ -30,6 +33,8 @@ class AppSettingsController extends ChangeNotifier {
   bool get soundEnabled => _soundEnabled;
   String get checkInWindow => _checkInWindow;
   int get preferredSessionMinutes => _preferredSessionMinutes;
+  int get completedTourVersion => _completedTourVersion;
+  int get tourReplayRequest => _tourReplayRequest;
   bool get isLoaded => _isLoaded;
 
   Future<void> _load() async {
@@ -41,6 +46,7 @@ class AppSettingsController extends ChangeNotifier {
     _soundEnabled = prefs.getBool(_soundEnabledKey) ?? false;
     _checkInWindow = prefs.getString(_checkInWindowKey) ?? 'Evening';
     _preferredSessionMinutes = prefs.getInt(_preferredSessionMinutesKey) ?? 5;
+    _completedTourVersion = prefs.getInt(_completedTourVersionKey) ?? 0;
     _isLoaded = true;
     notifyListeners();
   }
@@ -92,6 +98,19 @@ class AppSettingsController extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_preferredSessionMinutesKey, value);
+  }
+
+  Future<void> markTourCompleted(int version) async {
+    if (version <= _completedTourVersion) return;
+    _completedTourVersion = version;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_completedTourVersionKey, version);
+  }
+
+  void requestTourReplay() {
+    _tourReplayRequest++;
+    notifyListeners();
   }
 
   ThemeMode _themeModeFromString(String? value) {

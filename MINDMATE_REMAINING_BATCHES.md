@@ -191,11 +191,11 @@ Calm background music/ambience is approved only as a later optional layer. It mu
 - includes semantics, keyboard focus, hover, and responsive segment positioning;
 - uses pure Flutter drawing and adds no image asset weight.
 
-#### Contextual first-use guide — approved, not implemented
+#### Contextual first-use guide — implemented, validation pending
 
 **Purpose:** Help new users understand the app without adding another long onboarding carousel or a distracting permanent mascot.
 
-Approved behavior:
+Implemented behavior:
 
 - four small contextual coach marks: Home, Practice, Chat, and Me;
 - one message at a time with clear `Got it`, `Next`, and `Skip tour` actions;
@@ -217,11 +217,13 @@ Exit criteria:
 - coach marks do not cover their target or critical controls at supported widths;
 - analyzer/tests/Web and Android builds pass.
 
-Implementation order:
+Validation order:
 
-- validate the Floating Tide bar and new Quick Reset timeline first;
-- add coach marks only after tab target positions are stable;
-- complete the guide before release UX rehearsal, but do not let it delay safety or build blockers.
+- run analyzer/tests/build after the combined shell change;
+- verify the lower/slower bar at narrow and wide widths;
+- complete a fresh registration/onboarding path to confirm automatic display;
+- verify Skip, completion persistence, and Settings replay;
+- keep child-screen redesign deferred until the shell is stable.
 
 ### Batch 8 — Firestore integrity and authorization tests
 
@@ -538,12 +540,13 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 
 ## Current execution gate
 
-The natural-voice scope, contextual-guide design, Floating Tide navigation, and informational landing-site direction are approved. The user confirmed the core pilot playback works. Before expanding narration, adding ambience, or implementing coach marks:
+The Quiet Tide Modern shell, contextual guide, natural-voice pilot, and informational landing-site direction are implemented/approved to their documented checkpoints. Before expanding narration, adding ambience, or redesigning child screens:
 
-1. pull the navigation + reassurance-cue batch;
+1. pull the combined Modern Shell batch;
 2. run analyzer/tests and rebuild Android/Web;
-3. confirm the orb reaches all four tabs, labels stay readable, and tab state persists;
-4. confirm Quick Reset alternates 4 main prompts and 4 matching reassurance captions/audio at 1 minute;
-5. record results and fix any remaining blocker first.
+3. confirm the slower/lower orb reaches all four tabs, labels stay readable, and tab state persists;
+4. confirm fresh-onboarding automatic tour, Skip/Next/Got it, completion persistence, and Settings replay;
+5. confirm Quick Reset alternates 4 main prompts and 4 reassurance captions/audio at 1 minute;
+6. record results and fix any remaining shell blocker first.
 
 The public landing site remains Batch 13A and must not replace or delay core app validation.
