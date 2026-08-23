@@ -267,7 +267,7 @@ Exit criteria:
 - changed rules compile and deploy;
 - denial cases are manually confirmed against the intended project.
 
-### Batch 9 — Account and runtime reliability — 9A validated; 9B implemented locally
+### Batch 9 — Account and runtime reliability — implemented work validated
 
 **Purpose:** Fix account lifecycle failures and provide permanent user-controlled deletion.
 
@@ -337,11 +337,15 @@ ISO migration decision:
 - backfill existing records before switching all writes/queries;
 - remove legacy reads only after verification.
 
-Sub-batch 9B pending:
+Sub-batch 9B validation result:
 
-1. Run Flutter analyze/tests and confirm 5 tests pass.
-2. Smoke appointment duplicate-check failure and My Requests error state under weak/offline network when practical.
-3. Keep broader device/network interruption coverage in Batch 12.
+- `flutter test`: **5/5 passing**;
+- `flutter analyze`: 0 errors, 0 warnings, 4 informational notices.
+
+Remaining release-matrix evidence:
+
+1. Smoke appointment duplicate-check failure and My Requests error state under weak/offline network when practical.
+2. Keep broader device/network interruption coverage in Batch 12.
 
 Exit criteria:
 
@@ -619,8 +623,8 @@ Batch 9A's rules and normal disposable-account deletion path pass. Interruption/
 
 Current gate:
 
-1. run Batch 9B Flutter analyze/tests and confirm all 5 tests pass;
-2. keep deletion interruption/recovery and physical-device evidence open;
+1. treat Batch 9's implemented work as locally validated;
+2. keep deletion interruption/recovery, weak-network, and physical-device evidence in Batch 12;
 3. keep ISO migration deferred with the documented dual-read/backfill plan;
 4. keep the landing page's functional `/delete-account` request as a Play blocker;
-5. then close Batch 9 or fix any failed reliability gate.
+5. begin Batch 10 AI Worker live completion.

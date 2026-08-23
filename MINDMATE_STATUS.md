@@ -46,8 +46,8 @@ Audio, Floating Tide navigation, contextual tour, and the Modern Shell were conf
 | Quiet Tide modern shell | Focused shell polish implemented | User confirmed combined shell works in Chrome | N/A | Child-screen redesign intentionally deferred |
 | Account deletion/recovery | Spark-compatible implementation + rules deployed | User confirmed temporary-account happy-path deletion works | Rules live; retry/recovery proof pending | External web request page still required |
 | Daily Snapshot UI/progress | Theme/progress fix implemented | User confirmed Light/default colours + 8-unit progress in Chrome | N/A | Physical-device check pending |
-| Wellness scoring/runtime | 0–100 component/average caps + 4 unit tests implemented | Flutter tests pending | N/A | Score remains non-clinical |
-| Critical async/error states | Appointment duplicate-check + dashboard async guards + My Requests privacy state implemented | Flutter/Chrome pending | N/A | Broader device/network matrix pending |
+| Wellness scoring/runtime | 0–100 component/average caps + 4 unit tests implemented | **4/4 model tests passed**; analyzer clean | N/A | Score remains non-clinical |
+| Critical async/error states | Appointment duplicate-check + dashboard async guards + My Requests privacy state implemented | Flutter analyzer/tests passed | N/A | Broader device/network matrix pending |
 | Registration/onboarding text | Login-matched dark input style implemented | User confirmed inputs/setup choices readable in Chrome | N/A | Physical-device check pending |
 | Informational landing site | Direction approved, not implemented | N/A | N/A | Must include functional `/delete-account` request resource + signed APK info |
 | Android APK | Post-audio debug APK built | Build passed in 411 seconds despite recovered stale-depfile warnings | N/A | No phone available; emulator/device verification pending |
@@ -276,12 +276,12 @@ Batch 9B is implemented locally:
 
 ISO date strings are intentionally frozen for the competition prototype. A future migration must dual-read String/Timestamp, backfill existing records, then switch writes—never rewrite the schema casually before release.
 
-Pending local gate:
+Validation passed on the developer PC:
 
-```bash
-flutter analyze
-flutter test
-```
+- `flutter test`: **5/5 passed** (1 smoke + 4 wellness-boundary tests);
+- `flutter analyze`: 0 errors, 0 warnings, 4 informational notices.
+
+Batch 9B is closed. Weak/offline and physical-device behavior remains part of the broader release matrix.
 
 ### 5. Deploy and verify the AI Worker
 
@@ -344,7 +344,7 @@ Also verify:
 - Light-default, registration contrast, and Daily Snapshot progress/colour fixes are Chrome-validated; physical-device checks remain.
 - Critical async flows are audited/fixed; broader device/network interruption testing remains.
 - ISO date strings are intentionally deferred; migration requires dual-read/backfill planning after the competition.
-- Wellness score caps and focused tests are implemented locally; Flutter validation is pending.
+- Wellness score caps and 4 focused tests are validated; weak/offline behavior remains in the release matrix.
 - Critical stream states are friendly; broader consistency polish remains.
 - Some screens still use hardcoded legacy colours.
 - Analyzer informational debt at the last run: 2 deprecated onboarding Radio API uses and 2 optional `const` notices.
@@ -381,7 +381,7 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 23 Aug 2026 | Batch 9A account deletion/recovery | Spark-compatible deletion, retry routing, missing-profile recovery, registration rollback, no password trimming, Settings UI | **13/13 rules passed**; Flutter gates passed; disposable-account deletion confirmed | **Profile-delete delta deployed** | Retry/recovery + external web request still pending |
 | 23 Aug 2026 | Light default + Daily Snapshot fix | Correct first-run/reset theme; theme-aware wellness colours; 8-unit progress | User confirmed correct Light colours and 6/8 (75%) at Mind 5/5 | N/A | Keep physical-device check pending |
 | 23 Aug 2026 | Registration/onboarding contrast fix | Register inputs match Login dark 16px style; onboarding options use surface text colour | User confirmed all registration/setup text is readable | N/A | Keep physical-device check pending |
-| 23 Aug 2026 | Batch 9B runtime reliability | Wellness 0–100 caps + 4 tests; mounted-safe appointment/dashboard handling; private My Requests errors; ISO migration deferred | Static checks pass; Flutter analyze/tests pending | N/A | Run Flutter gates, then continue Batch 9 or AI Worker |
+| 23 Aug 2026 | Batch 9B runtime reliability | Wellness 0–100 caps + 4 tests; mounted-safe appointment/dashboard handling; private My Requests errors; ISO migration deferred | **5/5 tests passed**; Flutter 0 errors/0 warnings | N/A | Batch closed; proceed to AI Worker or release-matrix checks |
 
 ## Rule for the next agent
 
@@ -392,5 +392,5 @@ Before editing code:
 3. treat the Modern Shell and Batch 8 deployment as passed;
 4. treat Batch 9A normal deletion as passed; keep retry/recovery evidence open and never use the developer/admin account for destructive tests;
 5. treat Light-default/registration/Daily Snapshot Chrome validation as passed;
-6. run Batch 9B Flutter gates before moving on, and keep `/delete-account` web requests as a Play blocker; continue from **What remains**, not an older transcript;
+6. treat Batch 9B's 5/5 tests and clean analyzer as passed; keep `/delete-account` web requests as a Play blocker and continue from **What remains**, not an older transcript;
 7. update this file and the relevant Markdown documentation in the same batch as every fix.
