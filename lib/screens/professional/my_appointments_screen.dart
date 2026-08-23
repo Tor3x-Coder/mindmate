@@ -51,19 +51,42 @@ class MyAppointmentsScreen extends StatelessWidget {
                   }
 
                   if (snapshot.hasError) {
-                    return Center(
+                    return const Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Text(
-                          'ERROR: ${snapshot.error}',
-                          style:
-                              const TextStyle(color: Colors.red, fontSize: 12),
+                        padding: EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.cloud_off_outlined,
+                              color: AppTheme.danger,
+                              size: 46,
+                            ),
+                            SizedBox(height: 14),
+                            Text(
+                              'Your requests could not load',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(height: 7),
+                            Text(
+                              'Check your connection and try opening this page again. Your private error details are never shown here.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppTheme.textLight,
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
                   }
 
-                  final appointments = snapshot.data ?? [];
+                  final appointments =
+                      snapshot.data ?? const <AppointmentModel>[];
 
                   if (appointments.isEmpty) {
                     return Center(
@@ -112,7 +135,7 @@ class MyAppointmentsScreen extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Theme.of(context).colorScheme.surface,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color:

@@ -267,7 +267,7 @@ Exit criteria:
 - changed rules compile and deploy;
 - denial cases are manually confirmed against the intended project.
 
-### Batch 9 — Account and runtime reliability — Sub-batch 9A happy path validated
+### Batch 9 — Account and runtime reliability — 9A validated; 9B implemented locally
 
 **Purpose:** Fix account lifecycle failures and provide permanent user-controlled deletion.
 
@@ -320,18 +320,34 @@ Sub-batch 9A pending:
 - progress is 8 real units: Body + 5 Mind questions + Routine + Review;
 - user confirmed Mind 5/5 displays Step 6 of 8 / 75% and the full flow works.
 
-Remaining Batch 9 tasks:
+#### Sub-batch 9B — runtime reliability — implemented locally
 
-1. Audit other async gaps for missing `mounted` checks.
-2. Cap wellness-score components at 100.
-3. Add consistent friendly loading, empty, and error states to critical streams.
-4. Decide whether ISO date strings remain for the prototype; do not migrate without a data plan.
+- clamps wellness sleep/stress components and final score to 0–100;
+- adds 4 focused score tests, including malformed extreme values;
+- moves appointment duplicate-check network failure into the mounted-safe friendly handler and disables double submission while checking;
+- catches legacy Dashboard profile/admin loading failures;
+- replaces raw Firestore error output in My Requests with a private friendly state;
+- uses theme surfaces in My Requests;
+- intentionally freezes ISO date strings for the prototype.
+
+ISO migration decision:
+
+- do not rewrite dates before the competition;
+- a later migration must dual-read ISO String and Firestore Timestamp;
+- backfill existing records before switching all writes/queries;
+- remove legacy reads only after verification.
+
+Sub-batch 9B pending:
+
+1. Run Flutter analyze/tests and confirm 5 tests pass.
+2. Smoke appointment duplicate-check failure and My Requests error state under weak/offline network when practical.
+3. Keep broader device/network interruption coverage in Batch 12.
 
 Exit criteria:
 
-- deletion/recovery has exact temporary-account test evidence;
+- normal deletion path remains proven and retry/recovery remains tracked;
 - no analyzer errors/warnings;
-- debug/Web builds pass;
+- wellness model tests pass;
 - external `/delete-account` web request remains an explicit Play release gate.
 
 ### Batch 10 — AI Worker live completion
@@ -603,7 +619,8 @@ Batch 9A's rules and normal disposable-account deletion path pass. Interruption/
 
 Current gate:
 
-1. treat registration contrast, Light default, Daily Snapshot, and normal deletion as Chrome-validated;
-2. continue remaining Batch 9 reliability: wellness score cap, async mounted audit, critical stream states, and timestamp decision;
-3. keep deletion interruption/recovery and physical-device evidence open;
-4. keep the landing page's functional `/delete-account` request as a Play blocker.
+1. run Batch 9B Flutter analyze/tests and confirm all 5 tests pass;
+2. keep deletion interruption/recovery and physical-device evidence open;
+3. keep ISO migration deferred with the documented dual-read/backfill plan;
+4. keep the landing page's functional `/delete-account` request as a Play blocker;
+5. then close Batch 9 or fix any failed reliability gate.

@@ -40,19 +40,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final firestoreService = context.read<FirestoreService>();
     final uid = authService.currentUser?.uid;
 
-    if (uid != null) {
+    if (uid == null) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
       final profile = await firestoreService.getUserProfile(uid);
       final admin = await firestoreService.isUserAdmin(uid);
-      if (mounted) {
-        setState(() {
-          _profile = profile;
-          _userName = profile?['fullName']?.toString().split(' ').first ?? 'there';
-          _isAdmin = admin;
-          _isLoading = false;
-        });
-      }
-    } else {
-      setState(() => _isLoading = false);
+      if (!mounted) return;
+      setState(() {
+        _profile = profile;
+        _userName =
+            profile?['fullName']?.toString().split(' ').first ?? 'there';
+        _isAdmin = admin;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _userName = 'there';
+        _isAdmin = false;
+        _isLoading = false;
+      });
     }
   }
 

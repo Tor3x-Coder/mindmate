@@ -138,20 +138,21 @@ See `MINDMATE_STATUS.md` for exact files and status.
 5. **Trusted contacts/support events** — owner-only contact storage, explicit call/message actions, follow-up events, and expanded emergency UI.
 6. **Batch 8 Firestore integrity (validated and deployed)** — pending-only appointment creation, admin status-only updates, user/admin profile protection, trusted/support schemas, service guards, 13/13 emulator cases, Flutter gates, and successful release to `mindmate-app-fcf2d` on 23 August 2026.
 7. **Batch 9A account deletion/recovery (happy path validated)** — Spark-compatible in-app deletion, password reauthentication, repeatable owned-data batches, retry marker/routing, missing-profile recovery, registration rollback, no password trimming, 13/13 rules tests, deployed profile-delete rule, and confirmed disposable-account deletion.
+8. **Batch 9B runtime reliability (local, validation pending)** — bounded wellness scoring + 4 tests, mounted-safe appointment/dashboard async handling, friendly My Requests errors, and intentional ISO-string migration deferral.
 
-Important: interruption/retry and missing-profile restoration evidence remain. The project is on Spark, so a trusted Cloud Function is deferred unless billing is upgraded.
+Important: deletion interruption/retry and missing-profile restoration evidence remain. The project is on Spark, so a trusted Cloud Function is deferred unless billing is upgraded.
 
 ## Remaining backend/release work
 
 Immediate prototype path:
 
-1. Keep deletion interruption/retry and missing-profile restoration in the release matrix.
-2. Keep the external `/delete-account` web request path as a Google Play blocker.
-3. Continue remaining account/runtime reliability work: wellness score cap, async audit, and critical stream states.
-5. Confirm/deploy `worker/index.js`, configure required bindings, test the live endpoint, and make the final AI model decision.
-6. Verify emergency resources and sensitive content.
-7. Run meaningful automated tests plus the complete device test matrix.
-8. Build a release candidate APK and freeze nonessential features.
+1. Run Batch 9B Flutter analyze/tests and verify the new model tests pass.
+2. Keep deletion interruption/retry and missing-profile restoration in the release matrix.
+3. Keep the external `/delete-account` web request path as a Google Play blocker.
+4. Confirm/deploy `worker/index.js`, configure required bindings, test the live endpoint, and make the final AI model decision.
+5. Verify emergency resources and sensitive content.
+6. Run meaningful automated tests plus the complete device test matrix.
+7. Build a release candidate APK and freeze nonessential features.
 
 See `MINDMATE_REMAINING_BATCHES.md` for tasks and exit criteria for Batches 6–13.
 
@@ -167,11 +168,10 @@ Known backend/product limitations that may be deferred beyond the competition pr
 
 ## Known code issues already logged
 
-- Account deletion, missing-profile recovery, registration rollback, and no-password-trimming are implemented locally but need validation.
-- Several remaining async catch blocks may still need mounted checks.
-- Date models currently assume ISO strings.
-- Wellness score components need capping at 100.
-- Streams need consistent friendly loading, empty, and error states.
+- Account deletion happy path is proven; retry/recovery evidence remains.
+- Critical async/error paths are fixed locally in Batch 9B; broader device/network testing remains.
+- ISO date strings are intentionally frozen for the prototype; migrate only with dual-read/backfill planning.
+- Wellness caps/tests and My Requests friendly errors are implemented locally; Flutter validation is pending.
 - Some screens still have hardcoded legacy colours.
 - Current analyzer debt is non-blocking: 2 deprecated onboarding Radio API notices and 19 optional `const` notices.
 - Post-audio `flutter pub get` reports 27 newer package versions outside current constraints; avoid major upgrades before the competition unless required and tested.
@@ -196,4 +196,4 @@ Check in
 
 ## Immediate next action
 
-The disposable-account deletion, registration contrast, Light default, and Daily Snapshot 8-unit progress all work in Chrome. Next continue Batch 9 reliability (wellness cap, async audit, critical stream states) while keeping deletion retry/recovery and the landing site's `/delete-account` request path open.
+Batch 9B reliability fixes are implemented locally. Run Flutter analyze/tests and confirm all 5 tests pass (the original smoke test plus 4 wellness-boundary tests). Keep deletion retry/recovery and the landing site's `/delete-account` request path open.

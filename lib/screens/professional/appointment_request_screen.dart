@@ -155,42 +155,47 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
       return;
     }
 
-    // Re-check right before sending so a duplicate request in the past
-    // few seconds is still blocked even if the screen did not load it yet.
-    final hasPending = await context
-        .read<FirestoreService>()
-        .hasPendingAppointmentForProfessional(uid, widget.professional.id);
-    if (!mounted) return;
-
-    if (hasPending) {
-      setState(() {
-        _hasPendingRequest = true;
-        _errorText =
-            'You already have a pending request with this professional. Wait for their response before sending another.';
-      });
-      return;
-    }
-
     setState(() {
       _isSaving = true;
       _errorText = null;
     });
 
-    final appointment = AppointmentModel(
-      id: '',
-      uid: uid,
-      professionalId: widget.professional.id,
-      professionalName: widget.professional.fullName,
-      consultationType: _consultationType!,
-      preferredDate: _formatDate(_preferredDate!),
-      preferredTime: _formatTime(_preferredTime!),
-      note: _noteController.text.trim(),
-      status: 'pending',
-      requestedAt: DateTime.now(),
-    );
+    final firestore = context.read<FirestoreService>();
 
     try {
-      await context.read<FirestoreService>().requestAppointment(appointment);
+      // Re-check immediately before sending. This query can fail because of a
+      // network/index problem, so it belongs inside the same friendly handler
+      // as the write instead of escaping as an unhandled Future error.
+      final hasPending = await firestore.hasPendingAppointmentForProfessional(
+        uid,
+        widget.professional.id,
+      );
+      if (!mounted) return;
+
+      if (hasPending) {
+        setState(() {
+          _isSaving = false;
+          _hasPendingRequest = true;
+          _errorText =
+              'You already have a pending request with this professional. Wait for their response before sending another.';
+        });
+        return;
+      }
+
+      final appointment = AppointmentModel(
+        id: '',
+        uid: uid,
+        professionalId: widget.professional.id,
+        professionalName: widget.professional.fullName,
+        consultationType: _consultationType!,
+        preferredDate: _formatDate(_preferredDate!),
+        preferredTime: _formatTime(_preferredTime!),
+        note: _noteController.text.trim(),
+        status: 'pending',
+        requestedAt: DateTime.now(),
+      );
+
+      await firestore.requestAppointment(appointment);
       if (!mounted) return;
       await showDialog<void>(
         context: context,
@@ -217,7 +222,8 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
       if (!mounted) return;
       setState(() {
         _isSaving = false;
-        _errorText = 'Could not send the request. Please try again.';
+        _errorText =
+            'MindMate could not verify or send this request. Check your connection and try again.';
       });
     }
   }
