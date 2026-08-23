@@ -36,7 +36,7 @@ They are **not yet considered release-complete**. The final Batch #5 Firestore r
 
 Guided audio has a controlled pilot: one shared offline player, separate Quick Reset welcome, 4 main prompts, 4 midpoint reassurance cues, and 6 Box assets. The 15 MP3s total about 370 KB. Core playback previously worked; the newest 8-cue timeline needs local validation. Literal breathing loops are not included, and later ambience must be optional/licensed with separate volume and voice ducking.
 
-The Quiet Tide Modern shell now includes a lower/slower Floating Tide bar, consistent app-bar behavior, a lightweight 2D guide, automatic four-step tour only after new-user onboarding, persisted completion, and Settings replay. This combined shell still needs analyzer/build/Chrome validation. See `assets/audio/README.md` and `MINDMATE_REMAINING_BATCHES.md`.
+The Quiet Tide Modern shell includes a lower/slower Floating Tide bar, consistent app-bar behavior, lightweight 2D guide, four-step first-use tour, persisted completion, and Settings replay. The user confirmed the combined shell, navigation, tour controls/replay, and 8-cue Quick Reset work in Chrome. Physical-device and fresh-registration release checks remain. See `assets/audio/README.md` and `MINDMATE_REMAINING_BATCHES.md`.
 
 Post-audio dependency resolution, analyzer/tests, Android debug build, and Web build pass. Chrome playback, meaningful test coverage, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. The developer currently has no physical test phone, so emulator/Chrome checks are the near-term fallback and real-device-only behavior remains a release risk. See `MINDMATE_STATUS.md` for the exact status table.
 

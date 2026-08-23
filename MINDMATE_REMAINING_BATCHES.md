@@ -101,7 +101,7 @@ Implemented for validation before mass generation:
 
 Do not generate the remaining narration until the new 8-cue timeline passes analyzer/build and Chrome timing checks.
 
-#### Sub-batch 7A — Audio foundation and voice identity — pilot implemented, validation pending
+#### Sub-batch 7A — Audio foundation and voice identity — Chrome-validated; physical-device check pending
 
 - audition and approve one narrator;
 - add the chosen local audio-playback dependency;
@@ -181,7 +181,7 @@ Calm background music/ambience is approved only as a later optional layer. It mu
 
 ### Batch 7.5 — Floating navigation + contextual guide
 
-#### Floating Tide Orb — implemented, validation pending
+#### Floating Tide Orb — implemented and Chrome-validated
 
 - replaces the standard Material NavigationBar without changing the four destinations;
 - glides/hops softly between Home, Practice, Chat, and Me;
@@ -191,7 +191,7 @@ Calm background music/ambience is approved only as a later optional layer. It mu
 - includes semantics, keyboard focus, hover, and responsive segment positioning;
 - uses pure Flutter drawing and adds no image asset weight.
 
-#### Contextual first-use guide — implemented, validation pending
+#### Contextual first-use guide — implemented and Chrome-validated
 
 **Purpose:** Help new users understand the app without adding another long onboarding carousel or a distracting permanent mascot.
 
@@ -217,13 +217,11 @@ Exit criteria:
 - coach marks do not cover their target or critical controls at supported widths;
 - analyzer/tests/Web and Android builds pass.
 
-Validation order:
+Validation status:
 
-- run analyzer/tests/build after the combined shell change;
-- verify the lower/slower bar at narrow and wide widths;
-- complete a fresh registration/onboarding path to confirm automatic display;
-- verify Skip, completion persistence, and Settings replay;
-- keep child-screen redesign deferred until the shell is stable.
+- user confirmed the lower/slower navigation, labels, tab behavior, tour controls, Settings replay, and combined shell work in Chrome;
+- keep a fresh registration/onboarding trigger check and physical-device layout in the release matrix;
+- keep child-screen redesign deferred until higher-priority integrity/reliability work is complete.
 
 ### Batch 8 — Firestore integrity and authorization tests
 
@@ -534,19 +532,12 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 13. **Weak retention compared with habit specialists** — no strong personalized daily routine or reward loop.
 14. **No user data export/deletion flow** — a serious long-term privacy gap.
 15. **Account edge cases remain** — missing profile and partial registration failures need explicit handling.
-16. **Release proof is incomplete** — post-audio Android/Web builds pass, but the latest navigation/audio changes, runtime matrix, physical device, and signed release candidate remain pending.
+16. **Release proof is incomplete** — post-audio Android/Web builds and latest shell behavior pass in Chrome, but the full runtime matrix, physical device, and signed release candidate remain pending.
 17. **Broad scope creates maintenance risk** — many feature areas can become shallow or inconsistent if polish is spread too thin.
 18. **Package upgrades are pending** — 27 newer versions exist outside current constraints, but upgrading before feature freeze could introduce breakage.
 
 ## Current execution gate
 
-The Quiet Tide Modern shell, contextual guide, natural-voice pilot, and informational landing-site direction are implemented/approved to their documented checkpoints. Before expanding narration, adding ambience, or redesigning child screens:
+The user confirmed the Quiet Tide Modern shell, contextual guide/replay, Floating Tide navigation, and 8-cue Quick Reset behavior work in Chrome. Physical-device and fresh-registration release checks remain open.
 
-1. pull the combined Modern Shell batch;
-2. run analyzer/tests and rebuild Android/Web;
-3. confirm the slower/lower orb reaches all four tabs, labels stay readable, and tab state persists;
-4. confirm fresh-onboarding automatic tour, Skip/Next/Got it, completion persistence, and Settings replay;
-5. confirm Quick Reset alternates 4 main prompts and 4 reassurance captions/audio at 1 minute;
-6. record results and fix any remaining shell blocker first.
-
-The public landing site remains Batch 13A and must not replace or delay core app validation.
+The next planned implementation is **Batch 8 — Firestore integrity and authorization tests**. Begin only after explicit user approval. Do not expand narration, add ambience, redesign child screens, or start the public landing site ahead of this reliability work.

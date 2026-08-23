@@ -71,11 +71,11 @@ The next Chrome test confirmed playback but exposed source switching: phase/prom
 
 A later timing test showed the Box introduction could continue into the active timer and long phase sentences could be cut off. Start now stops the preview and waits for Cue 1 before beginning; all four phase clips were regenerated as concise commands. The user then confirmed the core breathing/meditation fixes worked.
 
-The newest change adds four midpoint reassurance cues to reduce long silent stretches without removing all intentional quiet. Literal human breathing loops and background music are not included in this batch. Later ambience must be optional, licensed, loop-safe, separately volume-controlled, and duck under speech.
+The newest change adds four midpoint reassurance cues to reduce long silent stretches without removing all intentional quiet. The user confirmed the updated Quick Reset/Box pilot works in Chrome. Literal human breathing loops and background music are not included in this batch. Later ambience must be optional, licensed, loop-safe, separately volume-controlled, and duck under speech.
 
 Still required:
 
-- confirm the 8-cue Quick Reset timeline changes audio and captions correctly at 1/3/5 minutes;
+- verify the 8-cue Quick Reset timeline across all 1/3/5-minute options during the release matrix;
 - test an Android emulator;
 - test audio focus, routing, interruption, and volume on a physical phone before release;
 - verify the empty-hold cue finishes comfortably inside the 4-second Box Breathing phase;
