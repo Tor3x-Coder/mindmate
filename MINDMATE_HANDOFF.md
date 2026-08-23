@@ -133,22 +133,21 @@ See `MINDMATE_STATUS.md` for exact files and status.
 3. **Appointment duplicate guard** — blocks another pending request to the same professional in the normal app flow.
 4. **AI Worker** — modes, limits, crisis route, rate-limit hook, logging, quota fallback, and model configuration.
 5. **Trusted contacts/support events** — owner-only contact storage, explicit call/message actions, follow-up events, and expanded emergency UI.
-6. **Batch 8 Firestore integrity (local only)** — pending-only appointment creation, admin status-only updates, user/admin profile protection, trusted/support schemas, service guards, and 13 emulator authorization tests.
+6. **Batch 8 Firestore integrity (validated, not deployed)** — pending-only appointment creation, admin status-only updates, user/admin profile protection, trusted/support schemas, service guards, and 13/13 passing emulator cases.
 
-Important: implementation is not proof of deployment. The Batch #5 rules remain live on `mindmate-app-fcf2d`. Batch 8 is not deployed and must wait for all 13 emulator cases plus Flutter analysis. The Arena sandbox completed JS/dependency checks but lacks Java, so it could not start the Firestore Emulator.
+Important: local validation is complete, but implementation is not proof of deployment. Batch #5 rules remain live on `mindmate-app-fcf2d`; Batch 8 is ready and still not deployed.
 
 ## Remaining backend/release work
 
 Immediate prototype path:
 
-1. Run Batch 8's 13 Firestore Emulator tests locally and run `flutter analyze`.
-2. Fix any denied normal flow or allowed attack case before deployment.
-3. Deploy Batch 8 rules only after every check passes, then record the project/result.
-4. Fix account/runtime reliability issues from Batch 9.
-5. Confirm/deploy `worker/index.js`, configure required bindings, test the live endpoint, and make the final AI model decision.
-6. Verify emergency resources and sensitive content.
-7. Run meaningful automated tests plus the complete device test matrix.
-8. Build a release candidate APK and freeze nonessential features.
+1. Deploy the tested Batch 8 rules to `mindmate-app-fcf2d` and record the exact result.
+2. Live-smoke normal appointment/trusted-contact flows and confirm obvious denied attacks remain denied.
+3. Fix account/runtime reliability issues from Batch 9.
+4. Confirm/deploy `worker/index.js`, configure required bindings, test the live endpoint, and make the final AI model decision.
+5. Verify emergency resources and sensitive content.
+6. Run meaningful automated tests plus the complete device test matrix.
+7. Build a release candidate APK and freeze nonessential features.
 
 See `MINDMATE_REMAINING_BATCHES.md` for tasks and exit criteria for Batches 6–13.
 
@@ -195,6 +194,4 @@ Check in
 
 ## Immediate next action
 
-Batch 8 code/tests are ready locally but not deployed. On the developer PC, confirm Java 21, install the isolated test dependencies, run all 13 emulator cases, then run Flutter analysis. If any case fails, stop and fix it; do not deploy. Exact commands are in `firestore_tests/README.md`.
-
-The developer still has no physical phone. Keep emulator/device checks open, and do not let the future landing page distract from this authorization gate.
+Batch 8 validation is green: 13/13 emulator cases, Flutter 0 errors/0 warnings, and the smoke test passed. Deploy only `firestore:rules` to `mindmate-app-fcf2d`, then record the output and live-smoke the normal flows. The developer still has no physical phone; keep device checks open and do not let the future landing page distract from this authorization gate.

@@ -47,10 +47,11 @@ npm test
 
 `npm test` starts the Firestore Emulator, runs the Mocha suite, and stops the emulator automatically. Test dependencies are development-only: `npm audit --omit=dev` reports 0 production vulnerabilities, and the locked toolchain currently has no high/critical audit findings.
 
-Expected result:
+Validated on 23 August 2026 with Android Studio Java 21:
 
 ```text
-13 passing
+13 passing (12s)
+Script exited successfully (code 0)
 ```
 
-Do not deploy `firestore.rules` until these tests pass and `flutter analyze` confirms the client/service guard changes compile.
+The `PERMISSION_DENIED` lines in the test log are expected attack attempts and count as successes when followed by a checkmark. Flutter analysis also completed with 0 errors and 0 warnings, and the smoke test passed. Deployment remains a separate explicit step.

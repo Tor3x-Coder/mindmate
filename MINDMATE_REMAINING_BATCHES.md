@@ -223,7 +223,7 @@ Validation status:
 - keep a fresh registration/onboarding trigger check and physical-device layout in the release matrix;
 - keep child-screen redesign deferred until higher-priority integrity/reliability work is complete.
 
-### Batch 8 — Firestore integrity and authorization tests — implemented locally, validation pending
+### Batch 8 — Firestore integrity and authorization tests — validation passed, deployment pending
 
 **Purpose:** Close the most important prototype security gaps without touching live data until authorization tests pass.
 
@@ -238,13 +238,18 @@ Implemented:
 7. Service methods reject non-pending creates and invalid status values before contacting Firestore.
 8. A 13-case Firebase Emulator suite covers owner, cross-user, self-admin, pending-only, status-only, trusted-contact, and support-event behavior.
 
+Validation result:
+
+- Java 21 Firestore Emulator suite: **13/13 passing in 12 seconds**;
+- expected attack writes produced `PERMISSION_DENIED` and counted as passing denials;
+- `flutter analyze`: 0 errors, 0 warnings, 4 informational notices;
+- `flutter test`: 1 smoke test passed.
+
 Pending:
 
-1. Run the suite on a Java 21 environment.
-2. Run `flutter analyze` for the service guard.
-3. Fix every failing allow/deny case.
-4. Deploy only after all checks pass.
-5. Record the exact Firebase project and deployment result.
+1. Deploy only `firestore:rules` to `mindmate-app-fcf2d`.
+2. Record the deployment result.
+3. Live-smoke normal flows and obvious denials.
 
 Deferred limitation:
 
@@ -540,14 +545,13 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 
 ## Current execution gate
 
-Batch 8 rules, service guards, and 13 emulator cases are implemented locally. The live Firebase project still uses Batch #5 rules.
+Batch 8 local validation passed: 13/13 emulator cases, Flutter 0 errors/0 warnings, and the smoke test passed. The live Firebase project still uses Batch #5 rules.
 
 Current gate:
 
-1. pull/install the isolated `firestore_tests` dependencies;
-2. provide Java 21 to the Firebase Emulator;
-3. get all 13 cases passing;
-4. run Flutter analysis;
-5. deploy only after both gates pass and record the result.
+1. deploy only `firestore:rules` to `mindmate-app-fcf2d`;
+2. record the successful compilation/release output;
+3. live-smoke normal and denied flows;
+4. then move to Batch 9.
 
-Do not begin Batch 9, expand narration, or start the landing site before this authorization gate is complete.
+Do not expand narration or start the landing site ahead of this authorization gate.
