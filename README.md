@@ -34,7 +34,7 @@ Backend/integration batches 1–5 are implemented in the repository:
 
 They are **not yet considered release-complete**. The final Batch #5 Firestore rules compiled and were released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Local dependency resolution and static analysis passed with 0 errors, 0 warnings, and 21 non-blocking informational notices. `flutter test` also passed the repository's single basic smoke test; this is not meaningful end-to-end coverage.
 
-Guided audio has a controlled pilot: one shared offline player, separate Quick Reset welcome, 4 timed meditation prompts, and 6 Box assets. The 11 MP3s total about 314 KB. Dependencies, analysis, smoke test, Android/Web builds, and loading pass. Latest changes stop preview before breathing timing, use concise phase cues, and slow Meditation to `0.88x` and Breathing to `0.92x`; runtime confirmation remains. Do not expand narration until timing and pacing pass. See `assets/audio/README.md` and Sub-batches 7A–7E in `MINDMATE_REMAINING_BATCHES.md`.
+Guided audio has a controlled pilot: one shared offline player, separate Quick Reset welcome, 4 main prompts, 4 midpoint reassurance cues, and 6 Box assets. The 15 MP3s total about 370 KB. Core playback previously worked; the newest 8-cue timeline and Floating Tide Orb navigation need analyzer/build/Chrome validation. Literal breathing loops are not included, and later ambience must be optional/licensed with separate volume and voice ducking. See `assets/audio/README.md` and `MINDMATE_REMAINING_BATCHES.md`.
 
 Post-audio dependency resolution, analyzer/tests, Android debug build, and Web build pass. Chrome playback, meaningful test coverage, Firestore denial tests, live Worker deployment, end-to-end device testing, and emergency-resource verification remain pending or unconfirmed. The developer currently has no physical test phone, so emulator/Chrome checks are the near-term fallback and real-device-only behavior remains a release risk. See `MINDMATE_STATUS.md` for the exact status table.
 
@@ -73,7 +73,7 @@ The AI companion is for supportive conversation and reflection. Clear crisis phr
 - goals and preferred check-in window;
 - session persistence through Firebase Auth;
 - light/dark/system theme, text-size, and animation preferences;
-- bottom navigation: Home, Practice, Chat, and Me.
+- custom Floating Tide Orb navigation for Home, Practice, Chat, and Me, preserving tab state with `IndexedStack`;
 
 ### Mood and next-step flow
 

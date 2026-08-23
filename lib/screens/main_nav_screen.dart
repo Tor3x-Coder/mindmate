@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import '../utils/app_theme.dart';
+import 'package:provider/provider.dart';
+
+import '../services/app_settings_controller.dart';
+import '../widgets/floating_tide_navigation_bar.dart';
 import 'home/home_tab_screen.dart';
 import 'practice/practice_tab_screen.dart';
 import 'chat/chat_tab_screen.dart';
@@ -19,6 +22,29 @@ class MainNavScreen extends StatefulWidget {
 class _MainNavScreenState extends State<MainNavScreen> {
   int _currentIndex = 0;
 
+  static const List<FloatingTideDestination> _destinations = [
+    FloatingTideDestination(
+      icon: Icons.home_outlined,
+      selectedIcon: Icons.home_rounded,
+      label: 'Home',
+    ),
+    FloatingTideDestination(
+      icon: Icons.self_improvement_outlined,
+      selectedIcon: Icons.self_improvement_rounded,
+      label: 'Practice',
+    ),
+    FloatingTideDestination(
+      icon: Icons.chat_bubble_outline_rounded,
+      selectedIcon: Icons.chat_bubble_rounded,
+      label: 'Chat',
+    ),
+    FloatingTideDestination(
+      icon: Icons.person_outline_rounded,
+      selectedIcon: Icons.person_rounded,
+      label: 'Me',
+    ),
+  ];
+
   final List<Widget> _tabs = const [
     HomeTabScreen(),
     PracticeTabScreen(),
@@ -28,40 +54,21 @@ class _MainNavScreenState extends State<MainNavScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final settings = context.watch<AppSettingsController>();
 
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
         children: _tabs,
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: FloatingTideNavigationBar(
         selectedIndex: _currentIndex,
-        onDestinationSelected: (index) => setState(() => _currentIndex = index),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        indicatorColor: AppTheme.primary.withValues(alpha: isDark ? 0.24 : 0.14),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.self_improvement_outlined),
-            selectedIcon: Icon(Icons.self_improvement_rounded),
-            label: 'Practice',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline_rounded),
-            selectedIcon: Icon(Icons.chat_bubble_rounded),
-            label: 'Chat',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Me',
-          ),
-        ],
+        destinations: _destinations,
+        animationIntensity: settings.animationIntensity,
+        onDestinationSelected: (index) {
+          if (index == _currentIndex) return;
+          setState(() => _currentIndex = index);
+        },
       ),
     );
   }

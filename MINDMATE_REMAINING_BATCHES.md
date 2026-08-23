@@ -94,12 +94,12 @@ Implemented for validation before mass generation:
 - shared offline `just_audio` service/provider;
 - real Sound preference behavior in supported sessions;
 - one approved calm feminine narrator;
-- 4 unique Quick Reset prompts scheduled across 1/3/5 minutes;
-- Box Breathing introduction, separate inhale/full-hold/exhale/empty-hold cues, and completion;
-- preview, pause/resume, replay, mute, text fallback, and stop-on-exit controls;
-- 10 MP3s totaling 280,242 bytes (about 274 KB).
+- Quick Reset welcome, 4 main prompts, and 4 unique midpoint reassurance cues scheduled across 1/3/5 minutes;
+- Box Breathing introduction, separate concise inhale/full-hold/exhale/empty-hold cues, and completion;
+- preview, pause/resume, replay, mute, text fallback, source serialization, and stop-on-exit controls;
+- 15 MP3s totaling 379,299 bytes (about 370 KB).
 
-Do not generate the remaining narration until local package resolution, analyzer, tests, Android/Web builds, and Chrome playback checks pass.
+Do not generate the remaining narration until the new 8-cue timeline passes analyzer/build and Chrome timing checks.
 
 #### Sub-batch 7A — Audio foundation and voice identity — pilot implemented, validation pending
 
@@ -175,11 +175,23 @@ Still required:
 - emulator check passes when available;
 - physical-device audio remains a documented release gate until tested.
 
-#### Post-competition audio expansion
+#### Later ambience expansion
 
-Ambient soundscapes, optional downloads, multiple narrator choices, localization, and longer continuous recordings remain post-competition work. They should not be mixed into Batch 7.
+Calm background music/ambience is approved only as a later optional layer. It must be licensed for distribution, loop seamlessly, have a separate volume/off control, duck under spoken guidance, and never be required. Literal human breathing loops are rejected for now because they can feel intrusive and complicate phase timing. Multiple narrator choices, localization, and longer recordings remain post-competition work.
 
-### Batch 7.5 — Contextual first-use guide — approved, not implemented
+### Batch 7.5 — Floating navigation + contextual guide
+
+#### Floating Tide Orb — implemented, validation pending
+
+- replaces the standard Material NavigationBar without changing the four destinations;
+- glides/hops softly between Home, Practice, Chat, and Me;
+- keeps visible labels and selected icon changes rather than relying only on colour;
+- preserves tab state through the existing IndexedStack;
+- honors browser/device reduced-motion settings and app animation intensity;
+- includes semantics, keyboard focus, hover, and responsive segment positioning;
+- uses pure Flutter drawing and adds no image asset weight.
+
+#### Contextual first-use guide — approved, not implemented
 
 **Purpose:** Help new users understand the app without adding another long onboarding carousel or a distracting permanent mascot.
 
@@ -207,8 +219,9 @@ Exit criteria:
 
 Implementation order:
 
-- do not start this batch until the audio pilot passes Android/Web builds and Chrome playback checks;
-- complete it before release UX rehearsal, but do not let it delay safety or build blockers.
+- validate the Floating Tide bar and new Quick Reset timeline first;
+- add coach marks only after tab target positions are stable;
+- complete the guide before release UX rehearsal, but do not let it delay safety or build blockers.
 
 ### Batch 8 — Firestore integrity and authorization tests
 
@@ -519,18 +532,18 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 13. **Weak retention compared with habit specialists** — no strong personalized daily routine or reward loop.
 14. **No user data export/deletion flow** — a serious long-term privacy gap.
 15. **Account edge cases remain** — missing profile and partial registration failures need explicit handling.
-16. **Release proof is incomplete** — the pre-audio debug APK built, but the post-audio build, Web build, runtime matrix, and release candidate remain pending.
+16. **Release proof is incomplete** — post-audio Android/Web builds pass, but the latest navigation/audio changes, runtime matrix, physical device, and signed release candidate remain pending.
 17. **Broad scope creates maintenance risk** — many feature areas can become shallow or inconsistent if polish is spread too thin.
 18. **Package upgrades are pending** — 27 newer versions exist outside current constraints, but upgrading before feature freeze could introduce breakage.
 
 ## Current execution gate
 
-The natural-voice scope, contextual-guide design, and informational landing-site direction are approved. Android/Web builds pass and Chrome loads audio. Latest feedback found breathing preview/timer overlap, overlong 4-second cues, and fast meditation delivery. Preview-stop/start synchronization, concise phase clips, and slower playback are implemented. Before expanding narration or implementing coach marks:
+The natural-voice scope, contextual-guide design, Floating Tide navigation, and informational landing-site direction are approved. The user confirmed the core pilot playback works. Before expanding narration, adding ambience, or implementing coach marks:
 
-1. pull the fix and fully restart Flutter Chrome;
-2. confirm Start immediately ends the breathing introduction;
-3. confirm each Box phase says its matching short cue without cutoff;
-4. confirm Quick Reset changes prompts and feels calm at `0.88x`;
-5. record results and fix any remaining pilot blocker first.
+1. pull the navigation + reassurance-cue batch;
+2. run analyzer/tests and rebuild Android/Web;
+3. confirm the orb reaches all four tabs, labels stay readable, and tab state persists;
+4. confirm Quick Reset alternates 4 main prompts and 4 matching reassurance captions/audio at 1 minute;
+5. record results and fix any remaining blocker first.
 
 The public landing site remains Batch 13A and must not replace or delay core app validation.

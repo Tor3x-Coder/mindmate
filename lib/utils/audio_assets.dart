@@ -16,6 +16,13 @@ class MindMateAudioAssets {
     'assets/audio/meditation/stress_relief/quick_reset/04_close.mp3',
   ];
 
+  static const List<String> quickResetSupportPrompts = [
+    'assets/audio/meditation/stress_relief/quick_reset/05_steady.mp3',
+    'assets/audio/meditation/stress_relief/quick_reset/06_soften.mp3',
+    'assets/audio/meditation/stress_relief/quick_reset/07_gently.mp3',
+    'assets/audio/meditation/stress_relief/quick_reset/08_finish_softly.mp3',
+  ];
+
   static const String boxBreathingIntro =
       'assets/audio/breathing/box/00_intro.mp3';
 

@@ -38,7 +38,8 @@ Before the audio pilot, the developer successfully ran dependency resolution, an
 | Mode-aware AI Worker and safety route | Yes | Dart analysis and `node --check` passed; live tests pending | **Unconfirmed** | No |
 | Trusted contacts and support-event tracking | Yes | `flutter analyze` passed; runtime pending | Rules live; app build unverified | No |
 | State/international emergency-number UI | Yes | `flutter analyze` passed; device tests pending | N/A | No; resource verification required |
-| Guided audio: Meditation, Breathing, Daily Snapshot | Pilot + sync/pacing fixes implemented | Chrome loads/plays; short phase cues + 0.88x meditation added; retest pending | N/A | Quick Reset + Box Breathing only; final timing/control verification incomplete |
+| Guided audio: Meditation, Breathing, Daily Snapshot | Pilot + reassurance cues implemented | Prior voice/switching worked; 8-cue Quick Reset timeline needs retest | N/A | Quick Reset + Box Breathing only; ambience deferred |
+| Floating Tide Orb navigation | Implemented | Static checks pass; Flutter/Chrome validation pending | N/A | Four tabs; runtime layout/motion unverified |
 | Contextual first-use guide | Design approved, not implemented | N/A | N/A | Four coach marks + lightweight 2D MindMate figure planned |
 | Informational landing site | Direction approved, not implemented | N/A | N/A | Static product info + signed APK download; no hosted Flutter app |
 | Android APK | Post-audio debug APK built | Build passed in 411 seconds despite recovered stale-depfile warnings | N/A | No phone available; emulator/device verification pending |
@@ -182,13 +183,13 @@ Pilot implementation now exists:
 
 - one shared `just_audio` service/provider prevents intentional overlap;
 - the Sound preference controls real supported-session behavior;
-- Quick Reset has 4 distinct timed narrated prompts for 1/3/5 minutes;
-- Box Breathing has an introduction, 4 distinct phase cues, and completion cue;
-- pause/resume, replay, mute, preview, stop-on-exit, and written fallback UI were added;
-- 10 MP3 files total **280,242 bytes (about 274 KB)**;
-- asset registry, relative imports, delimiters, and whitespace checks pass.
+- Quick Reset has 4 main prompts plus 4 short reassurance cues, interleaved across 1/3/5 minutes;
+- Box Breathing has an introduction, 4 distinct concise phase cues, and completion cue;
+- pause/resume, replay, mute, preview, stop-on-exit, and matching written captions were added;
+- 15 MP3 files total **379,299 bytes (about 370 KB)**;
+- asset registry, file uniqueness, imports, delimiters, and whitespace checks pass.
 
-Post-audio dependency resolution, analysis, the smoke test, Android build, and Web build pass. Chrome loads and plays MP3s. The latest runtime feedback found a breathing preview/timer race, phase sentences too long for 4 seconds, and meditation pacing too fast. Start now stops preview and loads Cue 1 before timing; four concise Box cues were regenerated; meditation uses `0.88x` playback and breathing `0.92x`. Pull, fully restart Chrome, and retest before expanding coverage. See `assets/audio/README.md`.
+Prior Chrome feedback confirmed loading, voice playback, and the latest switching fix. The new gate is the 8-cue Quick Reset timeline and custom Floating Tide Orb navigation. Literal breathing loops and background music are not included: later ambience must be optional, licensed, loop-safe, separately volume-controlled, and duck under narration.
 
 ### 3. Test the deployed Firestore configuration
 
@@ -302,7 +303,9 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 22 Aug 2026 | Landing-site direction | Planning only | Separate informational static site; supplied page is design reference only | Not deployed | Build later with product copy + signed release APK download |
 | 22 Aug 2026 | Chrome audio asset-load fix | Explicit nested asset directories + debug-only load/play logs | Initial preview failed safely; loading later confirmed | Not deployed | Continue playback matrix |
 | 22 Aug 2026 | Audio cue-switching + intro fix | Serialized source replacement; distinct Quick Reset welcome asset/copy | MP3 hashes/registry differ; loading/speech confirmed | Not deployed | Continue timing/pacing test |
-| 22 Aug 2026 | Breathing sync + narration pacing | Preview-stop/start synchronization; 4 concise Box cues; meditation 0.88x, breathing 0.92x | Static checks pass; runtime retest pending | Not deployed | Pull, restart Chrome, verify no cutoffs and calmer pace |
+| 22 Aug 2026 | Breathing sync + narration pacing | Preview-stop/start synchronization; 4 concise Box cues; meditation 0.88x, breathing 0.92x | User confirmed core playback works; no major blocker reported | Not deployed | Keep physical-device test pending |
+| 22 Aug 2026 | Quick Reset reassurance timeline | Added 4 unique midpoint cues with matching captions; 15 MP3s total | Registry/hash/delimiter checks pass; runtime retest pending | Not deployed | Verify 8-cue timing at 1/3/5 minutes |
+| 22 Aug 2026 | Floating Tide Orb navigation | Replaced standard NavigationBar with animated four-tab orb/labels; IndexedStack preserved | Static delimiter/import checks pass; Flutter/Chrome test pending | Not deployed | Pull, analyze, and test layout/motion |
 
 ## Rule for the next agent
 
@@ -310,6 +313,6 @@ Before editing code:
 
 1. run `git status --short --branch` and `git log --oneline -10`;
 2. read this file, `MINDMATE_CODING_GUIDE.md`, and `MINDMATE_REMAINING_BATCHES.md`;
-3. treat dependency resolution, analyzer, smoke test, Android build, and Web build as passed; confirm Chrome playback before expanding narration coverage;
+3. treat the earlier dependency/analyzer/test/build gates as passed; validate the new Floating Tide navigation and 8-cue Quick Reset timeline before expanding narration coverage;
 4. continue from **What remains**, not from an older chat transcript;
 5. update this file and the relevant Markdown documentation in the same batch as every fix.

@@ -11,23 +11,62 @@ import '../../services/firestore_service.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/audio_assets.dart';
 
+class _MeditationCue {
+  final String text;
+  final String? audioAsset;
+
+  const _MeditationCue({required this.text, this.audioAsset});
+}
+
 class _MeditationSession {
   final String name;
   final String description;
   final List<String> guidingLines;
+  final List<String> supportingLines;
   final String? introAudioAsset;
   final List<String> audioPrompts;
+  final List<String> supportAudioPrompts;
 
   const _MeditationSession({
     required this.name,
     required this.description,
     required this.guidingLines,
+    this.supportingLines = const [],
     this.introAudioAsset,
     this.audioPrompts = const [],
+    this.supportAudioPrompts = const [],
   });
 
   bool get hasIntroAudio => introAudioAsset != null;
   bool get hasGuidedAudio => audioPrompts.length == guidingLines.length;
+
+  List<_MeditationCue> get timedCues {
+    final cues = <_MeditationCue>[];
+
+    for (var index = 0; index < guidingLines.length; index++) {
+      cues.add(
+        _MeditationCue(
+          text: guidingLines[index],
+          audioAsset: index < audioPrompts.length
+              ? audioPrompts[index]
+              : null,
+        ),
+      );
+
+      if (index < supportingLines.length) {
+        cues.add(
+          _MeditationCue(
+            text: supportingLines[index],
+            audioAsset: index < supportAudioPrompts.length
+                ? supportAudioPrompts[index]
+                : null,
+          ),
+        );
+      }
+    }
+
+    return cues;
+  }
 }
 
 class _MeditationCategory {
@@ -70,8 +109,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'As you breathe out, imagine releasing just a little of the pressure. Nothing else needs to be solved in this moment.',
             'Take one more unhurried breath. Notice any small sense of space you have created, and carry it with you when you are ready.',
           ],
+          supportingLines: [
+            'Stay with this slow, steady breath.',
+            'Easy and unhurried. Let your body soften.',
+            'You’re doing well. Keep going gently.',
+            'Take your time. We’ll finish softly.',
+          ],
           introAudioAsset: MindMateAudioAssets.quickResetIntro,
           audioPrompts: MindMateAudioAssets.quickResetPrompts,
+          supportAudioPrompts: MindMateAudioAssets.quickResetSupportPrompts,
         ),
         _MeditationSession(
           name: 'Release Tension',
@@ -289,9 +335,9 @@ class _MeditationScreenState extends State<MeditationScreen>
   bool _isRunning = false;
   bool _isPaused = false;
   int _secondsRemaining = 0;
-  int _currentLineIndex = 0;
-  int _secondsPerLine = 0;
-  int _secondsUntilNextLine = 0;
+  int _currentCueIndex = 0;
+  int _secondsPerCue = 0;
+  int _secondsUntilNextCue = 0;
   Timer? _timer;
   AudioGuideService? _audioGuide;
   late AnimationController _pulseController;
@@ -336,22 +382,23 @@ class _MeditationScreenState extends State<MeditationScreen>
     if (session == null) return;
 
     final totalSeconds = _selectedDurationMinutes * 60;
+    final timedCues = session.timedCues;
     _timer?.cancel();
-    _secondsPerLine =
-        (totalSeconds / session.guidingLines.length).floor().clamp(3, 999).toInt();
+    _secondsPerCue =
+        (totalSeconds / timedCues.length).floor().clamp(3, 999).toInt();
 
     setState(() {
       _isRunning = true;
       _isPaused = false;
       _secondsRemaining = totalSeconds;
-      _currentLineIndex = 0;
-      _secondsUntilNextLine = _secondsPerLine;
+      _currentCueIndex = 0;
+      _secondsUntilNextCue = _secondsPerCue;
     });
     _pulseController.repeat(reverse: true);
 
     if (context.read<AppSettingsController>().soundEnabled &&
-        session.hasGuidedAudio) {
-      unawaited(_playMeditationPrompt(0, showError: true));
+        timedCues.first.audioAsset != null) {
+      unawaited(_playMeditationCue(0, showError: true));
     }
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -362,29 +409,29 @@ class _MeditationScreenState extends State<MeditationScreen>
       if (_isPaused) return;
 
       var shouldFinish = false;
-      int? nextPromptIndex;
+      int? nextCueIndex;
 
       setState(() {
         _secondsRemaining--;
-        _secondsUntilNextLine--;
+        _secondsUntilNextCue--;
 
         if (_secondsRemaining <= 0) {
           shouldFinish = true;
           return;
         }
 
-        if (_secondsUntilNextLine <= 0 &&
-            _currentLineIndex < session.guidingLines.length - 1) {
-          _currentLineIndex++;
-          _secondsUntilNextLine = _secondsPerLine;
-          nextPromptIndex = _currentLineIndex;
+        if (_secondsUntilNextCue <= 0 &&
+            _currentCueIndex < timedCues.length - 1) {
+          _currentCueIndex++;
+          _secondsUntilNextCue = _secondsPerCue;
+          nextCueIndex = _currentCueIndex;
         }
       });
 
-      if (nextPromptIndex != null &&
+      if (nextCueIndex != null &&
           context.read<AppSettingsController>().soundEnabled &&
-          session.hasGuidedAudio) {
-        unawaited(_playMeditationPrompt(nextPromptIndex!));
+          timedCues[nextCueIndex!].audioAsset != null) {
+        unawaited(_playMeditationCue(nextCueIndex!));
       }
 
       if (shouldFinish) {
@@ -412,22 +459,21 @@ class _MeditationScreenState extends State<MeditationScreen>
     }
   }
 
-  Future<void> _playMeditationPrompt(
+  Future<void> _playMeditationCue(
     int index, {
     bool showError = false,
   }) async {
     final session = _selectedSession;
     final audioGuide = _audioGuide;
-    if (session == null ||
-        audioGuide == null ||
-        !session.hasGuidedAudio ||
-        index < 0 ||
-        index >= session.audioPrompts.length) {
-      return;
-    }
+    if (session == null || audioGuide == null) return;
+
+    final timedCues = session.timedCues;
+    if (index < 0 || index >= timedCues.length) return;
+    final audioAsset = timedCues[index].audioAsset;
+    if (audioAsset == null) return;
 
     final played = await audioGuide.playAsset(
-      session.audioPrompts[index],
+      audioAsset,
       speed: _narrationSpeed,
     );
     if (!played && showError && mounted) {
@@ -451,7 +497,7 @@ class _MeditationScreenState extends State<MeditationScreen>
     }
 
     if (_isRunning && !_isPaused && _selectedSession?.hasGuidedAudio == true) {
-      await _playMeditationPrompt(_currentLineIndex, showError: true);
+      await _playMeditationCue(_currentCueIndex, showError: true);
     }
   }
 
@@ -471,7 +517,7 @@ class _MeditationScreenState extends State<MeditationScreen>
         if (audioGuide.hasLoadedAudio) {
           unawaited(audioGuide.resume());
         } else {
-          unawaited(_playMeditationPrompt(_currentLineIndex, showError: true));
+          unawaited(_playMeditationCue(_currentCueIndex, showError: true));
         }
       }
     }
@@ -483,7 +529,7 @@ class _MeditationScreenState extends State<MeditationScreen>
         !context.read<AppSettingsController>().soundEnabled) {
       return;
     }
-    unawaited(_playMeditationPrompt(_currentLineIndex, showError: true));
+    unawaited(_playMeditationCue(_currentCueIndex, showError: true));
   }
 
   void _cancelSession() {
@@ -1051,8 +1097,8 @@ class _MeditationScreenState extends State<MeditationScreen>
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 450),
                   child: Text(
-                    session.guidingLines[_currentLineIndex],
-                    key: ValueKey(_currentLineIndex),
+                    session.timedCues[_currentCueIndex].text,
+                    key: ValueKey(_currentCueIndex),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 17,
