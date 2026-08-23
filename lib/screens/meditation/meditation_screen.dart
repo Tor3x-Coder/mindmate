@@ -15,15 +15,18 @@ class _MeditationSession {
   final String name;
   final String description;
   final List<String> guidingLines;
+  final String? introAudioAsset;
   final List<String> audioPrompts;
 
   const _MeditationSession({
     required this.name,
     required this.description,
     required this.guidingLines,
+    this.introAudioAsset,
     this.audioPrompts = const [],
   });
 
+  bool get hasIntroAudio => introAudioAsset != null;
   bool get hasGuidedAudio => audioPrompts.length == guidingLines.length;
 }
 
@@ -65,6 +68,7 @@ class _MeditationScreenState extends State<MeditationScreen>
             'As you breathe out, imagine releasing just a little of the pressure. Nothing else needs to be solved in this moment.',
             'Take one more unhurried breath. Notice any small sense of space you have created, and carry it with you when you are ready.',
           ],
+          introAudioAsset: MindMateAudioAssets.quickResetIntro,
           audioPrompts: MindMateAudioAssets.quickResetPrompts,
         ),
         _MeditationSession(
@@ -386,6 +390,21 @@ class _MeditationScreenState extends State<MeditationScreen>
         unawaited(_finishSession());
       }
     });
+  }
+
+  Future<void> _playMeditationIntro({bool showError = false}) async {
+    final introAsset = _selectedSession?.introAudioAsset;
+    final audioGuide = _audioGuide;
+    if (introAsset == null || audioGuide == null) return;
+
+    final played = await audioGuide.playAsset(introAsset);
+    if (!played && showError && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Voice preview could not start. The session is still available.'),
+        ),
+      );
+    }
   }
 
   Future<void> _playMeditationPrompt(
@@ -754,13 +773,13 @@ class _MeditationScreenState extends State<MeditationScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Preview guidance',
+                  'What to expect',
                   style: TextStyle(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 9),
-                Text(
-                  session.guidingLines.first,
-                  style: const TextStyle(
+                const Text(
+                  'A few gentle prompts will appear during the session, with quiet space between them.',
+                  style: TextStyle(
                     color: AppTheme.textLight,
                     height: 1.45,
                   ),
@@ -808,7 +827,7 @@ class _MeditationScreenState extends State<MeditationScreen>
     final settings = context.watch<AppSettingsController>();
     final audioGuide = context.watch<AudioGuideService>();
     final hasAudio = session.hasGuidedAudio;
-    final previewAsset = hasAudio ? session.audioPrompts.first : null;
+    final previewAsset = session.introAudioAsset;
     final previewPlaying = previewAsset != null &&
         audioGuide.isCurrentAsset(previewAsset) &&
         audioGuide.isPlaying;
@@ -836,13 +855,13 @@ class _MeditationScreenState extends State<MeditationScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasAudio ? 'Natural voice guidance' : 'Text guidance',
+                  hasAudio ? 'Meet your session guide' : 'Text guidance',
                   style: const TextStyle(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   hasAudio
-                      ? 'Timed prompts adapt to your chosen session length.'
+                      ? 'Hear a short welcome. Guidance begins after you tap Begin.'
                       : 'Natural narration is still being added to this session.',
                   style: const TextStyle(
                     color: AppTheme.textLight,
@@ -853,14 +872,14 @@ class _MeditationScreenState extends State<MeditationScreen>
               ],
             ),
           ),
-          if (hasAudio && settings.soundEnabled)
+          if (session.hasIntroAudio && settings.soundEnabled)
             IconButton(
-              tooltip: previewPlaying ? 'Stop preview' : 'Preview voice',
+              tooltip: previewPlaying ? 'Stop introduction' : 'Meet your guide',
               onPressed: () {
                 if (previewPlaying) {
                   unawaited(audioGuide.stop());
                 } else {
-                  unawaited(_playMeditationPrompt(0, showError: true));
+                  unawaited(_playMeditationIntro(showError: true));
                 }
               },
               icon: Icon(

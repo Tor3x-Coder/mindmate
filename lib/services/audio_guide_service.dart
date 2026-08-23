@@ -14,6 +14,7 @@ class AudioGuideService extends ChangeNotifier {
 
   String? _currentAsset;
   int _requestGeneration = 0;
+  Future<void> _sourceOperation = Future<void>.value();
   bool _isDisposed = false;
 
   AudioGuideService() {
@@ -33,31 +34,60 @@ class AudioGuideService extends ChangeNotifier {
 
   /// Stops any existing narration, loads [assetPath], and starts playback.
   /// Returns false when the asset could not be loaded.
-  Future<bool> playAsset(String assetPath) async {
+  ///
+  /// Source changes are serialized. Without this queue, a timer can request a
+  /// new prompt while the previous setAsset/play operation is still settling,
+  /// which caused Web to keep replaying the first loaded clip.
+  Future<bool> playAsset(String assetPath) {
     final generation = ++_requestGeneration;
 
-    try {
-      // setAsset replaces the current source and stops its playback. Calling
-      // stop() first is unnecessary and has caused source-replacement issues
-      // in some just_audio platform implementations.
-      await _player.setAsset(assetPath);
-      if (generation != _requestGeneration) return false;
+    return _enqueueSourceOperation(() async {
+      if (generation != _requestGeneration || _isDisposed) return false;
 
-      _currentAsset = assetPath;
-      _notifyIfActive();
-      unawaited(_playLoadedAudio(generation));
-      return true;
-    } catch (error, stackTrace) {
-      if (kDebugMode) {
-        debugPrint('AudioGuideService could not load $assetPath: $error');
-        debugPrintStack(stackTrace: stackTrace);
-      }
-      if (generation == _requestGeneration) {
+      try {
+        if (_currentAsset != null ||
+            _player.processingState != ProcessingState.idle) {
+          await _player.stop();
+        }
+        if (generation != _requestGeneration || _isDisposed) return false;
+
         _currentAsset = null;
+        if (kDebugMode) {
+          debugPrint('AudioGuideService loading $assetPath');
+        }
+        await _player.setAsset(assetPath);
+        if (generation != _requestGeneration || _isDisposed) return false;
+
+        _currentAsset = assetPath;
         _notifyIfActive();
+        unawaited(_playLoadedAudio(generation));
+        return true;
+      } catch (error, stackTrace) {
+        if (kDebugMode) {
+          debugPrint('AudioGuideService could not load $assetPath: $error');
+          debugPrintStack(stackTrace: stackTrace);
+        }
+        if (generation == _requestGeneration) {
+          _currentAsset = null;
+          _notifyIfActive();
+        }
+        return false;
       }
-      return false;
-    }
+    });
+  }
+
+  Future<T> _enqueueSourceOperation<T>(Future<T> Function() operation) {
+    final completer = Completer<T>();
+
+    _sourceOperation = _sourceOperation.then((_) async {
+      try {
+        completer.complete(await operation());
+      } catch (error, stackTrace) {
+        completer.completeError(error, stackTrace);
+      }
+    });
+
+    return completer.future;
   }
 
   Future<void> pause() async {
@@ -81,11 +111,16 @@ class AudioGuideService extends ChangeNotifier {
     unawaited(_playLoadedAudio(_requestGeneration));
   }
 
-  Future<void> stop() async {
-    _requestGeneration++;
-    _currentAsset = null;
-    await _player.stop();
-    _notifyIfActive();
+  Future<void> stop() {
+    final generation = ++_requestGeneration;
+
+    return _enqueueSourceOperation(() async {
+      if (_isDisposed) return;
+      await _player.stop();
+      if (generation != _requestGeneration) return;
+      _currentAsset = null;
+      _notifyIfActive();
+    });
   }
 
   Future<void> _playLoadedAudio(int generation) async {

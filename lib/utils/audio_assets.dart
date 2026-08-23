@@ -6,6 +6,9 @@
 class MindMateAudioAssets {
   MindMateAudioAssets._();
 
+  static const String quickResetIntro =
+      'assets/audio/meditation/stress_relief/quick_reset/00_intro.mp3';
+
   static const List<String> quickResetPrompts = [
     'assets/audio/meditation/stress_relief/quick_reset/01_settle.mp3',
     'assets/audio/meditation/stress_relief/quick_reset/02_notice.mp3',

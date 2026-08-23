@@ -6,20 +6,22 @@ This directory contains offline spoken guidance. The Flutter app must not call a
 
 ## Pilot coverage
 
-The first Audio Sub-batch 7A pilot contains 10 MP3 files:
+The Audio Sub-batch 7A pilot contains 11 MP3 files:
 
+- 1 separate Quick Reset welcome/introduction;
 - 4 distinct timed prompts for Meditation → Stress Relief → Quick Reset;
 - 1 Box Breathing introduction;
 - 4 distinct Box Breathing phase cues;
 - 1 Box Breathing completion cue.
 
-Total pilot asset size: **280,242 bytes (about 274 KB)**.
+Total pilot MP3 size: **327,279 bytes (about 320 KB)**.
 
 The current pilot does not yet cover the other 17 meditation sessions, 4-7-8 Breathing, Simple Calm, Daily Snapshot, or Wellness Result. Do not describe the full audio feature as complete until those assets and integrations exist.
 
 ## Playback architecture
 
 - `lib/services/audio_guide_service.dart` owns one shared `just_audio` player so clips cannot intentionally overlap.
+- source changes are serialized and stop the active source before loading the next cue, preventing Web from sticking to the first clip;
 - `lib/utils/audio_assets.dart` is the central asset-path registry.
 - `AppSettingsController.soundEnabled` controls whether narration plays.
 - Written guidance remains visible for accessibility and silent use.
@@ -29,6 +31,8 @@ The current pilot does not yet cover the other 17 meditation sessions, 4-7-8 Bre
 ## Pilot transcript
 
 ### Quick Reset
+
+- Introduction: “Hi, I’m your MindMate guide for this session. Find a comfortable position, and when you’re ready, we’ll begin with a gentle reset. There’s nothing to get perfect here. Just follow at your own pace.”
 
 1. “Settle into a position that feels easy. Let your hands rest, and allow your shoulders to drop away from your ears.”
 2. “Notice where your body is holding tension. You do not need to force it away. Breathe gently into that space.”
@@ -55,7 +59,9 @@ Completed locally after the pilot:
 - the post-audio Android debug build passed in 411 seconds after recovering from stale depfiles left by the power interruption;
 - the Web build passed in 146.9 seconds and its WASM dry run succeeded.
 
-Initial Chrome playback exposed an asset-packaging bug: Flutter did not include deeply nested MP3 directories from the parent `assets/audio/` entry. The pilot directories are now declared explicitly in `pubspec.yaml`, and debug builds log the safe technical load/playback error to the console. Revalidation is pending.
+Initial Chrome playback exposed an asset-packaging bug: Flutter did not include deeply nested MP3 directories from the parent `assets/audio/` entry. Explicit declarations fixed loading.
+
+The next Chrome test confirmed playback but exposed source switching: phase/prompt text changed while the first loaded clip repeated. Source replacement is now serialized with an explicit stop, and debug builds log every loaded asset path. Quick Reset also has a separate welcome clip so preview never plays Prompt 1. Revalidation is pending.
 
 Still required:
 
