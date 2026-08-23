@@ -54,4 +54,4 @@ Validated on 23 August 2026 with Android Studio Java 21:
 Script exited successfully (code 0)
 ```
 
-The `PERMISSION_DENIED` lines in the test log are expected attack attempts and count as successes when followed by a checkmark. Batch 8 was deployed on 23 August 2026. Batch 9A's updated suite also passed 13/13, including owner profile deletion and cross-user deletion denial. Its rules delta is ready but not deployed.
+The `PERMISSION_DENIED` lines in the test log are expected attack attempts and count as successes when followed by a checkmark. Batch 9A's updated suite passed 13/13, including owner profile deletion and cross-user deletion denial, before Firebase compiled/released the delta to `mindmate-app-fcf2d` on 23 August 2026.

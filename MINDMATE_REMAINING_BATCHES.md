@@ -267,7 +267,7 @@ Exit criteria:
 - changed rules compile and deploy;
 - denial cases are manually confirmed against the intended project.
 
-### Batch 9 — Account and runtime reliability — Sub-batch 9A validated locally, deployment pending
+### Batch 9 — Account and runtime reliability — Sub-batch 9A rules deployed, destructive test pending
 
 **Purpose:** Fix account lifecycle failures and provide permanent user-controlled deletion.
 
@@ -300,12 +300,15 @@ Sub-batch 9A validation result:
 - Flutter analysis: 0 errors, 0 warnings, 4 informational notices;
 - smoke test passed.
 
+Deployment result:
+
+- Firebase compiled and released the tested owner-profile-delete rule delta to `mindmate-app-fcf2d` on 23 August 2026.
+
 Sub-batch 9A pending:
 
-1. Deploy the tested profile-delete rule delta.
-2. Destructively test only a temporary account, including interruption/retry.
-3. Confirm missing-profile restoration and incomplete-onboarding routes.
-4. Keep the external deletion-request web resource as a release blocker.
+1. Destructively test only a temporary account, including interruption/retry.
+2. Confirm missing-profile restoration and incomplete-onboarding routes.
+3. Keep the external deletion-request web resource as a release blocker.
 
 Remaining Batch 9 tasks:
 
@@ -586,12 +589,12 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 
 ## Current execution gate
 
-Batch 9A local validation passed: 13/13 updated rules cases, Flutter 0 errors/0 warnings, and the smoke test passed. The owner-profile-delete delta is not deployed.
+Batch 9A's updated rules are live after 13/13 emulator cases and clean Flutter gates.
 
 Current gate:
 
-1. deploy only the tested Firestore rules delta;
-2. use a temporary account for destructive deletion/retry/recovery tests;
+1. use a disposable temporary account for destructive deletion/retry/recovery tests;
+2. confirm the deleted account can no longer sign in and owned data is gone;
 3. confirm missing-profile restoration;
 4. keep the landing page's functional `/delete-account` request resource as a Play release blocker;
 5. then continue remaining Batch 9 reliability work.
