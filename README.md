@@ -33,7 +33,7 @@ Backend/integration batches 1–5 are implemented in the repository:
 - trusted contacts, support-event tracking, and expanded emergency-resource UI;
 - local Batch 8 Firestore hardening with pending-only appointments, status-only admin updates, strict trusted/support schemas, and 13 emulator authorization tests.
 
-They are **not yet considered release-complete**. Batch 8 now passes all 13 Firestore Emulator cases, Flutter analysis has 0 errors/0 warnings, and the smoke test passes. Batch #5 rules still remain live on `mindmate-app-fcf2d`; the tested Batch 8 rules are ready but not deployed.
+They are **not yet considered release-complete**. Batch 8 passes all 13 Firestore Emulator cases, Flutter analysis has 0 errors/0 warnings, the smoke test passes, and the tested rules are deployed to `mindmate-app-fcf2d`. Brief live normal-flow verification remains.
 
 Guided audio has a controlled pilot: one shared offline player, separate Quick Reset welcome, 4 main prompts, 4 midpoint reassurance cues, and 6 Box assets. The 15 MP3s total about 370 KB. Core playback previously worked; the newest 8-cue timeline needs local validation. Literal breathing loops are not included, and later ambience must be optional/licensed with separate volume and voice ducking.
 
@@ -195,7 +195,7 @@ Before a public or competition build:
 
 - keep the currently clean Flutter analysis result and run tests plus Android builds;
 - implement and real-device-test the approved guided-audio MVP;
-- deploy the now-tested Batch 8 Firestore rules and manually verify normal/denied live cases;
+- finish Batch 8's normal-flow live smoke checks under the deployed rules;
 - confirm/deploy the current Worker source;
 - test all owner/admin denial cases;
 - test every AI mode, safety route, limit, and failure state;
@@ -288,7 +288,7 @@ build/app/outputs/flutter-apk/app-release.apk
 
 ## Firebase deployment
 
-The Batch #5 rules remain live on `mindmate-app-fcf2d`. Batch 8 is **not deployed**, but its 13/13 emulator and Flutter validation gates pass. Deploy the tested revision with:
+Batch 8 is live on `mindmate-app-fcf2d`: 13/13 emulator cases and Flutter gates passed before Firebase compiled/released the rules on 23 August 2026. After future changes, redeploy with:
 
 ```bash
 firebase deploy --only firestore:rules

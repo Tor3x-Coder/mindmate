@@ -54,4 +54,4 @@ Validated on 23 August 2026 with Android Studio Java 21:
 Script exited successfully (code 0)
 ```
 
-The `PERMISSION_DENIED` lines in the test log are expected attack attempts and count as successes when followed by a checkmark. Flutter analysis also completed with 0 errors and 0 warnings, and the smoke test passed. Deployment remains a separate explicit step.
+The `PERMISSION_DENIED` lines in the test log are expected attack attempts and count as successes when followed by a checkmark. Flutter analysis completed with 0 errors and 0 warnings, and the smoke test passed. Firebase then compiled and released the tested rules to `mindmate-app-fcf2d` on 23 August 2026. Re-run this suite before every future rules deployment.

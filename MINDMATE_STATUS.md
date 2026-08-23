@@ -25,18 +25,18 @@ Do not call a feature “finished” merely because it is implemented. State all
 
 The repository contains backend/integration batches 1–5. The work from the interrupted Arena session was recovered exactly and committed to the active Arena branch.
 
-The developer confirmed that the local checkout tracks `arena/01a02a49-mindmate`. Batch #5 Firestore rules remain live on `mindmate-app-fcf2d`. The stricter Batch 8 rules now pass all 13 emulator cases plus Flutter analysis/tests and are ready—but not yet deployed.
+The developer confirmed that the local checkout tracks `arena/01a02a49-mindmate`. Batch 8 passed all 13 emulator cases, Flutter analysis/tests, compiled successfully, and was released to Firestore project `mindmate-app-fcf2d` on 23 August 2026. Brief normal-flow live smoke checks remain.
 
 Before the audio pilot, the developer successfully ran dependency resolution, analysis, the single smoke test, and a debug APK build. After pulling the audio pilot, `flutter pub get` succeeded, `flutter analyze` again reported **0 errors, 0 warnings, and the same 21 informational notices**, and `flutter test` passed its single smoke test. The first post-audio APK attempt lost power; the rerun recovered from stale depfiles and successfully built `app-debug.apk` in 411 seconds. `flutter build web` also succeeded in 146.9 seconds, including its WASM dry run. Chrome playback remains untested.
 
 | Area | Implemented | Validated | Deployed | Verified end to end |
 |---|---:|---:|---:|---:|
-| Firestore owner/admin rules | Batch 8 hardening implemented | **13/13 emulator tests passed**; Flutter 0 errors/0 warnings | Batch #5 rules live; Batch 8 ready, **not deployed** | No live verification yet |
-| Mood impact and activity feedback persistence | Yes | Flutter analysis/tests pass; runtime pending | Existing rules live; app build unverified | No |
-| Appointment admin workflow | Pending-only create + admin status-only rules/service guards implemented | Emulator + Flutter gates passed | Batch 8 ready, **not deployed** | No live verification yet |
+| Firestore owner/admin rules | Batch 8 hardening implemented | **13/13 emulator tests** + Flutter gates passed | **Deployed — `mindmate-app-fcf2d`** | Normal-flow smoke pending |
+| Mood impact and activity feedback persistence | Yes | Flutter analysis/tests pass; runtime pending | Batch 8 rules live | No |
+| Appointment admin workflow | Pending-only create + admin status-only rules/service guards implemented | Emulator + Flutter gates passed | **Batch 8 rules live** | Normal live request/admin smoke pending |
 | One-pending-request guard | Client/service guard only | `flutter analyze` passed; runtime pending | N/A | No |
 | Mode-aware AI Worker and safety route | Yes | Dart analysis and `node --check` passed; live tests pending | **Unconfirmed** | No |
-| Trusted contacts and support-event tracking | Strict schemas/immutability implemented | Owner/cross-user emulator cases passed | Batch 8 ready, **not deployed** | No live verification yet |
+| Trusted contacts and support-event tracking | Strict schemas/immutability implemented | Owner/cross-user emulator cases passed | **Batch 8 rules live** | Normal CRUD/event smoke pending |
 | State/international emergency-number UI | Yes | `flutter analyze` passed; device tests pending | N/A | No; resource verification required |
 | Guided audio: Meditation, Breathing, Daily Snapshot | Pilot + reassurance cues implemented | User confirmed 8-cue Quick Reset and Box pilot work in Chrome | N/A | Quick Reset + Box Breathing only; ambience deferred |
 | Floating Tide Orb navigation | Polished implementation | User confirmed slower/lower four-tab behavior in Chrome | N/A | Physical-device layout still pending |
@@ -217,13 +217,16 @@ Validation passed on the developer PC:
 - production dependency audit (`npm audit --omit=dev`): 0 vulnerabilities;
 - locked dev toolchain: no high/critical audit findings.
 
-Deployment is now the remaining gate:
+Deployment completed on 23 August 2026:
 
-```bash
-firebase deploy --only firestore:rules
+```text
+firestore.rules compiled successfully
+firestore.rules released to cloud.firestore
+Deploy complete
+Project: mindmate-app-fcf2d
 ```
 
-The Batch #5 rules remain live on `mindmate-app-fcf2d`; the tested Batch 8 file is ready but **not deployed yet**.
+Batch 8 is now live. Remaining: brief normal user profile, trusted-contact/support-event, pending appointment, and admin status smoke checks against the intended project.
 
 ### 4. Deploy and verify the AI Worker
 
@@ -320,7 +323,7 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 22 Aug 2026 | Quick Reset reassurance timeline | Added 4 unique midpoint cues with matching captions; 15 MP3s total | User confirmed updated timeline works in Chrome | Not deployed | Keep physical-device audio test pending |
 | 22 Aug 2026 | Floating Tide Orb navigation | Replaced standard NavigationBar with animated four-tab orb/labels; IndexedStack preserved | User liked concept but reported fast/high positioning | Not deployed | Included in Modern Shell correction |
 | 22 Aug 2026 | Quiet Tide Modern shell + guide | Slowed/lowered nav; modern AppBar defaults; 2D guide; new-user four-step tour; persisted completion; Settings replay | User confirmed combined behavior works in Chrome | Not deployed | Move to Batch 8; keep physical/fresh-account matrix pending |
-| 23 Aug 2026 | Batch 8 Firestore integrity | Pending-only/status-only appointment boundary; user/admin hardening; trusted/support schemas; service guards; 13 emulator cases | **13/13 passed**; Flutter 0 errors/0 warnings; smoke test passed | **Not deployed** | Deploy tested rules to `mindmate-app-fcf2d`, then live-smoke normal/denied flows |
+| 23 Aug 2026 | Batch 8 Firestore integrity | Pending-only/status-only appointment boundary; user/admin hardening; trusted/support schemas; service guards; 13 emulator cases | **13/13 passed**; Flutter 0 errors/0 warnings; smoke test passed | **Deployed to `mindmate-app-fcf2d`** | Live-smoke normal profile/contact/request/admin flows |
 
 ## Rule for the next agent
 
@@ -328,6 +331,6 @@ Before editing code:
 
 1. run `git status --short --branch` and `git log --oneline -10`;
 2. read this file, `MINDMATE_CODING_GUIDE.md`, and `MINDMATE_REMAINING_BATCHES.md`;
-3. treat the Modern Shell and Batch 8 local validation gates as passed;
-4. deploy Batch 8 only to `mindmate-app-fcf2d`, record the command result, then verify normal and denied live flows; continue from **What remains**, not an older chat transcript;
+3. treat the Modern Shell and Batch 8 validation/deployment gates as passed;
+4. finish brief Batch 8 live normal-flow smoke checks, then continue from **What remains**, not an older chat transcript;
 5. update this file and the relevant Markdown documentation in the same batch as every fix.

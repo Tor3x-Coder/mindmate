@@ -133,17 +133,17 @@ See `MINDMATE_STATUS.md` for exact files and status.
 3. **Appointment duplicate guard** — blocks another pending request to the same professional in the normal app flow.
 4. **AI Worker** — modes, limits, crisis route, rate-limit hook, logging, quota fallback, and model configuration.
 5. **Trusted contacts/support events** — owner-only contact storage, explicit call/message actions, follow-up events, and expanded emergency UI.
-6. **Batch 8 Firestore integrity (validated, not deployed)** — pending-only appointment creation, admin status-only updates, user/admin profile protection, trusted/support schemas, service guards, and 13/13 passing emulator cases.
+6. **Batch 8 Firestore integrity (validated and deployed)** — pending-only appointment creation, admin status-only updates, user/admin profile protection, trusted/support schemas, service guards, 13/13 emulator cases, Flutter gates, and successful release to `mindmate-app-fcf2d` on 23 August 2026.
 
-Important: local validation is complete, but implementation is not proof of deployment. Batch #5 rules remain live on `mindmate-app-fcf2d`; Batch 8 is ready and still not deployed.
+Important: deployment succeeded, but brief normal-flow live smoke checks remain before closing the batch completely.
 
 ## Remaining backend/release work
 
 Immediate prototype path:
 
-1. Deploy the tested Batch 8 rules to `mindmate-app-fcf2d` and record the exact result.
-2. Live-smoke normal appointment/trusted-contact flows and confirm obvious denied attacks remain denied.
-3. Fix account/runtime reliability issues from Batch 9.
+1. Live-smoke normal profile, trusted-contact/support-event, appointment, and admin-status flows under deployed Batch 8 rules.
+2. Fix any normal flow denied by mistake; otherwise close Batch 8.
+3. Begin account/runtime reliability Batch 9.
 4. Confirm/deploy `worker/index.js`, configure required bindings, test the live endpoint, and make the final AI model decision.
 5. Verify emergency resources and sensitive content.
 6. Run meaningful automated tests plus the complete device test matrix.
@@ -194,4 +194,4 @@ Check in
 
 ## Immediate next action
 
-Batch 8 validation is green: 13/13 emulator cases, Flutter 0 errors/0 warnings, and the smoke test passed. Deploy only `firestore:rules` to `mindmate-app-fcf2d`, then record the output and live-smoke the normal flows. The developer still has no physical phone; keep device checks open and do not let the future landing page distract from this authorization gate.
+Batch 8 validation and deployment are green: 13/13 emulator cases, Flutter 0 errors/0 warnings, smoke test passed, rules compiled, and rules released to `mindmate-app-fcf2d`. Run brief normal-flow live checks, then close Batch 8 and move to Batch 9. Physical-device checks remain open.

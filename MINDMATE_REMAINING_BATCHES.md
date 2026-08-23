@@ -223,7 +223,7 @@ Validation status:
 - keep a fresh registration/onboarding trigger check and physical-device layout in the release matrix;
 - keep child-screen redesign deferred until higher-priority integrity/reliability work is complete.
 
-### Batch 8 — Firestore integrity and authorization tests — validation passed, deployment pending
+### Batch 8 — Firestore integrity and authorization tests — validated and deployed; live smoke pending
 
 **Purpose:** Close the most important prototype security gaps without touching live data until authorization tests pass.
 
@@ -245,11 +245,17 @@ Validation result:
 - `flutter analyze`: 0 errors, 0 warnings, 4 informational notices;
 - `flutter test`: 1 smoke test passed.
 
+Deployment result:
+
+- `firestore.rules` compiled successfully;
+- rules were released to Cloud Firestore;
+- Firebase CLI reported `Deploy complete` for `mindmate-app-fcf2d`.
+
 Pending:
 
-1. Deploy only `firestore:rules` to `mindmate-app-fcf2d`.
-2. Record the deployment result.
-3. Live-smoke normal flows and obvious denials.
+1. Live-smoke normal profile/contact/request/admin flows.
+2. Confirm no expected user flow receives permission denied.
+3. Close Batch 8 and move to Batch 9.
 
 Deferred limitation:
 
@@ -545,13 +551,12 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 
 ## Current execution gate
 
-Batch 8 local validation passed: 13/13 emulator cases, Flutter 0 errors/0 warnings, and the smoke test passed. The live Firebase project still uses Batch #5 rules.
+Batch 8 validation and deployment passed: 13/13 emulator cases, Flutter 0 errors/0 warnings, smoke test passed, and the rules are live on `mindmate-app-fcf2d`.
 
 Current gate:
 
-1. deploy only `firestore:rules` to `mindmate-app-fcf2d`;
-2. record the successful compilation/release output;
-3. live-smoke normal and denied flows;
-4. then move to Batch 9.
+1. run brief normal-flow live smoke checks;
+2. close Batch 8 if no expected flow is denied;
+3. then move to Batch 9 account/runtime reliability.
 
-Do not expand narration or start the landing site ahead of this authorization gate.
+Do not expand narration or start the landing site ahead of this final live-smoke check.
