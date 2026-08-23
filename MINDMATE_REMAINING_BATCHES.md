@@ -267,7 +267,7 @@ Exit criteria:
 - changed rules compile and deploy;
 - denial cases are manually confirmed against the intended project.
 
-### Batch 9 — Account and runtime reliability — Sub-batch 9A rules deployed, destructive test pending
+### Batch 9 — Account and runtime reliability — Sub-batch 9A happy path validated
 
 **Purpose:** Fix account lifecycle failures and provide permanent user-controlled deletion.
 
@@ -300,15 +300,24 @@ Sub-batch 9A validation result:
 - Flutter analysis: 0 errors, 0 warnings, 4 informational notices;
 - smoke test passed.
 
-Deployment result:
+Deployment/runtime result:
 
-- Firebase compiled and released the tested owner-profile-delete rule delta to `mindmate-app-fcf2d` on 23 August 2026.
+- Firebase compiled/released the tested owner-profile-delete rule delta;
+- a disposable account successfully deleted its stored data/profile/Auth login and returned to onboarding.
 
 Sub-batch 9A pending:
 
-1. Destructively test only a temporary account, including interruption/retry.
+1. Keep interruption/retry behavior in the release matrix; do not deliberately use the real/admin account.
 2. Confirm missing-profile restoration and incomplete-onboarding routes.
 3. Keep the external deletion-request web resource as a release blocker.
+
+#### Daily Snapshot/light-default reliability fix — implemented locally
+
+- first-run and post-deletion reset default to Light; Dark/System remain optional;
+- wellness screens use theme-aware ink/surfaces instead of mixed hardcoded colours;
+- progress is 8 real units: Body + 5 Mind questions + Routine + Review;
+- Mind 5/5 displays Step 6 of 8 and 75%; Routine 7/8; Review 8/8;
+- Flutter/Chrome validation is pending.
 
 Remaining Batch 9 tasks:
 
@@ -589,12 +598,12 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 
 ## Current execution gate
 
-Batch 9A's updated rules are live after 13/13 emulator cases and clean Flutter gates.
+Batch 9A's rules and normal disposable-account deletion path pass. Interruption/recovery and the external web request remain release checks.
 
 Current gate:
 
-1. use a disposable temporary account for destructive deletion/retry/recovery tests;
-2. confirm the deleted account can no longer sign in and owned data is gone;
-3. confirm missing-profile restoration;
-4. keep the landing page's functional `/delete-account` request resource as a Play release blocker;
-5. then continue remaining Batch 9 reliability work.
+1. pull and validate Light default + Daily Snapshot theme/progress;
+2. confirm Mind 5/5 shows Step 6 of 8 / 75%;
+3. confirm Dark/System still work when explicitly selected;
+4. continue remaining Batch 9 reliability work;
+5. keep the landing page's functional `/delete-account` request as a Play blocker.

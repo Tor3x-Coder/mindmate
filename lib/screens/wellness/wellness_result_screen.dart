@@ -74,7 +74,7 @@ class WellnessResultScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildReflectionHero(),
+              _buildReflectionHero(context),
               const SizedBox(height: 22),
               const Text(
                 'What we noticed',
@@ -133,11 +133,14 @@ class WellnessResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReflectionHero() {
+  Widget _buildReflectionHero(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppTheme.heroGradientLight,
+        gradient: AppTheme.heroGradientFor(theme.brightness),
         borderRadius: BorderRadius.circular(28),
       ),
       child: Row(
@@ -147,7 +150,7 @@ class WellnessResultScreen extends StatelessWidget {
             height: 58,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.68),
+              color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.68),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -157,24 +160,28 @@ class WellnessResultScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'CHECK-IN COMPLETE',
                   style: TextStyle(
-                    color: Color(0xFF806B59),
+                    color: isDark
+                        ? AppTheme.seaGlass
+                        : const Color(0xFF806B59),
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1,
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   'Thank you for checking in with yourself.',
                   style: TextStyle(
-                    color: AppTheme.textDark,
+                    color: isDark
+                        ? AppTheme.textOnDark
+                        : AppTheme.textDark,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                   ),

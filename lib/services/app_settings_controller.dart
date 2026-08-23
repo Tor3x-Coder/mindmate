@@ -140,7 +140,7 @@ class AppSettingsController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
 
-    _themeMode = ThemeMode.dark;
+    _themeMode = ThemeMode.light;
     _textScale = 1.0;
     _animationIntensity = 1.0;
     _hapticsEnabled = true;
@@ -156,13 +156,13 @@ class AppSettingsController extends ChangeNotifier {
 
   ThemeMode _themeModeFromString(String? value) {
     switch (value) {
-      case 'light':
-        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
       case 'system':
         return ThemeMode.system;
-      case 'dark':
+      case 'light':
       default:
-        return ThemeMode.dark;
+        return ThemeMode.light;
     }
   }
 }

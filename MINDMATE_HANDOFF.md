@@ -114,6 +114,8 @@ Selected/implemented directions:
 - **First-use guide is implemented and Chrome-validated:** four coach marks for Home, Practice, Chat, and Me with Skip/Next/Got it, `tourVersion = 1` persistence, Settings replay, and a lightweight Flutter-drawn 2D figure. Automatic display is requested only after new-user onboarding; Login/Splash do not force it. It never appears on Emergency Support or autoplays speech. Fresh-account and physical-device release checks remain.
 - **Quiet Tide Modern shell is focused, not a full redesign:** global app bars use consistent height/spacing and no scroll tint/elevation. The user confirmed the combined shell works; child-screen polish remains intentionally deferred.
 - **Approved landing direction:** use the supplied Spouse Finder page only as visual/interaction inspiration. Build a separate lightweight informational MindMate site, not a hosted Flutter version of the app. It must include a functional `/delete-account` request resource for Google Play, plus truthful product/safety/privacy information, screenshots, FAQ, and a signed release APK download—not the debug APK.
+- **Light is the intended first-run/reset default.** Dark and System remain optional user choices.
+- **Daily Snapshot progress uses 8 real units:** Body, 5 Mind questions, Routine, Review. Mind 5/5 must show Step 6 of 8 / 75%. Theme-aware colour fixes are local and awaiting validation.
 - Mood impact uses words: A little, Somewhat, A lot, Overwhelming, Not sure yet.
 - CBT branches: Relationship, School/work, Mistake/regret, Future worry, Self-doubt, Sad/low, Angry/frustrated, Hurt/disappointed, Something else.
 - `Something else` uses a neutral fallback path.
@@ -134,16 +136,16 @@ See `MINDMATE_STATUS.md` for exact files and status.
 4. **AI Worker** — modes, limits, crisis route, rate-limit hook, logging, quota fallback, and model configuration.
 5. **Trusted contacts/support events** — owner-only contact storage, explicit call/message actions, follow-up events, and expanded emergency UI.
 6. **Batch 8 Firestore integrity (validated and deployed)** — pending-only appointment creation, admin status-only updates, user/admin profile protection, trusted/support schemas, service guards, 13/13 emulator cases, Flutter gates, and successful release to `mindmate-app-fcf2d` on 23 August 2026.
-7. **Batch 9A account deletion/recovery (validated and rules deployed)** — Spark-compatible in-app deletion, password reauthentication, repeatable owned-data batches, retry marker/routing, missing-profile recovery, registration rollback, no password trimming, 13/13 rules tests, Flutter 0 errors/0 warnings, and successful profile-delete rule release to `mindmate-app-fcf2d` on 23 August 2026.
+7. **Batch 9A account deletion/recovery (happy path validated)** — Spark-compatible in-app deletion, password reauthentication, repeatable owned-data batches, retry marker/routing, missing-profile recovery, registration rollback, no password trimming, 13/13 rules tests, deployed profile-delete rule, and confirmed disposable-account deletion.
 
-Important: destructive temporary-account evidence is still required before calling the in-app deletion feature release-ready. The project remains on Spark, so a trusted Cloud Function is deferred unless billing is upgraded.
+Important: interruption/retry and missing-profile restoration evidence remain. The project is on Spark, so a trusted Cloud Function is deferred unless billing is upgraded.
 
 ## Remaining backend/release work
 
 Immediate prototype path:
 
-1. Test deletion with a temporary account only, including data/Auth removal and interruption/retry.
-2. Confirm missing-profile restoration/incomplete-onboarding routes.
+1. Validate Light-default and Daily Snapshot progress/colour fixes in Flutter/Chrome.
+2. Keep deletion interruption/retry and missing-profile restoration in the release matrix.
 3. Keep the external `/delete-account` web request path as a Google Play blocker.
 4. Continue remaining account/runtime reliability work.
 5. Confirm/deploy `worker/index.js`, configure required bindings, test the live endpoint, and make the final AI model decision.
@@ -194,4 +196,4 @@ Check in
 
 ## Immediate next action
 
-Batch 9A rules are deployed after 13/13 updated emulator cases and clean Flutter gates. Perform destructive testing only with a disposable temporary account, verify retry/recovery, and keep the landing site's functional `/delete-account` request path as a Google Play blocker.
+The disposable-account deletion path worked 100%. Next validate the Light default and Daily Snapshot's theme-aware 8-unit progress. Keep deletion retry/recovery and the landing site's functional `/delete-account` request path as open release checks.

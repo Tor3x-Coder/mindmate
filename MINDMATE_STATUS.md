@@ -27,7 +27,7 @@ The repository contains backend/integration batches 1–5. The work from the int
 
 The developer confirmed that the local checkout tracks `arena/01a02a49-mindmate`. Batch 8 passed all 13 emulator cases, Flutter analysis/tests, compiled successfully, and was released to Firestore project `mindmate-app-fcf2d` on 23 August 2026. Brief normal-flow live smoke checks remain.
 
-Batch 9A account reliability is implemented on the Spark plan: in-app deletion with password reauthentication, repeatable deletion of every owned collection, profile/Auth ordering, interruption retry routing, missing-profile recovery, registration rollback, and no password trimming. The updated rules pass all 13 emulator cases, Flutter has 0 errors/0 warnings, the smoke test passes, and the profile-delete rule delta was deployed to `mindmate-app-fcf2d` on 23 August 2026. Temporary-account destructive testing remains.
+Batch 9A account reliability is implemented on the Spark plan. The updated rules pass all 13 emulator cases, Flutter gates pass, the profile-delete delta is live, and the user confirmed the disposable-account happy path deletes successfully. Interruption/retry, missing-profile recovery evidence, data export, and the external web request resource remain.
 
 Audio, Floating Tide navigation, contextual tour, and the Modern Shell were confirmed working in Chrome. Post-audio Android/Web builds passed; physical-device validation remains open.
 
@@ -44,7 +44,8 @@ Audio, Floating Tide navigation, contextual tour, and the Modern Shell were conf
 | Floating Tide Orb navigation | Polished implementation | User confirmed slower/lower four-tab behavior in Chrome | N/A | Physical-device layout still pending |
 | Contextual first-use guide | Implemented | User confirmed tour controls and Settings replay in Chrome | N/A | Fresh-account/physical-device release matrix still pending |
 | Quiet Tide modern shell | Focused shell polish implemented | User confirmed combined shell works in Chrome | N/A | Child-screen redesign intentionally deferred |
-| Account deletion/recovery | Spark-compatible implementation + rules deployed | Rules + Flutter gates passed; temporary destructive test pending | Rules live; app feature unreleased | In-app path exists; external web request page still required |
+| Account deletion/recovery | Spark-compatible implementation + rules deployed | User confirmed temporary-account happy-path deletion works | Rules live; retry/recovery proof pending | External web request page still required |
+| Daily Snapshot UI/progress | Theme/progress fix implemented locally | Flutter/Chrome retest pending | N/A | Light default + accurate 8-unit progress |
 | Informational landing site | Direction approved, not implemented | N/A | N/A | Must include functional `/delete-account` request resource + signed APK info |
 | Android APK | Post-audio debug APK built | Build passed in 411 seconds despite recovered stale-depfile warnings | N/A | No phone available; emulator/device verification pending |
 
@@ -258,7 +259,9 @@ Validation passed on the developer PC:
 - `flutter analyze`: 0 errors, 0 warnings, 4 informational notices;
 - `flutter test`: 1 smoke test passed.
 
-The tested profile-delete rules delta compiled and was released successfully to `mindmate-app-fcf2d` on 23 August 2026. Next, test destructive deletion with a disposable temporary account—not the developer/admin account. Do not mark the feature release-ready until profile/Auth/data removal and retry behavior are observed.
+The tested profile-delete rules delta compiled/released successfully, and the user confirmed the disposable-account happy path works end to end. Keep interruption/retry and missing-profile restoration in the release matrix; never repeat destructive testing with the developer/admin account.
+
+The next local reliability fix makes Light the true default and changes Daily Snapshot to accurate 8-unit progress (Body + 5 Mind questions + Routine + Review) with theme-aware colours. Flutter/Chrome validation is pending.
 
 ### 5. Deploy and verify the AI Worker
 
@@ -317,7 +320,8 @@ Also verify:
 ## Known issues still to review
 
 - Guided audio is only a pilot: Quick Reset and Box Breathing are implemented, but 17 meditations, 2 breathing patterns, Daily Snapshot, and Wellness Result still need assets/integration after validation.
-- Account deletion, missing-profile recovery, registration rollback, and no-password-trimming are implemented locally but still require validation.
+- Account deletion happy path is proven; interruption/retry and missing-profile restoration still need runtime evidence.
+- Light-default and Daily Snapshot progress/colour fixes are implemented locally but need Flutter/Chrome validation.
 - Audit remaining async gaps for missing `mounted` checks.
 - Date models currently rely on ISO strings instead of Firestore `Timestamp` values.
 - Wellness score components need capping at 100.
@@ -354,7 +358,8 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 22 Aug 2026 | Floating Tide Orb navigation | Replaced standard NavigationBar with animated four-tab orb/labels; IndexedStack preserved | User liked concept but reported fast/high positioning | Not deployed | Included in Modern Shell correction |
 | 22 Aug 2026 | Quiet Tide Modern shell + guide | Slowed/lowered nav; modern AppBar defaults; 2D guide; new-user four-step tour; persisted completion; Settings replay | User confirmed combined behavior works in Chrome | Not deployed | Move to Batch 8; keep physical/fresh-account matrix pending |
 | 23 Aug 2026 | Batch 8 Firestore integrity | Pending-only/status-only appointment boundary; user/admin hardening; trusted/support schemas; service guards; 13 emulator cases | **13/13 passed**; Flutter 0 errors/0 warnings; smoke test passed | **Deployed to `mindmate-app-fcf2d`** | Live-smoke normal profile/contact/request/admin flows |
-| 23 Aug 2026 | Batch 9A account deletion/recovery | Spark-compatible deletion, retry routing, missing-profile recovery, registration rollback, no password trimming, Settings UI | **13/13 rules passed**; Flutter 0 errors/0 warnings; smoke test passed | **Profile-delete delta deployed** | Destructively test only temporary account; external web request still pending |
+| 23 Aug 2026 | Batch 9A account deletion/recovery | Spark-compatible deletion, retry routing, missing-profile recovery, registration rollback, no password trimming, Settings UI | **13/13 rules passed**; Flutter gates passed; disposable-account deletion confirmed | **Profile-delete delta deployed** | Retry/recovery + external web request still pending |
+| 23 Aug 2026 | Light default + Daily Snapshot fix | Correct first-run/reset theme; theme-aware wellness colours; 8-unit progress | Static checks pass; Flutter/Chrome pending | N/A | Analyze/test and verify Mind 5/5 shows 6/8 (75%) |
 
 ## Rule for the next agent
 
@@ -363,6 +368,6 @@ Before editing code:
 1. run `git status --short --branch` and `git log --oneline -10`;
 2. read this file, `MINDMATE_CODING_GUIDE.md`, and `MINDMATE_REMAINING_BATCHES.md`;
 3. treat the Modern Shell and Batch 8 deployment as passed;
-4. treat Batch 9A rules deployment as passed and use only a temporary account for destructive deletion/retry/recovery testing;
-5. keep the external `/delete-account` web request resource as a Play release blocker; continue from **What remains**, not an older transcript;
+4. treat Batch 9A normal deletion as passed; keep retry/recovery evidence open and never use the developer/admin account for destructive tests;
+5. validate the Light-default/Daily Snapshot fix, and keep `/delete-account` web requests as a Play blocker; continue from **What remains**, not an older transcript;
 6. update this file and the relevant Markdown documentation in the same batch as every fix.
