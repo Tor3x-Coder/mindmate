@@ -30,9 +30,10 @@ Backend/integration batches 1–5 are implemented in the repository:
 - qualitative mood-impact and activity-feedback persistence;
 - normal-flow prevention of multiple pending requests to one professional;
 - mode-aware AI Worker validation, safety routing, logging, and fallbacks;
-- trusted contacts, support-event tracking, and expanded emergency-resource UI.
+- trusted contacts, support-event tracking, and expanded emergency-resource UI;
+- local Batch 8 Firestore hardening with pending-only appointments, status-only admin updates, strict trusted/support schemas, and 13 emulator authorization tests.
 
-They are **not yet considered release-complete**. The final Batch #5 Firestore rules compiled and were released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Local dependency resolution and static analysis passed with 0 errors, 0 warnings, and 21 non-blocking informational notices. `flutter test` also passed the repository's single basic smoke test; this is not meaningful end-to-end coverage.
+They are **not yet considered release-complete**. The Batch #5 Firestore rules remain live on Firebase project `mindmate-app-fcf2d`. Batch 8 is not deployed and must wait for all emulator cases plus Flutter analysis. Local dependency resolution and static analysis passed with 0 errors, 0 warnings, and 21 non-blocking informational notices. `flutter test` also passed the repository's single basic smoke test; this is not meaningful end-to-end coverage.
 
 Guided audio has a controlled pilot: one shared offline player, separate Quick Reset welcome, 4 main prompts, 4 midpoint reassurance cues, and 6 Box assets. The 15 MP3s total about 370 KB. Core playback previously worked; the newest 8-cue timeline needs local validation. Literal breathing loops are not included, and later ambience must be optional/licensed with separate volume and voice ducking.
 
@@ -178,7 +179,6 @@ Personal collections must remain owner-only. Updates must preserve the original 
 ## Planned beyond the immediate prototype
 
 - authoritative server-side one-pending-appointment enforcement;
-- stricter appointment field validation in Firestore rules, including pending-only creation and restricted mutable fields;
 - professional Firebase accounts and provider roles;
 - provider inboxes, notifications, verified identity, availability, and calendars;
 - persistent chat sessions and history;
@@ -195,7 +195,7 @@ Before a public or competition build:
 
 - keep the currently clean Flutter analysis result and run tests plus Android builds;
 - implement and real-device-test the approved guided-audio MVP;
-- test the deployed Firestore rules and redeploy after any rule change;
+- pass all 13 local Batch 8 Firestore Emulator cases, then deploy and manually verify denial cases;
 - confirm/deploy the current Worker source;
 - test all owner/admin denial cases;
 - test every AI mode, safety route, limit, and failure state;
@@ -234,6 +234,7 @@ assets/
 worker/
   index.js       Cloudflare AI Worker source
   README.md      Worker setup and deployment guide
+firestore_tests/ Firebase Emulator authorization suite
 web/
   index.html     Flutter Web and model-viewer setup
 firestore.rules  Firestore authorization rules
@@ -287,9 +288,9 @@ build/app/outputs/flutter-apk/app-release.apk
 
 ## Firebase deployment
 
-The final Batch #5 `firestore.rules` file compiled and was released successfully to Firebase project `mindmate-app-fcf2d` on 22 August 2026. Emulator/denial testing is still required, and every future rule change must be redeployed.
+The Batch #5 `firestore.rules` file remains live on Firebase project `mindmate-app-fcf2d`. Batch 8 is implemented locally but **not deployed**. Run `firestore_tests` first; a rules file existing in Git is not proof that authorization works.
 
-Review and test `firestore.rules`, then deploy changes with:
+After all 13 emulator tests and Flutter analysis pass, deploy changes with:
 
 ```bash
 firebase deploy --only firestore:rules

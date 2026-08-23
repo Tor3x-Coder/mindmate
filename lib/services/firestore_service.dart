@@ -22,8 +22,8 @@ class FirestoreService {
 
   // Checks the 'isAdmin' field on a user's profile. Defaults to false
   // if the field has never been set, so nobody is an admin by accident.
-  // NOTE: this is a client-side check only. Real enforcement comes from
-  // Firestore security rules (item 6 on the remaining-work list).
+  // This client-side check controls what the UI shows. Firestore security
+  // rules independently enforce every admin-only read/write.
   Future<bool> isUserAdmin(String uid) async {
     final profile = await getUserProfile(uid);
     return profile?['isAdmin'] == true;
@@ -112,8 +112,8 @@ class FirestoreService {
             .toList());
   }
 
-  // Admin-only create / update / delete. The UI checks isUserAdmin first;
-  // Firestore rules will enforce this for real once item 6 is done.
+  // Admin-only create / update / delete. The UI checks isUserAdmin for the
+  // experience, while Firestore rules provide the real authorization boundary.
   Future<void> addProfessional(ProfessionalModel professional) async {
     await _db
         .collection(FirestoreCollections.professionals)
@@ -135,10 +135,24 @@ class FirestoreService {
   }
 
   // ---- Appointments ----
-  // Users submit requests — never an instant booking, per the spec.
-  // Status starts as 'pending'. Approve/decline UI is a stretch goal;
-  // the status field is stored so that can be added later.
-    Future<void> requestAppointment(AppointmentModel appointment) async {
+  // Users submit requests — never an instant booking. Both this service and
+  // Firestore rules require every new request to start as pending.
+  Future<void> requestAppointment(AppointmentModel appointment) async {
+    if (appointment.status != 'pending') {
+      throw ArgumentError.value(
+        appointment.status,
+        'appointment.status',
+        'New appointment requests must start as pending.',
+      );
+    }
+    if (appointment.note.length > 1000) {
+      throw ArgumentError.value(
+        appointment.note.length,
+        'appointment.note.length',
+        'Appointment notes cannot exceed 1000 characters.',
+      );
+    }
+
     await _db
         .collection(FirestoreCollections.appointments)
         .add(appointment.toMap());
@@ -178,6 +192,14 @@ class FirestoreService {
     String appointmentId,
     String status,
   ) async {
+    if (!appointmentStatuses.contains(status)) {
+      throw ArgumentError.value(
+        status,
+        'status',
+        'Status must be pending, approved, or declined.',
+      );
+    }
+
     await _db
         .collection(FirestoreCollections.appointments)
         .doc(appointmentId)

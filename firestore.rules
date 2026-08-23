@@ -4,46 +4,117 @@ service cloud.firestore {
 
     // Shared helpers ---------------------------------------------------------
 
-    // Is the request coming from a signed-in user?
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Is the signed-in user the owner of the document being touched?
-    // Only useful for read/update/delete where the existing doc exists.
+    // Used for existing personal documents on read/update/delete.
     function isOwner() {
       return isSignedIn() && request.auth.uid == resource.data.uid;
     }
 
-    // Is the signed-in user an admin? Admin is granted in the Firebase
-    // Console on the user document; users cannot grant it to themselves.
+    // Admin is granted on the caller's user profile. Map.get handles older
+    // profiles that do not have an isAdmin field and treats them as non-admin.
     function isAdmin() {
       return isSignedIn()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isAdmin', false) == true;
+    }
+
+    function isNonEmptyString(value, maxLength) {
+      return value is string
+        && value.size() > 0
+        && value.size() <= maxLength;
+    }
+
+    function isShortString(value, maxLength) {
+      return value is string && value.size() <= maxLength;
+    }
+
+    function isValidAppointmentStatus(status) {
+      return status in ['pending', 'approved', 'declined'];
+    }
+
+    function isValidAppointmentCreate(data) {
+      return data.keys().hasAll([
+          'uid',
+          'professionalId',
+          'professionalName',
+          'consultationType',
+          'preferredDate',
+          'preferredTime',
+          'note',
+          'status',
+          'requestedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid',
+          'professionalId',
+          'professionalName',
+          'consultationType',
+          'preferredDate',
+          'preferredTime',
+          'note',
+          'status',
+          'requestedAt'
+        ])
+        && data.uid == request.auth.uid
+        && isNonEmptyString(data.professionalId, 128)
+        && isNonEmptyString(data.professionalName, 160)
+        && data.consultationType in ['Online', 'Physical']
+        && data.preferredDate is string
+        && data.preferredDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.preferredTime is string
+        && data.preferredTime.matches('^[0-9]{2}:[0-9]{2}$')
+        && isShortString(data.note, 1000)
+        && data.status == 'pending'
+        && isNonEmptyString(data.requestedAt, 64);
+    }
+
+    function isValidTrustedContact(data) {
+      return data.keys().hasAll([
+          'uid', 'name', 'relationship', 'phone', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'name', 'relationship', 'phone', 'createdAt'
+        ])
+        && data.uid == request.auth.uid
+        && isNonEmptyString(data.name, 120)
+        && isShortString(data.relationship, 80)
+        && isNonEmptyString(data.phone, 40)
+        && isNonEmptyString(data.createdAt, 64);
+    }
+
+    function isValidSupportEvent(data) {
+      return data.keys().hasAll([
+          'uid', 'actionLabel', 'detail', 'followUp', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'actionLabel', 'detail', 'followUp', 'createdAt'
+        ])
+        && data.uid == request.auth.uid
+        && isNonEmptyString(data.actionLabel, 200)
+        && isShortString(data.detail, 1000)
+        && (data.followUp == null || isShortString(data.followUp, 200))
+        && isNonEmptyString(data.createdAt, 64);
     }
 
     // Users ------------------------------------------------------------------
-    // Owners can read and update their own profile, but they cannot:
-    //   - delete it;
-    //   - change their email;
-    //   - change isAdmin (so nobody can self-grant admin).
+    // Owners can read and update their profile, but cannot delete it, change
+    // their email, or add/change isAdmin. Users therefore cannot self-promote.
     match /users/{userId} {
       allow read: if isSignedIn() && request.auth.uid == userId;
       allow create: if isSignedIn()
         && request.auth.uid == userId
-        && request.resource.data.isAdmin != true;
+        && request.resource.data.get('isAdmin', false) == false;
       allow update: if isSignedIn()
         && request.auth.uid == userId
-        && request.resource.data.email == resource.data.email
-        && request.resource.data.isAdmin == resource.data.isAdmin;
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['email', 'isAdmin']);
       // Intentionally no delete rule.
     }
 
     // Personal collections ---------------------------------------------------
-    // Only the owner can read, create, or delete their own records.
-    // Updates must keep the original uid so a record can never be
-    // reassigned to another user.
+    // Only the owner can access their records. Updates preserve uid.
     match /mood_logs/{docId} {
       allow read: if isOwner();
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
@@ -84,9 +155,6 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
-    // CBT thought records ----------------------------------------------------
-    // Same owner-only rules. This collection previously had no rule, which
-    // is why saving a thought record failed with permission-denied.
     match /thought_records/{docId} {
       allow read: if isOwner();
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
@@ -95,9 +163,6 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
-    // Activity feedback records ----------------------------------------------
-    // Same owner-only rules. Feedback is personal and should never be
-    // readable or writable by anyone else.
     match /feedback_records/{docId} {
       allow read: if isOwner();
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
@@ -107,45 +172,44 @@ service cloud.firestore {
     }
 
     // Trusted contacts -------------------------------------------------------
-    // Personal, owner-only. The app only ever opens tel:/sms: after the
-    // user taps, so these records still live securely per-user.
+    // Owner-only with a strict schema. createdAt and uid cannot be changed.
     match /trusted_contacts/{docId} {
       allow read: if isOwner();
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow create: if isSignedIn()
+        && isValidTrustedContact(request.resource.data);
       allow update: if isOwner()
-        && request.resource.data.uid == resource.data.uid;
+        && isValidTrustedContact(request.resource.data)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if isOwner();
     }
 
     // Support events ---------------------------------------------------------
-    // Owner-only tracking of which support actions a user tapped and what
-    // they told us afterwards. Never readable by anyone else.
+    // Owner-only append records. They may be read/deleted by the owner but not
+    // rewritten after creation, preserving the meaning of recorded actions.
     match /support_events/{docId} {
       allow read: if isOwner();
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
-      allow update: if isOwner()
-        && request.resource.data.uid == resource.data.uid;
+      allow create: if isSignedIn()
+        && isValidSupportEvent(request.resource.data);
       allow delete: if isOwner();
     }
 
     // Appointments -----------------------------------------------------------
-    // Users create requests to their own profile (pending status).
-    // Owners can read their own requests and delete them.
-    // Only admins can read every request and update status (approve/decline).
-    // An owner cannot change the status, so nobody can approve themselves.
+    // Users can only create their own pending request. Appointment details are
+    // immutable after creation. Admins may change only status, and only to a
+    // known value. Owners cannot approve themselves through a modified client.
     match /appointments/{docId} {
       allow read: if isOwner() || isAdmin();
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.uid;
+      allow create: if isSignedIn()
+        && isValidAppointmentCreate(request.resource.data);
       allow update: if isAdmin()
-        || (isOwner()
-          && request.resource.data.uid == resource.data.uid
-          && request.resource.data.status == resource.data.status);
+        && isValidAppointmentStatus(request.resource.data.status)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
       allow delete: if isOwner();
     }
 
     // Professionals ----------------------------------------------------------
-    // Anyone signed in can read the directory. Only admins can add, edit,
-    // or remove listings.
+    // Signed-in users can read the directory. Only admins manage listings.
     match /professionals/{docId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();

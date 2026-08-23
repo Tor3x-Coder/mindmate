@@ -1,6 +1,6 @@
 # MindMate handoff for a new chat
 
-**Last updated:** 22 August 2026
+**Last updated:** 23 August 2026
 
 ## Read these first
 
@@ -133,16 +133,17 @@ See `MINDMATE_STATUS.md` for exact files and status.
 3. **Appointment duplicate guard** — blocks another pending request to the same professional in the normal app flow.
 4. **AI Worker** — modes, limits, crisis route, rate-limit hook, logging, quota fallback, and model configuration.
 5. **Trusted contacts/support events** — owner-only contact storage, explicit call/message actions, follow-up events, and expanded emergency UI.
+6. **Batch 8 Firestore integrity (local only)** — pending-only appointment creation, admin status-only updates, user/admin profile protection, trusted/support schemas, service guards, and 13 emulator authorization tests.
 
-Important: implementation is not proof of end-to-end operation. The final Batch #5 Firestore rules were compiled and released successfully to `mindmate-app-fcf2d` on 22 August 2026. Post-audio dependency resolution, analysis, the single smoke test, debug APK build, Web build, and WASM dry run pass. Chrome playback, Firestore denial tests, Worker deployment, meaningful test coverage, emulator/device runtime, and physical-phone verification remain pending.
+Important: implementation is not proof of deployment. The Batch #5 rules remain live on `mindmate-app-fcf2d`. Batch 8 is not deployed and must wait for all 13 emulator cases plus Flutter analysis. The Arena sandbox completed JS/dependency checks but lacks Java, so it could not start the Firestore Emulator.
 
 ## Remaining backend/release work
 
 Immediate prototype path:
 
-1. Validate the Batch 7 audio pilot locally: dependency resolution, analyzer, smoke test, Android/Web builds, then Chrome playback; use an emulator later if practical.
-2. Only after the pilot passes, expand distinct narration to the remaining approved Meditation, Breathing, Daily Snapshot, and Result coverage.
-3. Harden/test the deployed Firestore rules and verify owner/admin denial cases; redeploy only after a rule change passes tests.
+1. Run Batch 8's 13 Firestore Emulator tests locally and run `flutter analyze`.
+2. Fix any denied normal flow or allowed attack case before deployment.
+3. Deploy Batch 8 rules only after every check passes, then record the project/result.
 4. Fix account/runtime reliability issues from Batch 9.
 5. Confirm/deploy `worker/index.js`, configure required bindings, test the live endpoint, and make the final AI model decision.
 6. Verify emergency resources and sensitive content.
@@ -154,7 +155,6 @@ See `MINDMATE_REMAINING_BATCHES.md` for tasks and exit criteria for Batches 6–
 Known backend/product limitations that may be deferred beyond the competition prototype:
 
 - the one-pending-appointment check is a client/service guard, not authoritative server-side uniqueness enforcement;
-- Firestore appointment rules still need stricter field validation, including `status == 'pending'` on create and restricted mutable fields;
 - real professional accounts, roles, provider inboxes, notifications, and calendars;
 - persistent AI chats;
 - opt-in journal AI reflection;
@@ -180,7 +180,7 @@ Known backend/product limitations that may be deferred beyond the competition pr
 
 - Competition: 11 September 2026.
 - Target feature freeze: 28 August 2026.
-- Current handoff date: 22 August 2026.
+- Current handoff date: 23 August 2026.
 - The competition accepts prototypes. Prioritise one polished, reliable demo journey over extra features.
 
 Demo journey:
@@ -195,6 +195,6 @@ Check in
 
 ## Immediate next action
 
-The user confirmed the Quiet Tide Modern shell, navigation, tour controls/replay, and 8-cue Quick Reset behavior work in Chrome. Keep physical-device and fresh-account release checks open. The next planned implementation is Batch 8 Firestore integrity/authorization hardening, but do not begin it without explicit user approval.
+Batch 8 code/tests are ready locally but not deployed. On the developer PC, confirm Java 21, install the isolated test dependencies, run all 13 emulator cases, then run Flutter analysis. If any case fails, stop and fix it; do not deploy. Exact commands are in `firestore_tests/README.md`.
 
-The developer has no physical phone. Use an Android emulator later if practical and keep phone-only behavior explicitly unverified until a borrowed or competition device is available. The existing landing-page code is only a reference for future Batch 13A and must not distract from pilot validation.
+The developer still has no physical phone. Keep emulator/device checks open, and do not let the future landing page distract from this authorization gate.

@@ -223,26 +223,28 @@ Validation status:
 - keep a fresh registration/onboarding trigger check and physical-device layout in the release matrix;
 - keep child-screen redesign deferred until higher-priority integrity/reliability work is complete.
 
-### Batch 8 — Firestore integrity and authorization tests
+### Batch 8 — Firestore integrity and authorization tests — implemented locally, validation pending
 
-**Purpose:** Close the most important prototype security gaps in the currently deployed rules.
+**Purpose:** Close the most important prototype security gaps without touching live data until authorization tests pass.
 
-Tasks:
+Implemented:
 
-1. Require appointment creation with `status == 'pending'`.
-2. Validate allowed appointment status values.
-3. Restrict which appointment fields owners and admins may update.
-4. Preserve UID and important identity fields.
-5. Add Firebase Emulator rule tests for:
-   - owner access;
-   - cross-user denial;
-   - self-admin denial;
-   - pending-only appointment creation;
-   - user appointment-status denial;
-   - admin approve/decline access;
-   - trusted-contact and support-event ownership.
-6. Deploy only after tests pass.
-7. Record the exact Firebase project and deployment result.
+1. Appointment creation requires an exact known schema, caller-owned UID, and `status == 'pending'`.
+2. Allowed statuses are pending/approved/declined.
+3. Appointment details are immutable; admins may change status only; owners cannot self-approve.
+4. User profile rules handle missing `isAdmin` safely and prevent self-promotion/email changes.
+5. Trusted contacts have strict fields and immutable UID/createdAt.
+6. Support events are owner-only and append-only (owners may read/delete, not rewrite).
+7. Service methods reject non-pending creates and invalid status values before contacting Firestore.
+8. A 13-case Firebase Emulator suite covers owner, cross-user, self-admin, pending-only, status-only, trusted-contact, and support-event behavior.
+
+Pending:
+
+1. Run the suite on a Java 21 environment.
+2. Run `flutter analyze` for the service guard.
+3. Fix every failing allow/deny case.
+4. Deploy only after all checks pass.
+5. Record the exact Firebase project and deployment result.
 
 Deferred limitation:
 
@@ -538,6 +540,14 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 
 ## Current execution gate
 
-The user confirmed the Quiet Tide Modern shell, contextual guide/replay, Floating Tide navigation, and 8-cue Quick Reset behavior work in Chrome. Physical-device and fresh-registration release checks remain open.
+Batch 8 rules, service guards, and 13 emulator cases are implemented locally. The live Firebase project still uses Batch #5 rules.
 
-The next planned implementation is **Batch 8 — Firestore integrity and authorization tests**. Begin only after explicit user approval. Do not expand narration, add ambience, redesign child screens, or start the public landing site ahead of this reliability work.
+Current gate:
+
+1. pull/install the isolated `firestore_tests` dependencies;
+2. provide Java 21 to the Firebase Emulator;
+3. get all 13 cases passing;
+4. run Flutter analysis;
+5. deploy only after both gates pass and record the result.
+
+Do not begin Batch 9, expand narration, or start the landing site before this authorization gate is complete.

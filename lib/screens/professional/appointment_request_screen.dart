@@ -487,6 +487,7 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
         TextField(
           controller: _noteController,
           maxLines: 4,
+          maxLength: 1000,
           decoration: InputDecoration(
             hintText: 'Anything you would like them to know...',
             filled: true,
