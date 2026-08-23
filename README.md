@@ -37,6 +37,8 @@ They are **not yet considered release-complete**. Batch 8 passes all 13 Firestor
 
 Batch 9A account deletion/recovery passes 13/13 rules tests, Flutter gates, deployed profile-delete rules, and a successful disposable-account deletion. It reauthenticates, deletes every UID-owned collection in repeatable batches, deletes profile/Auth last, preserves a retry route, repairs missing profiles, rolls back failed registration, and never trims passwords. Interruption/recovery proof and Google Play's external web deletion-request resource remain.
 
+Batch 10 AI hardening is local-only: 12/12 Worker tests pass, Llama 3.3 70B FP8 Fast is the final default, and Flutter client tests are added. Live `/health` still shows the older Worker, so deployment/live verification remain.
+
 Guided audio has a controlled pilot: one shared offline player, separate Quick Reset welcome, 4 main prompts, 4 midpoint reassurance cues, and 6 Box assets. The 15 MP3s total about 370 KB and the user confirmed the pilot works in Chrome. Literal breathing loops are not included, and later ambience must be optional/licensed with separate volume and voice ducking.
 
 The Quiet Tide Modern shell includes a lower/slower Floating Tide bar, consistent app-bar behavior, lightweight 2D guide, four-step first-use tour, persisted completion, and Settings replay. The user confirmed the combined shell, navigation, tour controls/replay, and 8-cue Quick Reset work in Chrome. Physical-device and fresh-registration release checks remain. See `assets/audio/README.md` and `MINDMATE_REMAINING_BATCHES.md`.
@@ -152,15 +154,17 @@ The duplicate-appointment guard is not authoritative server-side uniqueness enfo
 
 ### AI companion
 
-- Cloudflare Worker shields the AI provider binding from Flutter;
+- Cloudflare Worker shields the AI binding from Flutter;
+- transparently identifies as AI, never human/therapist/emergency care;
 - structured modes: Listen, Calm me, and Make a plan;
-- recent-history role validation and size limits in Flutter and the Worker;
-- deterministic crisis route before AI generation;
-- friendly unavailable and quota states;
-- generic client-safe errors with structured server logs;
-- optional Cloudflare rate-limit binding;
-- optional KV usage counter;
-- environment-variable AI model selection.
+- strict body/message/mode/history validation in Flutter and Worker;
+- deterministic crisis route before rate limits and AI generation;
+- Llama 3.3 70B FP8 Fast final default with `AI_MODEL` override;
+- concise 220-token maximum model output;
+- friendly unavailable, rate-limit, and quota states;
+- request IDs and structured length/timing logs with no message text;
+- versioned `/health` deployment verification;
+- optional KV counter intentionally deferred.
 
 Chat messages currently remain in memory while the session is open. Persistent chat sessions and a past-chat screen are future work.
 
@@ -207,9 +211,9 @@ Before a public or competition build:
 - verify Batch 9A interruption/retry and missing-profile restoration without risking the real/admin account;
 - keep Batch 9 weak-network/retry evidence in the release matrix;
 - publish a functional external `/delete-account` request resource for Google Play;
-- confirm/deploy the current Worker source;
+- pass Worker/Flutter AI tests, deploy Batch 10, verify `/health`, and enable the 20/60 limiter;
 - test all owner/admin denial cases;
-- test every AI mode, safety route, limit, and failure state;
+- test every live AI mode, safety route, limit, and failure state;
 - verify every emergency number and external support resource against authoritative current sources;
 - test `tel:`, `sms:`, and external links on a real Android device;
 - complete accessibility, loading/error/empty-state, privacy, and adversarial-safety passes;
@@ -315,9 +319,10 @@ The Worker source is `worker/index.js`. See `worker/README.md` for:
 
 - the endpoint;
 - `AI`, `AI_MODEL`, `MINDMATE_RATE_LIMIT`, and `MINDMATE_METRICS` configuration;
-- manual deployment steps;
+- manual deployment steps and `/health` verification;
 - logging and fallback behavior;
-- the final model decision still pending.
+- final Llama 3.3 model and recommended 20/60 limiter;
+- the 12-case local Worker test suite.
 
 ## Web 3D model setup
 

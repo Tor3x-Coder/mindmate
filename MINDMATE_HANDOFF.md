@@ -66,15 +66,21 @@ Implemented in the repository:
 - deterministic crisis-keyword routing before normal generation;
 - generic user-safe errors and server-side structured logs;
 - friendly quota fallback;
-- optional rate-limit and metrics bindings;
-- environment-variable model switching.
+- final local default `@cf/meta/llama-3.3-70b-instruct-fp8-fast` with `AI_MODEL` override;
+- strict message/body/mode/history validation on Worker and Flutter sides;
+- crisis route before limiter/model generation;
+- current Cloudflare Rate Limiting binding API and friendly fallback;
+- versioned `/health`, no-store headers, request IDs, and length-only logs;
+- safe quota/provider/missing-binding responses;
+- 12/12 local Worker tests; 4 Flutter ChatService tests added.
 
 Still required:
 
-- confirm/deploy the live Worker version;
-- test every mode and failure path;
-- complete adversarial and qualified human safety review;
-- make the final AI model choice after testing.
+- validate Flutter ChatService changes;
+- deploy complete `worker/index.js` and explicit model/rate-limit settings;
+- confirm `/health` version because live health still exposes old behavior;
+- run live mode/crisis/invalid/limit/failure checks;
+- complete adversarial and qualified human safety review.
 
 ## Frontend decisions and current implementation
 
@@ -139,19 +145,20 @@ See `MINDMATE_STATUS.md` for exact files and status.
 6. **Batch 8 Firestore integrity (validated and deployed)** — pending-only appointment creation, admin status-only updates, user/admin profile protection, trusted/support schemas, service guards, 13/13 emulator cases, Flutter gates, and successful release to `mindmate-app-fcf2d` on 23 August 2026.
 7. **Batch 9A account deletion/recovery (happy path validated)** — Spark-compatible in-app deletion, password reauthentication, repeatable owned-data batches, retry marker/routing, missing-profile recovery, registration rollback, no password trimming, 13/13 rules tests, deployed profile-delete rule, and confirmed disposable-account deletion.
 8. **Batch 9B runtime reliability (validated)** — bounded wellness scoring, 4/4 model tests, mounted-safe appointment/dashboard async handling, friendly My Requests errors, intentional ISO-string migration deferral, 5/5 total tests, and Flutter 0 errors/0 warnings.
+9. **Batch 10 AI Worker hardening (local, not deployed)** — transparent AI identity, final Llama 3.3 70B model, strict payload/mode/history limits, crisis-first routing, fixed rate-limit API, health/version endpoint, safe fallbacks/logging, and 12/12 Worker tests.
 
-Important: deletion interruption/retry and missing-profile restoration evidence remain. The project is on Spark, so a trusted Cloud Function is deferred unless billing is upgraded.
+Important: the live `/health` response proves the older Worker is still deployed. Deletion interruption/retry and missing-profile restoration evidence also remain.
 
 ## Remaining backend/release work
 
 Immediate prototype path:
 
-1. Keep deletion interruption/retry and missing-profile restoration in the release matrix.
-2. Keep the external `/delete-account` web request path as a Google Play blocker.
-3. Begin Batch 10: compare/deploy `worker/index.js`, configure bindings, test live behavior, and make the final AI model decision.
-4. Verify emergency resources and sensitive content.
-5. Run meaningful automated tests plus the complete device test matrix.
-6. Build a release candidate APK and freeze nonessential features.
+1. Run 12 Worker tests plus Flutter analyze/tests for the 4 new client cases.
+2. Deploy Batch 10 Worker source, explicit Llama 3.3 model, and recommended limiter.
+3. Verify `/health` and the complete live mode/crisis/error matrix.
+4. Keep deletion retry/recovery and external `/delete-account` in the release matrix.
+5. Verify emergency resources and sensitive content.
+6. Run the complete device/release test matrix and build the signed candidate APK.
 
 See `MINDMATE_REMAINING_BATCHES.md` for tasks and exit criteria for Batches 6–13.
 
@@ -195,4 +202,4 @@ Check in
 
 ## Immediate next action
 
-Batch 9B is green: 5/5 tests and Flutter 0 errors/0 warnings. Batch 9's implemented work is closed; keep deletion retry/recovery and the landing site's `/delete-account` request path in the release matrix, then begin Batch 10 AI Worker completion.
+Batch 10 is hardened locally and 12/12 Worker tests pass. The live Worker is still old. Next run Flutter analyzer/tests, deploy the complete Worker with explicit Llama 3.3 70B and a 20/60 rate limiter, verify `/health`, then run the live safety/mode/error matrix.

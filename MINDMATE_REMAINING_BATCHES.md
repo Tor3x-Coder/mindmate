@@ -354,36 +354,46 @@ Exit criteria:
 - wellness model tests pass;
 - external `/delete-account` web request remains an explicit Play release gate.
 
-### Batch 10 — AI Worker live completion
+### Batch 10 — AI Worker live completion — hardened locally, deployment pending
 
 **Purpose:** Make the repository Worker and live Worker match, then verify safety and reliability.
 
-Tasks:
+Implemented locally:
 
-1. Compare the live Cloudflare Worker with `worker/index.js`.
-2. Change any wording that could imply the AI is human; keep it transparently an AI companion.
-3. Confirm the `AI` binding.
-4. Choose and record the final `AI_MODEL`.
-5. Decide whether to enable `MINDMATE_RATE_LIMIT`.
-6. Decide whether to enable `MINDMATE_METRICS`.
-7. Deploy the reviewed Worker.
-8. Test:
-   - normal conversation;
-   - `listen`, `calm`, and `make_plan`;
-   - invalid payloads;
-   - injected roles;
-   - oversized message/history;
-   - deterministic crisis route;
-   - quota fallback;
-   - provider/network failure;
-   - logs without sensitive message content.
+- transparent AI identity; no human/therapist claims;
+- final default `@cf/meta/llama-3.3-70b-instruct-fp8-fast` with override;
+- Worker body/message/mode/history validation and Flutter-side matching caps;
+- single trusted system prompt; injected roles/modes discarded;
+- crisis response before limiter/model generation;
+- current Cloudflare limiter API and friendly 20/60-ready fallback;
+- max 220 output tokens;
+- safe quota/provider/missing-binding/empty-reply handling;
+- request ID/no-store headers and message-free structured logs;
+- versioned `GET /health` endpoint;
+- 12/12 Worker tests passing;
+- 4 Flutter ChatService tests added.
+
+Live comparison:
+
+- current `/health` returns old plain text, proving live deployment is stale.
+
+Pending:
+
+1. Run Flutter analyzer/tests and confirm the 4 client tests.
+2. Deploy complete Worker source.
+3. Confirm required `AI` binding.
+4. Set explicit final `AI_MODEL`.
+5. Enable recommended `MINDMATE_RATE_LIMIT` at 20 requests/60 seconds.
+6. Defer optional KV metrics.
+7. Verify `/health` version/model.
+8. Run normal/listen/calm/plan, invalid/injected/oversized, crisis, limit/quota, and provider-failure cases.
 
 Exit criteria:
 
 - live deployment version is recorded;
-- every test case has a result;
+- every live test has a result;
 - Flutter receives safe, friendly responses;
-- no raw provider error is exposed.
+- no raw provider/user message content is exposed.
 
 ### Batch 11 — Safety, content, and resource verification
 
@@ -619,12 +629,11 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 
 ## Current execution gate
 
-Batch 9A's rules and normal disposable-account deletion path pass. Interruption/recovery and the external web request remain release checks.
+Batch 9 is locally validated. Batch 10 Worker hardening has 12/12 source tests, but the live `/health` proves the old Worker remains deployed.
 
 Current gate:
 
-1. treat Batch 9's implemented work as locally validated;
-2. keep deletion interruption/recovery, weak-network, and physical-device evidence in Batch 12;
-3. keep ISO migration deferred with the documented dual-read/backfill plan;
-4. keep the landing page's functional `/delete-account` request as a Play blocker;
-5. begin Batch 10 AI Worker live completion.
+1. run Flutter analyze/tests for ChatService;
+2. deploy the full Batch 10 Worker with explicit Llama 3.3 model and 20/60 limiter;
+3. verify `/health` version/model and the complete live matrix;
+4. keep deletion retry/recovery, physical-device evidence, and the landing `/delete-account` resource in the release matrix.

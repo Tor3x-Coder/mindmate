@@ -37,7 +37,7 @@ Audio, Floating Tide navigation, contextual tour, and the Modern Shell were conf
 | Mood impact and activity feedback persistence | Yes | Flutter analysis/tests pass; runtime pending | Batch 8 rules live | No |
 | Appointment admin workflow | Pending-only create + admin status-only rules/service guards implemented | Emulator + Flutter gates passed | **Batch 8 rules live** | Normal live request/admin smoke pending |
 | One-pending-request guard | Client/service guard only | `flutter analyze` passed; runtime pending | N/A | No |
-| Mode-aware AI Worker and safety route | Yes | Dart analysis and `node --check` passed; live tests pending | **Unconfirmed** | No |
+| Mode-aware AI Worker and safety route | Batch 10 hardened locally | **12/12 Worker tests passed**; Flutter client tests pending | Live `/health` proves old source still deployed | No live Batch 10 verification |
 | Trusted contacts and support-event tracking | Strict schemas/immutability implemented | Owner/cross-user emulator cases passed | **Batch 8 rules live** | Normal CRUD/event smoke pending |
 | State/international emergency-number UI | Yes | `flutter analyze` passed; device tests pending | N/A | No; resource verification required |
 | Guided audio: Meditation, Breathing, Daily Snapshot | Pilot + reassurance cues implemented | User confirmed 8-cue Quick Reset and Box pilot work in Chrome | N/A | Quick Reset + Box Breathing only; ambience deferred |
@@ -283,16 +283,42 @@ Validation passed on the developer PC:
 
 Batch 9B is closed. Weak/offline and physical-device behavior remains part of the broader release matrix.
 
-### 5. Deploy and verify the AI Worker
+### 5. Deploy and verify Batch 10 AI Worker
 
-- Compare the live Cloudflare Worker with `worker/index.js`.
-- Deploy the repository version if they differ.
-- Confirm the `AI` binding.
-- Decide whether to configure `MINDMATE_RATE_LIMIT` and `MINDMATE_METRICS`.
-- Make the intentionally deferred final `AI_MODEL` choice.
-- Test normal messages, every mode, invalid payloads, oversized history, crisis routing, quota fallback, and provider failure.
+Implemented locally:
 
-See `worker/README.md` for deployment details.
+- transparent AI-only identity; all “human companion” wording removed;
+- final default model: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`;
+- `AI_MODEL` retained as a controlled emergency override;
+- strict message/body/history/mode validation on Flutter and Worker sides;
+- one trusted system prompt; client-injected roles discarded;
+- explicit crisis response before rate limits/model generation;
+- current Cloudflare rate-limit API (`limit({ key })`) with friendly fallback;
+- max 220 output tokens and concise mode instructions;
+- safe malformed/quota/provider/missing-binding behavior;
+- request IDs, no-store headers, and length-only logs;
+- versioned `GET /health` endpoint;
+- 12/12 Worker source tests passed;
+- 4 Flutter ChatService tests added; Flutter validation pending.
+
+Live comparison:
+
+- `GET /health` still returns the old plain “Send a POST request” response;
+- therefore Batch 10 is **not deployed**.
+
+Pending gate:
+
+```bash
+cd worker
+npm test
+cd ..
+flutter analyze
+flutter test
+```
+
+After local gates, deploy the complete `worker/index.js`, confirm the `AI` binding, set the explicit final `AI_MODEL`, enable a recommended 20 requests/60 seconds `MINDMATE_RATE_LIMIT` binding, verify `/health`, and run the live mode/crisis/error matrix. KV metrics are intentionally deferred.
+
+See `worker/README.md` for exact deployment and PowerShell checks.
 
 ### 6. Run the end-to-end demo checklist
 
@@ -382,6 +408,7 @@ Append one concise row after every code batch or fix. Keep detailed product docu
 | 23 Aug 2026 | Light default + Daily Snapshot fix | Correct first-run/reset theme; theme-aware wellness colours; 8-unit progress | User confirmed correct Light colours and 6/8 (75%) at Mind 5/5 | N/A | Keep physical-device check pending |
 | 23 Aug 2026 | Registration/onboarding contrast fix | Register inputs match Login dark 16px style; onboarding options use surface text colour | User confirmed all registration/setup text is readable | N/A | Keep physical-device check pending |
 | 23 Aug 2026 | Batch 9B runtime reliability | Wellness 0–100 caps + 4 tests; mounted-safe appointment/dashboard handling; private My Requests errors; ISO migration deferred | **5/5 tests passed**; Flutter 0 errors/0 warnings | N/A | Batch closed; proceed to AI Worker or release-matrix checks |
+| 23 Aug 2026 | Batch 10 AI Worker hardening | Transparent AI identity; final Llama 3.3 70B; strict input/modes/history; crisis-first; current limiter API; health/version; client sanitization | **12/12 Worker tests passed**; Flutter ChatService tests pending | **Not deployed**; live health is old | Run local gates, deploy Worker/bindings, verify live matrix |
 
 ## Rule for the next agent
 
@@ -392,5 +419,6 @@ Before editing code:
 3. treat the Modern Shell and Batch 8 deployment as passed;
 4. treat Batch 9A normal deletion as passed; keep retry/recovery evidence open and never use the developer/admin account for destructive tests;
 5. treat Light-default/registration/Daily Snapshot Chrome validation as passed;
-6. treat Batch 9B's 5/5 tests and clean analyzer as passed; keep `/delete-account` web requests as a Play blocker and continue from **What remains**, not an older transcript;
-7. update this file and the relevant Markdown documentation in the same batch as every fix.
+6. treat Batch 9B's 5/5 tests and clean analyzer as passed;
+7. treat Batch 10 as local-only despite 12/12 Worker tests; run Flutter tests, deploy, and verify `/health`/live behavior before calling it complete;
+8. keep `/delete-account` web requests as a Play blocker and update relevant docs in every batch.
