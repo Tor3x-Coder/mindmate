@@ -35,7 +35,7 @@ Backend/integration batches 1–5 are implemented in the repository:
 
 They are **not yet considered release-complete**. Batch 8 passes all 13 Firestore Emulator cases, Flutter analysis has 0 errors/0 warnings, the smoke test passes, and the rules/live normal flows work on `mindmate-app-fcf2d`.
 
-Batch 9A account deletion/recovery is implemented locally for Spark but unvalidated: it reauthenticates, deletes every UID-owned collection in repeatable batches, deletes profile/Auth last, preserves a retry route, repairs missing profiles, rolls back failed registration, and never trims passwords. Google Play's external web deletion-request resource is still pending.
+Batch 9A account deletion/recovery is implemented locally for Spark and passes 13/13 updated rules tests plus Flutter analysis/tests. It reauthenticates, deletes every UID-owned collection in repeatable batches, deletes profile/Auth last, preserves a retry route, repairs missing profiles, rolls back failed registration, and never trims passwords. The profile-delete rule delta is not deployed, destructive temporary-account evidence is pending, and Google Play's external web deletion-request resource is still required.
 
 Guided audio has a controlled pilot: one shared offline player, separate Quick Reset welcome, 4 main prompts, 4 midpoint reassurance cues, and 6 Box assets. The 15 MP3s total about 370 KB and the user confirmed the pilot works in Chrome. Literal breathing loops are not included, and later ambience must be optional/licensed with separate volume and voice ducking.
 
@@ -198,7 +198,7 @@ Before a public or competition build:
 
 - keep the currently clean Flutter analysis result and run tests plus Android builds;
 - implement and real-device-test the approved guided-audio MVP;
-- validate/deploy Batch 9A's owner-profile-delete delta and test only with a temporary account;
+- deploy Batch 9A's tested owner-profile-delete delta and destructively test only with a temporary account;
 - publish a functional external `/delete-account` request resource for Google Play;
 - confirm/deploy the current Worker source;
 - test all owner/admin denial cases;
@@ -292,7 +292,7 @@ build/app/outputs/flutter-apk/app-release.apk
 
 ## Firebase deployment
 
-Batch 8 is live on `mindmate-app-fcf2d`. Batch 9A locally adds owner profile deletion for the confirmed account-deletion flow; this delta is **not deployed** and must pass emulator/Flutter gates first. After validation, deploy with:
+Batch 8 is live on `mindmate-app-fcf2d`. Batch 9A's owner-profile-delete delta now passes 13/13 updated emulator cases and Flutter gates but is **not deployed**. Deploy the tested delta with:
 
 ```bash
 firebase deploy --only firestore:rules

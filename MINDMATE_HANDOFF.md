@@ -134,17 +134,17 @@ See `MINDMATE_STATUS.md` for exact files and status.
 4. **AI Worker** — modes, limits, crisis route, rate-limit hook, logging, quota fallback, and model configuration.
 5. **Trusted contacts/support events** — owner-only contact storage, explicit call/message actions, follow-up events, and expanded emergency UI.
 6. **Batch 8 Firestore integrity (validated and deployed)** — pending-only appointment creation, admin status-only updates, user/admin profile protection, trusted/support schemas, service guards, 13/13 emulator cases, Flutter gates, and successful release to `mindmate-app-fcf2d` on 23 August 2026.
-7. **Batch 9A account deletion/recovery (local, unvalidated)** — Spark-compatible in-app deletion, password reauthentication, repeatable owned-data batches, retry marker/routing, missing-profile recovery, registration rollback, and no password trimming.
+7. **Batch 9A account deletion/recovery (validated locally, not deployed)** — Spark-compatible in-app deletion, password reauthentication, repeatable owned-data batches, retry marker/routing, missing-profile recovery, registration rollback, no password trimming, 13/13 rules tests, and Flutter 0 errors/0 warnings.
 
-Important: Batch 9A adds an owner-profile-delete rule delta that is not deployed. The project remains on Spark, so a trusted Cloud Function is deferred unless billing is upgraded.
+Important: Batch 9A's owner-profile-delete rule delta is tested but not deployed. The project remains on Spark, so a trusted Cloud Function is deferred unless billing is upgraded.
 
 ## Remaining backend/release work
 
 Immediate prototype path:
 
-1. Rerun Firestore Emulator and Flutter gates for Batch 9A's profile-delete delta.
-2. Deploy that rules delta only after tests pass.
-3. Test deletion with a temporary account only, including interruption/retry and missing-profile recovery.
+1. Deploy Batch 9A's tested owner-profile-delete rules delta.
+2. Test deletion with a temporary account only, including data/Auth removal and interruption/retry.
+3. Confirm missing-profile restoration/incomplete-onboarding routes.
 4. Continue remaining account/runtime reliability work.
 5. Confirm/deploy `worker/index.js`, configure required bindings, test the live endpoint, and make the final AI model decision.
 6. Verify emergency resources and sensitive content.
@@ -194,4 +194,4 @@ Check in
 
 ## Immediate next action
 
-Batch 9A account deletion/recovery is implemented locally for Spark but unvalidated. Rerun emulator/Flutter gates, deploy only the owner-profile-delete delta after they pass, and perform destructive testing only with a temporary account. The landing site now has a mandatory functional `/delete-account` request path before Google Play submission.
+Batch 9A local gates are green: 13/13 updated emulator cases, Flutter 0 errors/0 warnings, and the smoke test passed. Deploy only the tested owner-profile-delete delta, then perform destructive testing only with a temporary account. The landing site still needs a functional `/delete-account` request path before Google Play submission.

@@ -267,7 +267,7 @@ Exit criteria:
 - changed rules compile and deploy;
 - denial cases are manually confirmed against the intended project.
 
-### Batch 9 — Account and runtime reliability — Sub-batch 9A implemented locally
+### Batch 9 — Account and runtime reliability — Sub-batch 9A validated locally, deployment pending
 
 **Purpose:** Fix account lifecycle failures and provide permanent user-controlled deletion.
 
@@ -293,13 +293,19 @@ Architecture note:
 - Spark-compatible client deletion is repeatable, not falsely described as atomic;
 - Google Play requires both the in-app path and a functional external web deletion request resource.
 
+Sub-batch 9A validation result:
+
+- updated Firestore Emulator suite: **13/13 passing**;
+- owner profile deletion allowed and cross-user deletion denied;
+- Flutter analysis: 0 errors, 0 warnings, 4 informational notices;
+- smoke test passed.
+
 Sub-batch 9A pending:
 
-1. Rerun Firestore Emulator tests for profile deletion.
-2. Run Flutter analyzer/tests/build.
-3. Deploy the profile-delete rule only after tests pass.
-4. Destructively test only a temporary account, including interruption/retry.
-5. Confirm missing-profile restoration and incomplete-onboarding routes.
+1. Deploy the tested profile-delete rule delta.
+2. Destructively test only a temporary account, including interruption/retry.
+3. Confirm missing-profile restoration and incomplete-onboarding routes.
+4. Keep the external deletion-request web resource as a release blocker.
 
 Remaining Batch 9 tasks:
 
@@ -568,25 +574,24 @@ The main lesson is that MindMate does not need 1,000 sessions to compete in a pr
 6. **Crisis matching is basic** — keyword routing is useful but not a complete safety system.
 7. **Emergency-resource maintenance risk** — numbers can change and must be sourced, dated, and rechecked.
 8. **Professional support is still a prototype** — no provider identity, provider account, availability, notifications, or provider inbox.
-9. **Appointment rules need hardening** — pending-only creation and mutable-field restrictions are not complete.
-10. **No authoritative duplicate-request enforcement** — the current normal-flow guard can be bypassed.
-11. **No persistent chat history** — conversation continuity ends with the in-memory session.
-12. **Weak analytics compared with tracking specialists** — no deep correlations, export, or mature history exploration.
-13. **Weak retention compared with habit specialists** — no strong personalized daily routine or reward loop.
-14. **No user data export/deletion flow** — a serious long-term privacy gap.
-15. **Account edge cases remain** — missing profile and partial registration failures need explicit handling.
-16. **Release proof is incomplete** — post-audio Android/Web builds and latest shell behavior pass in Chrome, but the full runtime matrix, physical device, and signed release candidate remain pending.
-17. **Broad scope creates maintenance risk** — many feature areas can become shallow or inconsistent if polish is spread too thin.
-18. **Package upgrades are pending** — 27 newer versions exist outside current constraints, but upgrading before feature freeze could introduce breakage.
+9. **No authoritative duplicate-request enforcement** — pending/status integrity is deployed, but the current one-pending-request client guard can still be raced or bypassed.
+10. **No persistent chat history** — conversation continuity ends with the in-memory session.
+11. **Weak analytics compared with tracking specialists** — no deep correlations, export, or mature history exploration.
+12. **Weak retention compared with habit specialists** — no strong personalized daily routine or reward loop.
+13. **Privacy lifecycle is incomplete** — in-app deletion is locally validated, but destructive testing, data export, and the external web request path remain.
+14. **Account recovery needs runtime proof** — missing-profile/rollback logic passes analysis but needs temporary-account evidence.
+15. **Release proof is incomplete** — post-audio Android/Web builds and latest shell behavior pass in Chrome, but the full runtime matrix, physical device, and signed release candidate remain pending.
+16. **Broad scope creates maintenance risk** — many feature areas can become shallow or inconsistent if polish is spread too thin.
+17. **Package upgrades are pending** — 27 newer versions exist outside current constraints, but upgrading before feature freeze could introduce breakage.
 
 ## Current execution gate
 
-Batch 8 validation/deployment and live normal-flow checks passed. Batch 9A account deletion/recovery is implemented locally for Spark; its owner-profile-delete rule delta is not deployed.
+Batch 9A local validation passed: 13/13 updated rules cases, Flutter 0 errors/0 warnings, and the smoke test passed. The owner-profile-delete delta is not deployed.
 
 Current gate:
 
-1. rerun Firestore Emulator and Flutter gates;
-2. deploy only after they pass;
-3. use a temporary account for destructive deletion/retry/recovery tests;
+1. deploy only the tested Firestore rules delta;
+2. use a temporary account for destructive deletion/retry/recovery tests;
+3. confirm missing-profile restoration;
 4. keep the landing page's functional `/delete-account` request resource as a Play release blocker;
 5. then continue remaining Batch 9 reliability work.
