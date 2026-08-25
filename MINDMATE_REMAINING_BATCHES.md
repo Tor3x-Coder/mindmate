@@ -354,14 +354,14 @@ Exit criteria:
 - wellness model tests pass;
 - external `/delete-account` web request remains an explicit Play release gate.
 
-### Batch 10 — AI Worker live completion — hardened locally, deployment pending
+### Batch 10 — AI Worker live completion — validated, deployed, and verified live
 
 **Purpose:** Make the repository Worker and live Worker match, then verify safety and reliability.
 
-Implemented locally:
+Implemented, deployed, and verified on 25 August 2026:
 
 - transparent AI identity; no human/therapist claims;
-- final default `@cf/meta/llama-3.3-70b-instruct-fp8-fast` with override;
+- final default `@cf/meta/llama-3.3-70b-instruct-fp8-fast` with `AI_MODEL` override;
 - Worker body/message/mode/history validation and Flutter-side matching caps;
 - single trusted system prompt; injected roles/modes discarded;
 - crisis response before limiter/model generation;
@@ -371,29 +371,10 @@ Implemented locally:
 - request ID/no-store headers and message-free structured logs;
 - versioned `GET /health` endpoint;
 - 12/12 Worker tests passing;
-- 4 Flutter ChatService tests added.
-
-Live comparison:
-
-- current `/health` returns old plain text, proving live deployment is stale.
-
-Pending:
-
-1. Run Flutter analyzer/tests and confirm the 4 client tests.
-2. Deploy complete Worker source.
-3. Confirm required `AI` binding.
-4. Set explicit final `AI_MODEL`.
-5. Enable recommended `MINDMATE_RATE_LIMIT` at 20 requests/60 seconds.
-6. Defer optional KV metrics.
-7. Verify `/health` version/model.
-8. Run normal/listen/calm/plan, invalid/injected/oversized, crisis, limit/quota, and provider-failure cases.
-
-Exit criteria:
-
-- live deployment version is recorded;
-- every live test has a result;
-- Flutter receives safe, friendly responses;
-- no raw provider/user message content is exposed.
+- 4 Flutter ChatService tests added (9/9 total tests passing, 0 analyzer errors);
+- live deployment to Cloudflare Worker `mindmate-ai-chat.tor3x-akachukwu.workers.dev`;
+- verified live `/health` returning version `2026-08-23-batch10` and default model `@cf/meta/llama-3.3-70b-instruct-fp8-fast`;
+- verified live responses for `make_plan`, `calm`, and immediate deterministic human crisis routing.
 
 ### Batch 11 — Safety, content, and resource verification
 

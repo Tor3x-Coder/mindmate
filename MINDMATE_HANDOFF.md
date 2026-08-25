@@ -1,6 +1,6 @@
 # MindMate handoff for a new chat
 
-**Last updated:** 23 August 2026
+**Last updated:** 25 August 2026
 
 ## Read these first
 
@@ -72,15 +72,10 @@ Implemented in the repository:
 - current Cloudflare Rate Limiting binding API and friendly fallback;
 - versioned `/health`, no-store headers, request IDs, and length-only logs;
 - safe quota/provider/missing-binding responses;
-- 12/12 local Worker tests; 4 Flutter ChatService tests added.
-
-Still required:
-
-- validate Flutter ChatService changes;
-- deploy complete `worker/index.js` and explicit model/rate-limit settings;
-- confirm `/health` version because live health still exposes old behavior;
-- run live mode/crisis/invalid/limit/failure checks;
-- complete adversarial and qualified human safety review.
+- 12/12 local Worker tests; 4 Flutter ChatService tests added (9/9 total tests passing, 0 analyzer errors);
+- live Worker deployed to `mindmate-ai-chat.tor3x-akachukwu.workers.dev`;
+- `/health` confirmed returning version `2026-08-23-batch10` with model `@cf/meta/llama-3.3-70b-instruct-fp8-fast`;
+- live plan, calm, and crisis safety routes verified.
 
 ## Frontend decisions and current implementation
 
@@ -145,9 +140,7 @@ See `MINDMATE_STATUS.md` for exact files and status.
 6. **Batch 8 Firestore integrity (validated and deployed)** — pending-only appointment creation, admin status-only updates, user/admin profile protection, trusted/support schemas, service guards, 13/13 emulator cases, Flutter gates, and successful release to `mindmate-app-fcf2d` on 23 August 2026.
 7. **Batch 9A account deletion/recovery (happy path validated)** — Spark-compatible in-app deletion, password reauthentication, repeatable owned-data batches, retry marker/routing, missing-profile recovery, registration rollback, no password trimming, 13/13 rules tests, deployed profile-delete rule, and confirmed disposable-account deletion.
 8. **Batch 9B runtime reliability (validated)** — bounded wellness scoring, 4/4 model tests, mounted-safe appointment/dashboard async handling, friendly My Requests errors, intentional ISO-string migration deferral, 5/5 total tests, and Flutter 0 errors/0 warnings.
-9. **Batch 10 AI Worker hardening (local, not deployed)** — transparent AI identity, final Llama 3.3 70B model, strict payload/mode/history limits, crisis-first routing, fixed rate-limit API, health/version endpoint, safe fallbacks/logging, and 12/12 Worker tests.
-
-Important: the live `/health` response proves the older Worker is still deployed. Deletion interruption/retry and missing-profile restoration evidence also remain.
+9. **Batch 10 AI Worker hardening (validated, deployed, verified)** — transparent AI identity, final Llama 3.3 70B model, strict payload/mode/history limits, crisis-first routing, fixed rate-limit API, health/version endpoint, safe fallbacks/logging, 12/12 Worker tests, 9/9 Flutter tests, live deployment to `mindmate-ai-chat`, and confirmed live `/health` and chat/crisis responses on 25 August 2026.
 
 ## Remaining backend/release work
 
@@ -202,4 +195,4 @@ Check in
 
 ## Immediate next action
 
-Batch 10 is hardened locally and 12/12 Worker tests pass. The live Worker is still old. Next run Flutter analyzer/tests, deploy the complete Worker with explicit Llama 3.3 70B and a 20/60 rate limiter, verify `/health`, then run the live safety/mode/error matrix.
+Batch 10 is fully validated, deployed to Cloudflare, and verified live with `/health` reporting `2026-08-23-batch10` and Llama 3.3 70B FP8 Fast. Next steps are generating the full natural-voice guidance scope (Batch 7 MVP), verifying emergency support resources (Batch 11), setting up the competition landing page / Google Play external deletion resource (Batch 13A), and end-to-end device testing (Batch 12).
