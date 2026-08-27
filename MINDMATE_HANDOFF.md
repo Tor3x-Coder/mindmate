@@ -1,23 +1,35 @@
 # MindMate handoff for a new chat
 
-**Also read:** `MINDMATE_CODING_GUIDE.md` before making any edit. It contains the exact collaboration, coding, UI, safety, and fix-instruction rules to keep a new chat consistent.
+**Last updated:** 25 August 2026
+
+## Read these first
+
+1. `MINDMATE_STATUS.md` — current implementation, validation, deployment state, and exact next action.
+2. `MINDMATE_CODING_GUIDE.md` — collaboration, coding, UI, safety, and documentation rules.
+3. `MINDMATE_REMAINING_BATCHES.md` — full ordered plan, guided-audio decision, competitive grade, strengths, and weaknesses.
+4. This file — product direction, decisions, and broader context.
+5. `worker/README.md` before changing or deploying the AI Worker.
+
+Do not use an old chat transcript as the status source. The repository documents must be updated in the same batch as every implementation or fix.
 
 ## User working style
 
 - Speak casually and plainly (“bro”), but explain programming terms in brackets.
-- Do not make app-code edits without explicit approval.
-- For each screen, create two strong UI options and mark the preferred one with `[RECOMMENDED]` before implementation.
+- Do not make new app-code edits without explicit approval.
+- For a screen redesign, create two strong UI options and mark the preferred one with `[RECOMMENDED]` before implementation.
 - User prefers exact small-edit instructions:
   - file path;
   - exact text to find with Ctrl+F;
   - exact replacement or exact text to paste below it;
-  - explain why and how to test.
-- Do not ask for the whole project. Request only the relevant file(s).
-- Do not treat paste indentation as a bug if the actual app compiles.
+  - why the fix is needed;
+  - how to test it.
+- Do not ask for the whole project. Request only the relevant file when it is not already in the repository.
+- Do not treat pasted indentation as a bug if the actual app compiles.
+- After every fix, update `MINDMATE_STATUS.md` and all relevant Markdown documentation so the next chat can continue immediately.
 
 ## Product direction
 
-MindMate is a real-world, action-first mental wellness companion, not a school-project app.
+MindMate is a real-world, action-first mental-wellness companion, not a school-project app.
 
 Core promise:
 
@@ -26,22 +38,44 @@ Core promise:
 Core loop:
 
 ```text
-Mood check-in -> understand the need -> recommend one action -> user tries it ->
-ask whether it helped -> offer another approach or human support
+Mood check-in
+  -> understand the need
+  -> recommend one action
+  -> user tries it
+  -> ask whether it helped
+  -> offer another approach or human support
 ```
 
 MindMate is not a diagnostic tool, therapist, doctor, medical device, or emergency service.
 
 ## AI direction
 
-Keep AI, but it is AI-supported, not AI-first.
+Keep AI, but make the product AI-supported rather than AI-first.
 
-- Current AI uses a Cloudflare Worker and Cloudflare Workers AI.
-- No provider API key is inside Flutter; `env.AI` is configured in Cloudflare.
-- AI should support conversation, reflection, journal reflection (with consent), and small plans.
-- It must not diagnose, prescribe, claim to be human, or handle crises as normal chat.
-- Later AI backend batch: pass structured modes (`listen`, `calm`, `make_plan`), improve prompt, avoid generic replies/assumptions, validate history roles, limit history/message sizes, deterministic crisis routing, rate limiting, fallback.
-- Current chat history is memory-only; no past-chat screen/storage yet.
+- The Flutter app calls a Cloudflare Worker; provider credentials do not belong in Flutter.
+- AI supports conversation, reflection, and small plans.
+- It must not diagnose, prescribe, claim to replace a professional, or treat crisis content as normal chat.
+- Journal reflection remains future work and must be opt-in.
+- Chat history is currently memory-only; persistent sessions and a past-chat screen are not implemented.
+
+Implemented in the repository:
+
+- structured modes: `listen`, `calm`, and `make_plan`;
+- Flutter and Worker history sanitization/limits;
+- rejection of client-injected system roles;
+- deterministic crisis-keyword routing before normal generation;
+- generic user-safe errors and server-side structured logs;
+- friendly quota fallback;
+- final local default `@cf/meta/llama-3.3-70b-instruct-fp8-fast` with `AI_MODEL` override;
+- strict message/body/mode/history validation on Worker and Flutter sides;
+- crisis route before limiter/model generation;
+- current Cloudflare Rate Limiting binding API and friendly fallback;
+- versioned `/health`, no-store headers, request IDs, and length-only logs;
+- safe quota/provider/missing-binding responses;
+- 12/12 local Worker tests; 4 Flutter ChatService tests added (9/9 total tests passing, 0 analyzer errors);
+- live Worker deployed to `mindmate-ai-chat.tor3x-akachukwu.workers.dev`;
+- `/health` confirmed returning version `2026-08-23-batch10` with model `@cf/meta/llama-3.3-70b-instruct-fp8-fast`;
+- live plan, calm, and crisis safety routes verified.
 
 ## Frontend decisions and current implementation
 
@@ -51,14 +85,14 @@ Selected/implemented directions:
 - Home: Option A — Today, One Step.
 - Practice: Option A — Practice Map.
 - Journal: Option A — Private Diary.
-- Breathing: new Sanctuary design was rejected; original former breathing screen was restored.
+- Breathing: the rejected Sanctuary redesign was removed; the former breathing screen was restored.
 - Meditation: Option A — Meditation Journey.
 - CBT: Option A — Guided Path with 9-category branching.
 - Progress: Option A — Your Story.
 - Achievements: Option A — Wins Shelf.
 - Chat: Option A — Guided Conversation.
 - Me/Settings: Option A — Personal Space.
-- Emergency: Option A — Immediate Help; no fake trusted-person button.
+- Emergency: Option A — Immediate Help, now with explicit trusted-contact actions and location choices.
 - Professional directory: Option A — Find the Right Person.
 - Professional detail: Option A — Profile & Request.
 - Appointment request: Option A — Request in Steps.
@@ -67,71 +101,98 @@ Selected/implemented directions:
 - Admin professionals: Option A — Directory Manager.
 - Professional form: Option A — Guided Listing Setup.
 - Terms/Privacy: Option A — Readable Legal.
-- Illustration onboarding carousel was confirmed and updated; splash/illustration-first screens are excluded from further redesign.
-- Existing Login/Register screens are intentionally left as-is.
 - Wellness Check: Option A — Daily Snapshot.
 - Wellness Result: Option A — Reflection & Next Step.
+- The illustration onboarding carousel is confirmed.
+- Splash/illustration-first screens are excluded from further redesign.
+- Existing Login/Register screens are intentionally left as-is unless a functional bug is found.
 
-Workspace files were created/updated under `/home/user/lib/...`; the user’s actual local project is `T:\Dev\mindmate`, so files must be copied manually.
+## Important implementation details
 
-## Important frontend details
-
-- Mood impact uses words, not a numeric slider: A little, Somewhat, A lot, Overwhelming, Not sure yet.
-- CBT branching categories: Relationship, School/work, Mistake/regret, Future worry, Self-doubt, Sad/low, Angry/frustrated, Hurt/disappointed, Something else.
-- `Something else` uses a neutral fallback question path.
+- **Guided audio is competition-critical and Batch 7A–7D is complete.** All 3 breathing patterns (Box, 4-7-8, Simple Calm) and all 18 meditation sessions have unique offline narration with matching written captions: meditation gets intro + 4 main prompts (reading the session's guiding lines) + 4 short reassurance cues at `0.88x`; breathing gets intro + phase cues verified to fit each phase length + completion at `0.92x`. Daily Snapshot plays one short guide once per stage (Body/Mind/Routine/Review) with replay/mute above the Continue bar, and the Wellness Result screen plays one safe band narration on entry (steady >= 70 / mixed 40-69 / heavier < 40; no score read-out, no diagnosis) with replay/mute and stop-on-exit. The 15 pilot clips were re-voiced with the newly approved narrator so the app uses one consistent voice. **184 MP3s total about 3.75 MB; asset audit passed 184/184.** One Wind Down reassurance line was reworded after a content-filter rejection ("A little slower with each breath"); its caption matches the audio. Only 7E (Chrome/device playback matrix) remains.
+- **Approved full audio scope:** one consistent natural narrator with unique words for all 18 meditation sessions, segmented prompts for 1/3/5-minute choices, unique guidance for all 3 breathing patterns, one short guide per Daily Snapshot stage, and 3 safe Wellness Result band narrations. Keep intentional quiet between concise cues. Literal breathing loops are rejected for now; future calm ambience must be optional, licensed, loop-safe, independently volume-controlled, and duck under narration.
+- **Floating Tide Orb navigation is implemented, polished, and Chrome-validated:** four lower-positioned destinations, slower 520ms-base glide, restrained hop, visible labels, semantics, reduced-motion support, and existing IndexedStack state preservation.
+- **First-use guide is implemented and Chrome-validated:** four coach marks for Home, Practice, Chat, and Me with Skip/Next/Got it, `tourVersion = 1` persistence, Settings replay, and a lightweight Flutter-drawn 2D figure. Automatic display is requested only after new-user onboarding; Login/Splash do not force it. It never appears on Emergency Support or autoplays speech. Fresh-account and physical-device release checks remain.
+- **Quiet Tide Modern shell is focused, not a full redesign:** global app bars use consistent height/spacing and no scroll tint/elevation. The user confirmed the combined shell works; child-screen polish remains intentionally deferred.
+- **Approved landing direction:** use the supplied Spouse Finder page only as visual/interaction inspiration. Build a separate lightweight informational MindMate site, not a hosted Flutter version of the app. It must include a functional `/delete-account` request resource for Google Play, plus truthful product/safety/privacy information, screenshots, FAQ, and a signed release APK download—not the debug APK.
+- **Light is the validated first-run/reset default.** Dark and System remain optional user choices.
+- **Registration contrast is Chrome-validated:** Name/Email/Password match Login's dark 16px style; setup choices use readable surface text.
+- **Daily Snapshot is Chrome-validated with 8 real units:** Body, 5 Mind questions, Routine, Review. Mind 5/5 shows Step 6 of 8 / 75%.
+- Mood impact uses words: A little, Somewhat, A lot, Overwhelming, Not sure yet.
+- CBT branches: Relationship, School/work, Mistake/regret, Future worry, Self-doubt, Sad/low, Angry/frustrated, Hurt/disappointed, Something else.
+- `Something else` uses a neutral fallback path.
 - Post-activity feedback: Much worse, A little worse, About the same, A little better, Much better, Not sure yet.
-- Journal is private first; optional AI reflection later with explicit consent.
-- Trusted contact concept is planned: user adds name/phone/relationship, app launches `tel:`/`sms:` only after user taps, then asks whether they connected. Do not contact anyone silently.
-- Home has a “Need help right now?” entry point to Emergency Support.
-- Emergency screen currently preserves 112 and 767; MANI/SURPIN open Find a Helpline. Verify all resources before public release.
-- Appointments are request-based, not instant booking. Current model has pending/approved/declined.
+- Journal is private first; optional AI reflection requires explicit consent.
+- Trusted contacts store name, relationship, and phone. The app opens `tel:` or `sms:` only after the user taps and never contacts anyone silently.
+- Home has a “Need help right now?” route to Emergency Support.
+- Emergency resources include Nigeria state choices, nationwide 112 fallback, international choices, and Find a Helpline. Every resource must be authoritatively re-verified before public release.
+- Appointments are requests, not instant bookings. Statuses are pending, approved, and declined.
 
-## Current backend gaps
+## Backend/integration batches already implemented in code
 
-- Add `/thought_records/{docId}` rule; current CBT save previously failed with permission-denied because this rule was missing.
-- Use the stricter user rules that protect `isAdmin` and prevent profile deletion; do not use simple `allow read, write` on user profiles because users could self-grant admin.
-- Preserve UID during updates for every personal collection.
-- Ensure `requestAppointment()`, `allAppointmentsForAdmin()`, and `updateAppointmentStatus()` exist in `FirestoreService`.
-- Admin appointment review UI exists but needs those service methods and navigation wiring.
-- One pending request per professional policy: current frontend guard blocks exact same professional/date/time active request; stronger policy should block any pending request to the same professional and be enforced server-side later.
-- Save mood impact and activity feedback.
-- Add feedback/recommendation data model.
-- Add trusted-contact collection/rules and support-action event tracking.
-- Real professional system later: professional accounts, provider roles, provider inbox, notifications, availability/calendar.
+See `MINDMATE_STATUS.md` for exact files and status.
+
+1. **Firestore rules/admin support** — stricter user/admin rules, UID preservation, thought-record rule, appointment admin service/UI support.
+2. **Mood impact/feedback** — mood impact and post-activity feedback persistence with `feedback_records`.
+3. **Appointment duplicate guard** — blocks another pending request to the same professional in the normal app flow.
+4. **AI Worker** — modes, limits, crisis route, rate-limit hook, logging, quota fallback, and model configuration.
+5. **Trusted contacts/support events** — owner-only contact storage, explicit call/message actions, follow-up events, and expanded emergency UI.
+6. **Batch 8 Firestore integrity (validated and deployed)** — pending-only appointment creation, admin status-only updates, user/admin profile protection, trusted/support schemas, service guards, 13/13 emulator cases, Flutter gates, and successful release to `mindmate-app-fcf2d` on 23 August 2026.
+7. **Batch 9A account deletion/recovery (happy path validated)** — Spark-compatible in-app deletion, password reauthentication, repeatable owned-data batches, retry marker/routing, missing-profile recovery, registration rollback, no password trimming, 13/13 rules tests, deployed profile-delete rule, and confirmed disposable-account deletion.
+8. **Batch 9B runtime reliability (validated)** — bounded wellness scoring, 4/4 model tests, mounted-safe appointment/dashboard async handling, friendly My Requests errors, intentional ISO-string migration deferral, 5/5 total tests, and Flutter 0 errors/0 warnings.
+9. **Batch 10 AI Worker hardening (validated, deployed, verified)** — transparent AI identity, final Llama 3.3 70B model, strict payload/mode/history limits, crisis-first routing, fixed rate-limit API, health/version endpoint, safe fallbacks/logging, 12/12 Worker tests, 9/9 Flutter tests, live deployment to `mindmate-ai-chat`, and confirmed live `/health` and chat/crisis responses on 25 August 2026.
+
+## Remaining backend/release work
+
+Immediate prototype path:
+
+1. Run 12 Worker tests plus Flutter analyze/tests for the 4 new client cases.
+2. Deploy Batch 10 Worker source, explicit Llama 3.3 model, and recommended limiter.
+3. Verify `/health` and the complete live mode/crisis/error matrix.
+4. Keep deletion retry/recovery and external `/delete-account` in the release matrix.
+5. Verify emergency resources and sensitive content.
+6. Run the complete device/release test matrix and build the signed candidate APK.
+
+See `MINDMATE_REMAINING_BATCHES.md` for tasks and exit criteria for Batches 6–13.
+
+Known backend/product limitations that may be deferred beyond the competition prototype:
+
+- the one-pending-appointment check is a client/service guard, not authoritative server-side uniqueness enforcement;
+- real professional accounts, roles, provider inboxes, notifications, and calendars;
+- persistent AI chats;
+- opt-in journal AI reflection;
+- privacy data export controls;
+- trusted-backend deletion after a future Blaze upgrade;
+- production moderation and operational review.
 
 ## Known code issues already logged
 
-- Do not trim passwords.
-- Login must handle missing Firestore profile.
-- Registration can create Auth account without profile if Firestore write fails.
-- Several async catch blocks need mounted checks.
-- Date models currently assume ISO strings.
-- Wellness score components need capping at 100.
-- Progress/other streams need friendly error states.
-- Some screens still have hardcoded old colours.
-- Onboarding Radio API and some Flutter APIs are deprecated but not blockers.
+- Account deletion happy path is proven; retry/recovery evidence remains.
+- Critical async/error paths are fixed locally in Batch 9B; broader device/network testing remains.
+- ISO date strings are intentionally frozen for the prototype; migrate only with dual-read/backfill planning.
+- Wellness caps/tests and My Requests friendly errors are validated; broader weak-network/device checks remain.
+- Some screens still have hardcoded legacy colours.
+- Current analyzer debt is non-blocking: 2 deprecated onboarding Radio API notices and 19 optional `const` notices.
+- Post-audio `flutter pub get` reports 27 newer package versions outside current constraints; avoid major upgrades before the competition unless required and tested.
+- Some service comments are stale and can be cleaned during a controlled pass.
 
 ## Competition
 
 - Competition: 11 September 2026.
 - Target feature freeze: 28 August 2026.
-- Current date in this handoff: 22 August 2026.
-- The competition accepts prototypes. Prioritise one polished demo journey and reliability over extra features.
+- Current handoff date: 23 August 2026.
+- The competition accepts prototypes. Prioritise one polished, reliable demo journey over extra features.
 
 Demo journey:
 
 ```text
-Check in -> personalised next step -> complete activity -> feedback ->
-alternate action/support route
+Check in
+  -> personalised next step
+  -> complete/try activity
+  -> save feedback
+  -> alternate action or human-support route
 ```
 
 ## Immediate next action
 
-The frontend screen design pass is largely complete. Start a new chat with this handoff and move into backend/integration in controlled batches:
-
-1. Firestore rules and service methods.
-2. Feedback and mood-impact persistence.
-3. Admin/professional request workflow.
-4. AI Worker modes/safety/history.
-5. Trusted contacts/support events.
-6. Testing, Android APK and competition freeze.
+Batch 10 is fully validated, deployed to Cloudflare, and verified live with `/health` reporting `2026-08-23-batch10` and Llama 3.3 70B FP8 Fast. **Batch 7 is complete** (7A–7E: all 184 clips recorded/wired, asset audit passed, dev-machine analyzer 0 errors/0 warnings + 9/9 tests, Chrome playback matrix user-confirmed 26 Aug 2026; physical-device audio remains a documented release gate). **Batch 13A is in progress:** the landing site is implemented in `landing/` (GitHub Pages hosting, hosted-form deletion flow, identity "MindMate by Junior Achievers — FG Enugu (JA FGCE)"); waiting on the user's form URL, support email, and 4 real screenshots, then deploy. Remaining order: **13A finish → Batch 11 (emergency resource verification) → Batch 12 (end-to-end device testing)**.
