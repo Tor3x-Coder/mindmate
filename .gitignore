@@ -51,3 +51,6 @@ app.*.map.json
 /android/key.properties
 *.jks
 *.keystore
+
+# Firebase Android config — contains API keys, keep out of the public repo
+/android/app/google-services.json
