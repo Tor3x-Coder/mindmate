@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/app_settings_controller.dart';
 import '../../utils/app_theme.dart';
+import 'delete_account_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -85,10 +86,20 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const Divider(height: 18),
                   _SwitchSetting(
-                    title: 'Sound',
-                    subtitle: 'Allow guided audio when it becomes available.',
+                    title: 'Guided voice',
+                    subtitle: 'Play natural voice prompts in supported sessions.',
                     value: settings.soundEnabled,
                     onChanged: settings.updateSoundEnabled,
+                  ),
+                  const Divider(height: 18),
+                  _ActionSetting(
+                    icon: Icons.explore_outlined,
+                    title: 'Replay app tour',
+                    subtitle: 'See Home, Practice, Chat, and Me again.',
+                    onTap: () {
+                      settings.requestTourReplay();
+                      Navigator.of(context).pop();
+                    },
                   ),
                 ],
               ),
@@ -162,6 +173,26 @@ class SettingsScreen extends StatelessWidget {
                     }).toList(),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            const _SectionTitle(title: 'Privacy and data'),
+            _SettingsCard(
+              child: _ActionSetting(
+                icon: Icons.delete_forever_outlined,
+                title: 'Delete account',
+                subtitle: 'Permanently delete your account and stored data.',
+                color: AppTheme.danger,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => DeleteAccountScreen(
+                        resumePendingDeletion:
+                            settings.accountDeletionPending,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(height: 22),
@@ -322,6 +353,73 @@ class _SliderSetting extends StatelessWidget {
           onChanged: onChanged,
         ),
       ],
+    );
+  }
+}
+
+class _ActionSetting extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionSetting({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.color = AppTheme.primary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppTheme.textLight,
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_rounded,
+              color: AppTheme.textLight,
+              size: 19,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

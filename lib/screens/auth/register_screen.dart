@@ -40,7 +40,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await authService.register(
         fullName: _nameController.text.trim(),
         email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+        password: _passwordController.text,
       );
 
       if (!mounted) return;
@@ -48,6 +48,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         MaterialPageRoute(builder: (_) => const OnboardingScreen()),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = _friendlyError(e.toString());
       });
@@ -160,6 +161,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 32),
                 TextFormField(
                   controller: _nameController,
+                  style: const TextStyle(color: _textDark, fontSize: 16),
+                  cursorColor: _accentColor,
                   decoration: const InputDecoration(
                     filled: false,
                     hintText: 'Full Name',
@@ -182,6 +185,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  style: const TextStyle(color: _textDark, fontSize: 16),
+                  cursorColor: _accentColor,
                   decoration: const InputDecoration(
                     filled: false,
                     hintText: 'Email',
@@ -207,6 +212,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
+                  style: const TextStyle(color: _textDark, fontSize: 16),
+                  cursorColor: _accentColor,
                   decoration: InputDecoration(
                     filled: false,
                     hintText: 'Password',

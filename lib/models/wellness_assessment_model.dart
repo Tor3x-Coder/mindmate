@@ -21,24 +21,31 @@ class WellnessAssessmentModel {
     required this.date,
   });
 
-  // Simple scoring logic — we'll refine this when we build the Rule Engine
+  // A gentle prototype reflection score, not a clinical measurement.
+  // Every component is clamped so malformed/legacy data can never produce a
+  // result below 0 or above 100.
   int get overallScorePercent {
-    int sleepScore = sleepHours >= 7 ? 100 : (sleepHours / 7 * 100).round();
-    int stressScore = ((10 - stressLevel) / 10 * 100).round();
-    int exerciseScore = exercised ? 100 : 40;
-    int waterScore = drankEnoughWater ? 100 : 40;
-    int socialScore = socialized ? 100 : 60;
-    int foodScore = ateHealthyMeals ? 100 : 40;
+    final sleepScore = _boundedScore(
+      sleepHours >= 7 ? 100 : (sleepHours / 7 * 100),
+    );
+    final stressScore = _boundedScore((10 - stressLevel) / 10 * 100);
+    final exerciseScore = exercised ? 100 : 40;
+    final waterScore = drankEnoughWater ? 100 : 40;
+    final socialScore = socialized ? 100 : 60;
+    final foodScore = ateHealthyMeals ? 100 : 40;
 
-    return ((sleepScore +
-                stressScore +
-                exerciseScore +
-                waterScore +
-                socialScore +
-                foodScore) /
-            6)
-        .round();
+    final average = (sleepScore +
+            stressScore +
+            exerciseScore +
+            waterScore +
+            socialScore +
+            foodScore) /
+        6;
+    return _boundedScore(average);
   }
+
+  static int _boundedScore(num value) =>
+      value.round().clamp(0, 100).toInt();
 
   factory WellnessAssessmentModel.fromMap(Map<String, dynamic> map, String id) {
     return WellnessAssessmentModel(

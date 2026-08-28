@@ -1,6 +1,6 @@
 # MindMate coding guide
 
-Read this with `MINDMATE_HANDOFF.md` before making any MindMate change. This guide exists so a new chat/agent follows the same conventions and does not introduce a different coding style.
+Read this with `MINDMATE_STATUS.md`, `MINDMATE_REMAINING_BATCHES.md`, and `MINDMATE_HANDOFF.md` before making any MindMate change. This guide exists so a new chat/agent follows the same conventions, starts from the real current checkpoint, and does not introduce a different coding style.
 
 ## Collaboration rules
 
@@ -13,6 +13,49 @@ Read this with `MINDMATE_HANDOFF.md` before making any MindMate change. This gui
 - Treat the developer's pasted code as the source of truth for their local project. Do not assume that a workspace draft has been copied into `T:\Dev\mindmate`.
 - Do not invent field names, class names, file paths, phone numbers, crisis resources, or backend methods. Inspect first or clearly label a new dependency.
 - After every batch, require `flutter analyze` and clear all severity 8 errors before moving on. Informational/deprecation warnings can be grouped for later cleanup.
+
+## Documentation and continuity rule
+
+Documentation is part of every implementation or fix, not an optional clean-up task.
+
+### Required after every code batch or fix
+
+1. Update `MINDMATE_STATUS.md` in the same batch:
+   - append a row to the documentation update log;
+   - state what was implemented;
+   - record the exact checks run and their results;
+   - distinguish whether it was deployed and verified;
+   - name the next concrete action and any unresolved risk.
+2. Update `MINDMATE_HANDOFF.md` whenever the completed/remaining-work boundary or a product decision changes.
+3. Update `README.md` when user-facing features, setup commands, architecture, dependencies, or release requirements change.
+4. Update a feature-specific document such as `worker/README.md` whenever that feature's configuration, environment variables, deployment, or operation changes.
+5. Update this coding guide only when a collaboration, safety, architecture, or coding convention changes. Do not add meaningless edits to every Markdown file merely to touch it.
+
+### Status language
+
+Use the definitions in `MINDMATE_STATUS.md` consistently:
+
+- **Implemented** means the code exists.
+- **Validated** means checks/tests passed.
+- **Deployed** means the live service was updated.
+- **Verified** means the deployed feature worked end to end on a target device.
+
+Never say “done” or “finished” when only the first status is known. If a command could not be run, say why and leave it as an explicit next action.
+
+### End-of-batch documentation check
+
+Before handing over:
+
+```text
+Code changed
+  -> tests/checks run
+  -> status document updated
+  -> relevant README/handoff updated
+  -> deployment state recorded
+  -> exact next action recorded
+```
+
+A future agent should be able to continue by reading the repository, without needing the previous chat transcript.
 
 ## Small-fix instruction format
 
@@ -114,3 +157,5 @@ Confirm:
 - No secrets or private credentials were added.
 - The user has an exact test path.
 - The user knows which changes are approved and which are only drafts.
+- `MINDMATE_STATUS.md` records the batch, checks, deployment state, unresolved risks, and next action.
+- Relevant sections of `MINDMATE_HANDOFF.md`, `README.md`, and feature-specific documentation are current.

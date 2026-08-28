@@ -1,11 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/wellness_assessment_model.dart';
+import '../../services/app_settings_controller.dart';
+import '../../services/audio_guide_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
-import 'wellness_result_screen.dart';
 import '../../utils/app_theme.dart';
+import '../../utils/audio_assets.dart';
 import '../../utils/pattern_insight.dart';
+import 'wellness_result_screen.dart';
 
 class WellnessAssessmentScreen extends StatefulWidget {
   const WellnessAssessmentScreen({super.key});
@@ -26,6 +30,8 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
   int _stressQuestionIndex = 0;
   bool _isSaving = false;
   String? _errorText;
+  AudioGuideService? _audioGuide;
+  int _guidedStep = -1;
 
   final List<_StressQuestion> _stressQuestions = const [
     _StressQuestion(
@@ -66,13 +72,20 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
     'Extremely',
   ];
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
+  static const int _totalProgressUnits = 8;
 
   _StressQuestion get _currentQuestion =>
       _stressQuestions[_stressQuestionIndex];
+
+  int get _currentProgressUnit {
+    if (_currentStep == 0) return 1;
+    if (_currentStep == 1) return 2 + _stressQuestionIndex;
+    if (_currentStep == 2) return 7;
+    return 8;
+  }
+
+  double get _overallProgress =>
+      _currentProgressUnit / _totalProgressUnits;
 
   bool get _routineComplete =>
       _exercised != null &&
@@ -117,6 +130,69 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
     return 'Take a look at what you entered before saving this check-in.';
   }
 
+  String? _stageGuideAsset(int step) {
+    switch (step) {
+      case 0:
+        return MindMateAudioAssets.snapshotBodyGuide;
+      case 1:
+        return MindMateAudioAssets.snapshotMindGuide;
+      case 2:
+        return MindMateAudioAssets.snapshotRoutineGuide;
+      case 3:
+        return MindMateAudioAssets.snapshotReviewGuide;
+      default:
+        return null;
+    }
+  }
+
+  /// Plays the short guide for the current stage once (per stage entry).
+  Future<void> _maybePlayStageGuide() async {
+    final audioGuide = _audioGuide;
+    if (audioGuide == null || _guidedStep == _currentStep) return;
+    final asset = _stageGuideAsset(_currentStep);
+    if (asset == null) return;
+    if (!context.read<AppSettingsController>().soundEnabled) return;
+    _guidedStep = _currentStep;
+    await audioGuide.playAsset(asset);
+  }
+
+  Future<void> _replayStageGuide() async {
+    final audioGuide = _audioGuide;
+    final asset = _stageGuideAsset(_currentStep);
+    if (audioGuide == null || asset == null) return;
+    await audioGuide.playAsset(asset);
+  }
+
+  Future<void> _toggleSnapshotSound(bool enabled) async {
+    final settings = context.read<AppSettingsController>();
+    final audioGuide = _audioGuide;
+    await settings.updateSoundEnabled(enabled);
+    if (!mounted) return;
+    if (!enabled) {
+      await audioGuide?.stop();
+      return;
+    }
+    if (_guidedStep != _currentStep) {
+      await _maybePlayStageGuide();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_audioGuide == null) {
+      _audioGuide = context.read<AudioGuideService>();
+      unawaited(_maybePlayStageGuide());
+    }
+  }
+
+  @override
+  void dispose() {
+    final audioGuide = _audioGuide;
+    if (audioGuide != null) unawaited(audioGuide.stop());
+    super.dispose();
+  }
+
   void _nextStep() {
     setState(() => _errorText = null);
 
@@ -126,6 +202,7 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
         return;
       }
       setState(() => _currentStep = 1);
+      unawaited(_maybePlayStageGuide());
       return;
     }
 
@@ -139,6 +216,7 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
         setState(() => _stressQuestionIndex++);
       } else {
         setState(() => _currentStep = 2);
+        unawaited(_maybePlayStageGuide());
       }
       return;
     }
@@ -149,6 +227,7 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
         return;
       }
       setState(() => _currentStep = 3);
+      unawaited(_maybePlayStageGuide());
       return;
     }
 
@@ -290,33 +369,74 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
   }
 
   Widget _buildProgressHeader() {
+    final theme = Theme.of(context);
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-      child: Row(
-        children: List.generate(4, (index) {
-          final active = index <= _currentStep;
-          return Expanded(
-            child: Container(
-              height: 5,
-              margin: EdgeInsets.only(right: index == 3 ? 0 : 7),
-              decoration: BoxDecoration(
-                color: active
-                    ? AppTheme.primary
-                    : AppTheme.surfaceBorder.withValues(alpha: 0.65),
-                borderRadius: BorderRadius.circular(4),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text(
+                'STEP $_currentProgressUnit OF $_totalProgressUnits',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.58),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.8,
+                ),
               ),
-            ),
-          );
-        }),
+              const Spacer(),
+              Text(
+                '${(_overallProgress * 100).round()}%',
+                style: const TextStyle(
+                  color: AppTheme.primary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return Container(
+                height: 6,
+                alignment: Alignment.centerLeft,
+                decoration: BoxDecoration(
+                  color: theme.dividerColor.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 320),
+                  curve: Curves.easeOutCubic,
+                  width: constraints.maxWidth * _overallProgress,
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildStepHero() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final titleColor = isDark ? AppTheme.textOnDark : AppTheme.textDark;
+    final supportingColor = isDark
+        ? AppTheme.textOnDark.withValues(alpha: 0.72)
+        : const Color(0xFF59646F);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppTheme.heroGradientLight,
+        gradient: AppTheme.heroGradientFor(theme.brightness),
         borderRadius: BorderRadius.circular(27),
       ),
       child: Column(
@@ -324,8 +444,8 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
         children: [
           Text(
             _stepEyebrow,
-            style: const TextStyle(
-              color: Color(0xFF806B59),
+            style: TextStyle(
+              color: isDark ? AppTheme.seaGlass : const Color(0xFF806B59),
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 1,
@@ -334,8 +454,8 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
           const SizedBox(height: 11),
           Text(
             _stepTitle,
-            style: const TextStyle(
-              color: AppTheme.textDark,
+            style: TextStyle(
+              color: titleColor,
               fontSize: 21,
               fontWeight: FontWeight.w800,
             ),
@@ -343,8 +463,8 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
           const SizedBox(height: 7),
           Text(
             _stepSubtitle,
-            style: const TextStyle(
-              color: Color(0xFF59646F),
+            style: TextStyle(
+              color: supportingColor,
               fontSize: 13,
               height: 1.4,
             ),
@@ -399,6 +519,7 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
 
   Widget _buildStressStep() {
     final selected = _stressAnswers[_currentQuestion.id];
+    final theme = Theme.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,9 +537,24 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
             return ChoiceChip(
               label: Text(_stressLabels[index]),
               selected: isSelected,
-              selectedColor: AppTheme.primary.withValues(alpha: 0.18),
+              backgroundColor: theme.colorScheme.surface,
+              selectedColor: AppTheme.primary.withValues(alpha: 0.14),
+              side: BorderSide(
+                color: isSelected
+                    ? AppTheme.primary.withValues(alpha: 0.48)
+                    : theme.dividerColor.withValues(alpha: 0.68),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              labelPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 3,
+              ),
               labelStyle: TextStyle(
-                color: isSelected ? AppTheme.primary : AppTheme.textDark,
+                color: isSelected
+                    ? AppTheme.primary
+                    : theme.colorScheme.onSurface,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
               showCheckmark: false,
@@ -492,6 +628,9 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
   }
 
   Widget _buildBottomBar() {
+    final settings = context.watch<AppSettingsController>();
+    final canReplay = settings.soundEnabled && _guidedStep == _currentStep;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
       decoration: BoxDecoration(
@@ -506,22 +645,49 @@ class _WellnessAssessmentScreenState extends State<WellnessAssessmentScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _isSaving ? null : _nextStep,
-            child: _isSaving
-                ? const SizedBox(
-                    height: 21,
-                    width: 21,
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Text(_currentStep == 3 ? 'Save reflection' : 'Continue'),
-          ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton.filledTonal(
+                  tooltip: 'Replay stage guide',
+                  onPressed: canReplay ? _replayStageGuide : null,
+                  icon: const Icon(Icons.replay_rounded),
+                ),
+                const SizedBox(width: 8),
+                IconButton.filledTonal(
+                  tooltip: settings.soundEnabled
+                      ? 'Turn stage guide voice off'
+                      : 'Turn stage guide voice on',
+                  onPressed: () => _toggleSnapshotSound(!settings.soundEnabled),
+                  icon: Icon(
+                    settings.soundEnabled
+                        ? Icons.volume_up_rounded
+                        : Icons.volume_off_rounded,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: _isSaving ? null : _nextStep,
+                child: _isSaving
+                    ? const SizedBox(
+                        height: 21,
+                        width: 21,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(_currentStep == 3 ? 'Save reflection' : 'Continue'),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -584,8 +750,11 @@ class _ChoiceCard extends StatelessWidget {
             const SizedBox(height: 5),
             Text(
               subtitle,
-              style: const TextStyle(
-                color: AppTheme.textLight,
+              style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onSurface
+                    .withValues(alpha: 0.62),
                 fontSize: 11,
               ),
             ),
@@ -682,7 +851,9 @@ class _YesNoButton extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? AppTheme.primary : AppTheme.textDark,
+            color: selected
+                ? AppTheme.primary
+                : Theme.of(context).colorScheme.onSurface,
             fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
           ),
         ),
@@ -712,7 +883,15 @@ class _ReviewRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: AppTheme.textLight)),
+          Text(
+            label,
+            style: TextStyle(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withValues(alpha: 0.62),
+            ),
+          ),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
         ],
       ),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../main_nav_screen.dart';
+import '../onboarding/onboarding_screen.dart';
+import 'missing_profile_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -27,16 +29,23 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       final authService = context.read<AuthService>();
-      await authService.login(
+      final profile = await authService.login(
         email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+        password: _passwordController.text,
       );
       if (!mounted) return;
+
+      final nextScreen = profile == null
+          ? const MissingProfileScreen()
+          : profile.goals.isEmpty || profile.reminderTime == null
+              ? const OnboardingScreen()
+              : const MainNavScreen();
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const MainNavScreen()),
+        MaterialPageRoute(builder: (_) => nextScreen),
         (route) => false,
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = _friendlyError(e.toString());
       });
@@ -69,6 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
         const SnackBar(content: Text('Password reset email sent.')),
       );
     } catch (_) {
+      if (!mounted) return;
       setState(() =>
           _errorMessage = 'Couldn\'t send reset email. Check the address and try again.');
     }

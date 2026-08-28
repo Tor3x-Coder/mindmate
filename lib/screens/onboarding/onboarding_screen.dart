@@ -37,9 +37,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         reminderTime: _selectedReminderTime!,
       );
 
-if (!mounted) return;
+      if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const MainNavScreen()),
+        MaterialPageRoute(
+          builder: (_) => const MainNavScreen(showFirstUseGuide: true),
+        ),
         (route) => false,
       );
     } catch (_) {
@@ -55,6 +57,8 @@ if (!mounted) return;
 
   @override
   Widget build(BuildContext context) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Let\'s personalize MindMate')),
       body: SafeArea(
@@ -101,7 +105,7 @@ if (!mounted) return;
                       child: Text(
                         goal,
                         style: TextStyle(
-                          color: isSelected ? Colors.white : AppTheme.textDark,
+                          color: isSelected ? Colors.white : onSurface,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -129,7 +133,7 @@ if (!mounted) return;
                     onChanged: (value) => setState(() => _selectedReminderTime = value),
                     title: Text(
                       time,
-                      style: const TextStyle(color: AppTheme.textOnDark),
+                      style: TextStyle(color: onSurface),
                     ),
                     activeColor: AppTheme.primary,
                     tileColor: isSelected

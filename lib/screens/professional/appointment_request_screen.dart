@@ -27,6 +27,7 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
   TimeOfDay? _preferredTime;
   int _currentStep = 0;
   bool _isSaving = false;
+  bool _hasPendingRequest = false;
   String? _errorText;
 
   List<String> get _availableTypes {
@@ -41,6 +42,23 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
     super.initState();
     final types = _availableTypes;
     if (types.length == 1) _consultationType = types.first;
+    _checkPendingRequest();
+  }
+
+  Future<void> _checkPendingRequest() async {
+    final uid = context.read<AuthService>().currentUser?.uid;
+    if (uid == null || !mounted) return;
+
+    try {
+      final hasPending = await context
+          .read<FirestoreService>()
+          .hasPendingAppointmentForProfessional(uid, widget.professional.id);
+      if (!mounted) return;
+      setState(() => _hasPendingRequest = hasPending);
+    } catch (_) {
+      // If the check fails, allow the request screen to continue normally.
+      // The submit flow re-checks and will block duplicates if needed.
+    }
   }
 
   @override
@@ -142,21 +160,42 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
       _errorText = null;
     });
 
-    final appointment = AppointmentModel(
-      id: '',
-      uid: uid,
-      professionalId: widget.professional.id,
-      professionalName: widget.professional.fullName,
-      consultationType: _consultationType!,
-      preferredDate: _formatDate(_preferredDate!),
-      preferredTime: _formatTime(_preferredTime!),
-      note: _noteController.text.trim(),
-      status: 'pending',
-      requestedAt: DateTime.now(),
-    );
+    final firestore = context.read<FirestoreService>();
 
     try {
-      await context.read<FirestoreService>().requestAppointment(appointment);
+      // Re-check immediately before sending. This query can fail because of a
+      // network/index problem, so it belongs inside the same friendly handler
+      // as the write instead of escaping as an unhandled Future error.
+      final hasPending = await firestore.hasPendingAppointmentForProfessional(
+        uid,
+        widget.professional.id,
+      );
+      if (!mounted) return;
+
+      if (hasPending) {
+        setState(() {
+          _isSaving = false;
+          _hasPendingRequest = true;
+          _errorText =
+              'You already have a pending request with this professional. Wait for their response before sending another.';
+        });
+        return;
+      }
+
+      final appointment = AppointmentModel(
+        id: '',
+        uid: uid,
+        professionalId: widget.professional.id,
+        professionalName: widget.professional.fullName,
+        consultationType: _consultationType!,
+        preferredDate: _formatDate(_preferredDate!),
+        preferredTime: _formatTime(_preferredTime!),
+        note: _noteController.text.trim(),
+        status: 'pending',
+        requestedAt: DateTime.now(),
+      );
+
+      await firestore.requestAppointment(appointment);
       if (!mounted) return;
       await showDialog<void>(
         context: context,
@@ -183,7 +222,8 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
       if (!mounted) return;
       setState(() {
         _isSaving = false;
-        _errorText = 'Could not send the request. Please try again.';
+        _errorText =
+            'MindMate could not verify or send this request. Check your connection and try again.';
       });
     }
   }
@@ -232,6 +272,8 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
                         height: 1.4,
                       ),
                     ),
+                    const SizedBox(height: 16),
+                    if (_hasPendingRequest) _buildPendingNotice(),
                     const SizedBox(height: 20),
                     if (_currentStep == 0) _buildTypeStep(),
                     if (_currentStep == 1) _buildTimeStep(),
@@ -253,6 +295,36 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
             _buildBottomBar(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPendingNotice() {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: AppTheme.danger.withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppTheme.danger.withValues(alpha: 0.35),
+        ),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline_rounded, color: AppTheme.danger, size: 20),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'You already have a pending request with this professional. You can check its status in My Requests and wait for a response before sending another.',
+              style: TextStyle(
+                color: AppTheme.danger,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -421,6 +493,7 @@ class _AppointmentRequestScreenState extends State<AppointmentRequestScreen> {
         TextField(
           controller: _noteController,
           maxLines: 4,
+          maxLength: 1000,
           decoration: InputDecoration(
             hintText: 'Anything you would like them to know...',
             filled: true,

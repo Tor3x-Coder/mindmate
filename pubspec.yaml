@@ -18,6 +18,7 @@ dependencies:
   shared_preferences: ^2.5.3
   url_launcher: ^6.3.2
   model_viewer_plus: ^1.10.0
+  just_audio: ^0.10.6
 
 dev_dependencies:
   flutter_test:
@@ -29,3 +30,27 @@ flutter:
   assets:
     - assets/models/
     - assets/illustrations/
+    - assets/audio/
+    - assets/audio/breathing/box/
+    - assets/audio/breathing/four_seven_eight/
+    - assets/audio/breathing/simple_calm/
+    - assets/audio/meditation/stress_relief/quick_reset/
+    - assets/audio/meditation/stress_relief/release_tension/
+    - assets/audio/meditation/stress_relief/calm_the_storm/
+    - assets/audio/meditation/sleep/wind_down/
+    - assets/audio/meditation/sleep/quiet_night/
+    - assets/audio/meditation/sleep/deep_rest/
+    - assets/audio/meditation/focus/clear_mind/
+    - assets/audio/meditation/focus/pre_study_focus/
+    - assets/audio/meditation/focus/deep_work_prep/
+    - assets/audio/meditation/anxiety/grounding/
+    - assets/audio/meditation/anxiety/steady_breath/
+    - assets/audio/meditation/anxiety/anxious_thoughts_softened/
+    - assets/audio/meditation/gratitude/small_joys/
+    - assets/audio/meditation/gratitude/gratitude_for_people/
+    - assets/audio/meditation/gratitude/end_of_day_thanks/
+    - assets/audio/meditation/morning/fresh_start/
+    - assets/audio/meditation/morning/set_an_intention/
+    - assets/audio/meditation/morning/morning_clarity/
+    - assets/audio/snapshot/
+    - assets/audio/wellness_result/

@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppSettingsController extends ChangeNotifier {
+  final Completer<void> _loadCompleter = Completer<void>();
+
   static const _themeModeKey = 'theme_mode';
   static const _textScaleKey = 'text_scale';
   static const _animationIntensityKey = 'animation_intensity';
@@ -9,6 +13,8 @@ class AppSettingsController extends ChangeNotifier {
   static const _soundEnabledKey = 'sound_enabled';
   static const _checkInWindowKey = 'check_in_window';
   static const _preferredSessionMinutesKey = 'preferred_session_minutes';
+  static const _completedTourVersionKey = 'completed_tour_version';
+  static const _accountDeletionPendingKey = 'account_deletion_pending';
 
   ThemeMode _themeMode = ThemeMode.light;
   double _textScale = 1.0;
@@ -17,6 +23,9 @@ class AppSettingsController extends ChangeNotifier {
   bool _soundEnabled = false;
   String _checkInWindow = 'Evening';
   int _preferredSessionMinutes = 5;
+  int _completedTourVersion = 0;
+  int _tourReplayRequest = 0;
+  bool _accountDeletionPending = false;
   bool _isLoaded = false;
 
   AppSettingsController() {
@@ -30,19 +39,32 @@ class AppSettingsController extends ChangeNotifier {
   bool get soundEnabled => _soundEnabled;
   String get checkInWindow => _checkInWindow;
   int get preferredSessionMinutes => _preferredSessionMinutes;
+  int get completedTourVersion => _completedTourVersion;
+  int get tourReplayRequest => _tourReplayRequest;
+  bool get accountDeletionPending => _accountDeletionPending;
   bool get isLoaded => _isLoaded;
+  Future<void> get loaded => _loadCompleter.future;
 
   Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    _themeMode = _themeModeFromString(prefs.getString(_themeModeKey));
-    _textScale = prefs.getDouble(_textScaleKey) ?? 1.0;
-    _animationIntensity = prefs.getDouble(_animationIntensityKey) ?? 1.0;
-    _hapticsEnabled = prefs.getBool(_hapticsEnabledKey) ?? true;
-    _soundEnabled = prefs.getBool(_soundEnabledKey) ?? false;
-    _checkInWindow = prefs.getString(_checkInWindowKey) ?? 'Evening';
-    _preferredSessionMinutes = prefs.getInt(_preferredSessionMinutesKey) ?? 5;
-    _isLoaded = true;
-    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _themeMode = _themeModeFromString(prefs.getString(_themeModeKey));
+      _textScale = prefs.getDouble(_textScaleKey) ?? 1.0;
+      _animationIntensity = prefs.getDouble(_animationIntensityKey) ?? 1.0;
+      _hapticsEnabled = prefs.getBool(_hapticsEnabledKey) ?? true;
+      _soundEnabled = prefs.getBool(_soundEnabledKey) ?? false;
+      _checkInWindow = prefs.getString(_checkInWindowKey) ?? 'Evening';
+      _preferredSessionMinutes =
+          prefs.getInt(_preferredSessionMinutesKey) ?? 5;
+      _completedTourVersion = prefs.getInt(_completedTourVersionKey) ?? 0;
+      _accountDeletionPending =
+          prefs.getBool(_accountDeletionPendingKey) ?? false;
+    } finally {
+      // Never leave Splash waiting forever if local preferences are damaged.
+      _isLoaded = true;
+      if (!_loadCompleter.isCompleted) _loadCompleter.complete();
+      notifyListeners();
+    }
   }
 
   Future<void> updateThemeMode(ThemeMode value) async {
@@ -94,15 +116,53 @@ class AppSettingsController extends ChangeNotifier {
     await prefs.setInt(_preferredSessionMinutesKey, value);
   }
 
+  Future<void> markTourCompleted(int version) async {
+    if (version <= _completedTourVersion) return;
+    _completedTourVersion = version;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_completedTourVersionKey, version);
+  }
+
+  void requestTourReplay() {
+    _tourReplayRequest++;
+    notifyListeners();
+  }
+
+  Future<void> updateAccountDeletionPending(bool value) async {
+    _accountDeletionPending = value;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_accountDeletionPendingKey, value);
+  }
+
+  Future<void> clearAllLocalData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    _themeMode = ThemeMode.light;
+    _textScale = 1.0;
+    _animationIntensity = 1.0;
+    _hapticsEnabled = true;
+    _soundEnabled = false;
+    _checkInWindow = 'Evening';
+    _preferredSessionMinutes = 5;
+    _completedTourVersion = 0;
+    _tourReplayRequest = 0;
+    _accountDeletionPending = false;
+    _isLoaded = true;
+    notifyListeners();
+  }
+
   ThemeMode _themeModeFromString(String? value) {
     switch (value) {
-      case 'light':
-        return ThemeMode.light;
+      case 'dark':
+        return ThemeMode.dark;
       case 'system':
         return ThemeMode.system;
-      case 'dark':
+      case 'light':
       default:
-        return ThemeMode.dark;
+        return ThemeMode.light;
     }
   }
 }

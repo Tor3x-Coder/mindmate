@@ -20,9 +20,9 @@ window.MINDMATE_LANDING = {
 
   // Google Play external deletion-request workflow (Batch 13A).
   // deleteRequestFormUrl: hosted form (Google Form / Tally) that former users
-  // submit without reinstalling the app. supportEmail: real team inbox.
+  // submit without reinstalling the app — set when the form is created.
   deleteRequestFormUrl: '',
-  supportEmail: '',
+  supportEmail: 'tor3x.akachukwu@gmail.com',
 
   // Final published URL (used by the QR code and share links).
   siteUrl: 'https://tor3x-coder.github.io/mindmate/',

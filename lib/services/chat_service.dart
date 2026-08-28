@@ -1,5 +1,14 @@
+import 'dart:async';
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
+
+typedef ChatHttpPost = Future<http.Response> Function(
+  Uri url, {
+  Map<String, String>? headers,
+  Object? body,
+  Encoding? encoding,
+});
 
 // This service is the ONLY place in the app that talks to the AI backend.
 // It sends the user's message (plus recent chat history for context) to
@@ -9,11 +18,26 @@ import 'package:http/http.dart' as http;
 // whole point of routing through a backend instead of calling an AI
 // provider directly from Flutter.
 class ChatService {
-  // The live URL of the Cloudflare Worker (from the Cloudflare dashboard).
-  // If you ever redeploy the Worker under a different name/subdomain,
-  // this is the only line that needs to change.
-  static const String _workerUrl =
+  static const int _maxMessageChars = 4000;
+  static const int _maxHistoryChars = 4000;
+  static const int _maxHistoryTurns = 12;
+  static const Set<String> _allowedModes = {
+    'listen',
+    'calm',
+    'make_plan',
+  };
+
+  static const String _defaultWorkerUrl =
       'https://mindmate-ai-chat.tor3x-akachukwu.workers.dev';
+
+  final ChatHttpPost _post;
+  final Uri _workerUri;
+
+  ChatService({
+    ChatHttpPost? post,
+    String workerUrl = _defaultWorkerUrl,
+  })  : _post = post ?? http.post,
+        _workerUri = Uri.parse(workerUrl);
 
   // Sends [userMessage] to the AI, along with [history] (recent prior
   // turns in the conversation, oldest first) so the AI has context.
@@ -24,6 +48,12 @@ class ChatService {
   // This matches exactly what the Worker expects and just gets passed
   // straight through to it.
   //
+  // [mode] is optional and tells the Worker the kind of reply to aim for:
+  //   'listen'    - reflective listening, minimal advice
+  //   'calm'      - grounding, calming language
+  //   'make_plan' - help make one small, realistic next step
+  //   null        - general supportive conversation
+  //
   // Returns the AI's reply as a plain string.
   // Throws an Exception with a human-readable message if anything goes
   // wrong (no internet, Worker down, bad response, etc.) — the screen
@@ -32,45 +62,79 @@ class ChatService {
   Future<String> sendMessage({
     required String userMessage,
     required List<Map<String, String>> history,
+    String? mode,
   }) async {
-    try {
-      final response = await http
-          .post(
-            Uri.parse(_workerUrl),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'message': userMessage,
-              'history': history,
-            }),
-          )
-          // If the AI takes too long to respond, fail clearly instead of
-          // leaving the user staring at a spinner forever.
-          .timeout(const Duration(seconds: 30));
+    final message = userMessage.trim();
+    if (message.isEmpty) {
+      throw Exception('Write a message before sending.');
+    }
+    if (message.length > _maxMessageChars) {
+      throw Exception('That message is too long. Shorten it and try again.');
+    }
 
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
+    final cleanHistory = history
+        .where((turn) {
+          final role = turn['role'];
+          return role == 'user' || role == 'assistant';
+        })
+        .map((turn) {
+          final content = turn['content']?.trim() ?? '';
+          final limitedContent = content.length > _maxHistoryChars
+              ? content.substring(0, _maxHistoryChars)
+              : content;
+          return <String, String>{
+            'role': turn['role']!,
+            'content': limitedContent,
+          };
+        })
+        .where((turn) => turn['content']!.isNotEmpty)
+        .toList();
+    final limitedHistory = cleanHistory.length > _maxHistoryTurns
+        ? cleanHistory.sublist(cleanHistory.length - _maxHistoryTurns)
+        : cleanHistory;
+
+    final normalizedMode = mode?.trim() ?? '';
+    final body = <String, dynamic>{
+      'message': message,
+      'history': limitedHistory,
+      if (_allowedModes.contains(normalizedMode)) 'mode': normalizedMode,
+    };
+
+    try {
+      final response = await _post(
+        _workerUri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 30));
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException('Unexpected Worker response shape.');
+      }
 
       if (response.statusCode != 200) {
-        // The Worker sends back a JSON error like {"error": "...", "details": "..."}
-        // when something goes wrong on its end (e.g. bad model name,
-        // AI service hiccup). Surface that message so it's easy to debug.
-        final errorMsg = data['error'] ?? 'Something went wrong.';
-        throw Exception(errorMsg);
+        final workerError = decoded['error'];
+        throw Exception(
+          workerError is String && workerError.trim().isNotEmpty
+              ? workerError
+              : 'The AI companion is unavailable right now.',
+        );
       }
 
-      final reply = data['reply'] as String?;
-      if (reply == null || reply.trim().isEmpty) {
-        throw Exception('Received an empty reply from the AI.');
+      final reply = decoded['reply'];
+      if (reply is! String || reply.trim().isEmpty) {
+        throw Exception('The AI companion returned an empty reply.');
       }
 
-      return reply;
+      return reply.trim();
     } on http.ClientException {
       throw Exception(
         'Could not reach the AI companion. Check your internet connection.',
       );
-    } catch (e) {
-      // Re-throw anything else (including the Exceptions we threw above)
-      // so the screen can show a message to the user.
-      rethrow;
+    } on TimeoutException {
+      throw Exception('The AI companion took too long to respond. Try again.');
+    } on FormatException {
+      throw Exception('The AI companion returned an unexpected response.');
     }
   }
 }

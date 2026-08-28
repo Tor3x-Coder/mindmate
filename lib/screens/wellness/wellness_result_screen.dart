@@ -1,12 +1,17 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../services/app_settings_controller.dart';
+import '../../services/audio_guide_service.dart';
 import '../../utils/app_theme.dart';
+import '../../utils/audio_assets.dart';
 import '../../utils/pattern_insight.dart';
 import '../breathing/breathing_screen.dart';
 import '../chat/chat_tab_screen.dart';
 import '../emergency_support_screen.dart';
 import '../journal/journal_screen.dart';
 
-class WellnessResultScreen extends StatelessWidget {
+class WellnessResultScreen extends StatefulWidget {
   final int score;
   final PatternInsight insight;
 
@@ -16,24 +21,34 @@ class WellnessResultScreen extends StatelessWidget {
     required this.insight,
   });
 
-  bool get _needsExtraSupport => score < 45 || insight.isConcerning;
+  @override
+  State<WellnessResultScreen> createState() => _WellnessResultScreenState();
+}
+
+class _WellnessResultScreenState extends State<WellnessResultScreen> {
+  AudioGuideService? _audioGuide;
+  bool _hasHandledEntry = false;
+
+  bool get _needsExtraSupport =>
+      widget.score < 45 || widget.insight.isConcerning;
 
   String get _observation {
-    if (insight.message != null && insight.message!.trim().isNotEmpty) {
-      return insight.message!;
+    if (widget.insight.message != null &&
+        widget.insight.message!.trim().isNotEmpty) {
+      return widget.insight.message!;
     }
 
-    if (score >= 70) {
+    if (widget.score >= 70) {
       return 'You shared several signs of steadiness today. Keep noticing what supports you.';
     }
-    if (score >= 40) {
+    if (widget.score >= 40) {
       return 'Your answers show a mixed day. A small reset or quiet reflection may help.';
     }
     return 'Your answers suggest today feels heavier than usual. Be gentle with yourself.';
   }
 
   _ResultAction get _primaryAction {
-    if (score >= 70) {
+    if (widget.score >= 70) {
       return _ResultAction(
         title: 'Keep the good going',
         subtitle: 'Take a moment to notice what is supporting you today.',
@@ -62,9 +77,55 @@ class WellnessResultScreen extends StatelessWidget {
     );
   }
 
+  /// One safe narration per existing score band (steady >= 70, mixed
+  /// 40-69, heavier < 40). It never reads the score or claims a diagnosis.
+  String get _bandAsset {
+    if (widget.score >= 70) return MindMateAudioAssets.wellnessResultSteady;
+    if (widget.score >= 40) return MindMateAudioAssets.wellnessResultMixed;
+    return MindMateAudioAssets.wellnessResultHeavier;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_audioGuide == null) {
+      _audioGuide = context.read<AudioGuideService>();
+      if (!_hasHandledEntry) {
+        _hasHandledEntry = true;
+        if (context.read<AppSettingsController>().soundEnabled) {
+          unawaited(_audioGuide?.playAsset(_bandAsset));
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    final audioGuide = _audioGuide;
+    if (audioGuide != null) unawaited(audioGuide.stop());
+    super.dispose();
+  }
+
+  Future<void> _replayBandNarration() async {
+    await _audioGuide?.playAsset(_bandAsset);
+  }
+
+  Future<void> _toggleResultSound(bool enabled) async {
+    final settings = context.read<AppSettingsController>();
+    final audioGuide = _audioGuide;
+    await settings.updateSoundEnabled(enabled);
+    if (!mounted) return;
+    if (!enabled) {
+      await audioGuide?.stop();
+      return;
+    }
+    unawaited(audioGuide?.playAsset(_bandAsset));
+  }
+
   @override
   Widget build(BuildContext context) {
     final action = _primaryAction;
+    final settings = context.watch<AppSettingsController>();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Your reflection')),
@@ -74,8 +135,31 @@ class WellnessResultScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildReflectionHero(),
-              const SizedBox(height: 22),
+              _buildReflectionHero(context),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  IconButton.filledTonal(
+                    tooltip: 'Replay narration',
+                    onPressed: settings.soundEnabled
+                        ? _replayBandNarration
+                        : null,
+                    icon: const Icon(Icons.replay_rounded),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filledTonal(
+                    tooltip: settings.soundEnabled
+                        ? 'Turn result voice off'
+                        : 'Turn result voice on',
+                    onPressed: () => _toggleResultSound(!settings.soundEnabled),
+                    icon: Icon(
+                      settings.soundEnabled
+                          ? Icons.volume_up_rounded
+                          : Icons.volume_off_rounded,
+                    ),
+                  ),
+                ],
+              ),
               const Text(
                 'What we noticed',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
@@ -133,11 +217,14 @@ class WellnessResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReflectionHero() {
+  Widget _buildReflectionHero(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppTheme.heroGradientLight,
+        gradient: AppTheme.heroGradientFor(theme.brightness),
         borderRadius: BorderRadius.circular(28),
       ),
       child: Row(
@@ -147,7 +234,7 @@ class WellnessResultScreen extends StatelessWidget {
             height: 58,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.68),
+              color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.68),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -157,24 +244,28 @@ class WellnessResultScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'CHECK-IN COMPLETE',
                   style: TextStyle(
-                    color: Color(0xFF806B59),
+                    color: isDark
+                        ? AppTheme.seaGlass
+                        : const Color(0xFF806B59),
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1,
                   ),
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   'Thank you for checking in with yourself.',
                   style: TextStyle(
-                    color: AppTheme.textDark,
+                    color: isDark
+                        ? AppTheme.textOnDark
+                        : AppTheme.textDark,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                   ),
@@ -223,9 +314,9 @@ class WellnessResultScreen extends StatelessWidget {
   }
 
   Widget _buildActionCard(
-  BuildContext context,
-  _ResultAction action,
-) {
+    BuildContext context,
+    _ResultAction action,
+  ) {
     return InkWell(
       onTap: () => _open(context, action.builder(context)),
       borderRadius: BorderRadius.circular(22),

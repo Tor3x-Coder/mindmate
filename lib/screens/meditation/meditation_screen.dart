@@ -5,20 +5,68 @@ import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:provider/provider.dart';
 import '../../models/meditation_session_model.dart';
 import '../../services/app_settings_controller.dart';
+import '../../services/audio_guide_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/app_theme.dart';
+import '../../utils/audio_assets.dart';
+
+class _MeditationCue {
+  final String text;
+  final String? audioAsset;
+
+  const _MeditationCue({required this.text, this.audioAsset});
+}
 
 class _MeditationSession {
   final String name;
   final String description;
   final List<String> guidingLines;
+  final List<String> supportingLines;
+  final String? introAudioAsset;
+  final List<String> audioPrompts;
+  final List<String> supportAudioPrompts;
 
   const _MeditationSession({
     required this.name,
     required this.description,
     required this.guidingLines,
+    this.supportingLines = const [],
+    this.introAudioAsset,
+    this.audioPrompts = const [],
+    this.supportAudioPrompts = const [],
   });
+
+  bool get hasIntroAudio => introAudioAsset != null;
+  bool get hasGuidedAudio => audioPrompts.length == guidingLines.length;
+
+  List<_MeditationCue> get timedCues {
+    final cues = <_MeditationCue>[];
+
+    for (var index = 0; index < guidingLines.length; index++) {
+      cues.add(
+        _MeditationCue(
+          text: guidingLines[index],
+          audioAsset: index < audioPrompts.length
+              ? audioPrompts[index]
+              : null,
+        ),
+      );
+
+      if (index < supportingLines.length) {
+        cues.add(
+          _MeditationCue(
+            text: supportingLines[index],
+            audioAsset: index < supportAudioPrompts.length
+                ? supportAudioPrompts[index]
+                : null,
+          ),
+        );
+      }
+    }
+
+    return cues;
+  }
 }
 
 class _MeditationCategory {
@@ -44,6 +92,8 @@ class MeditationScreen extends StatefulWidget {
 
 class _MeditationScreenState extends State<MeditationScreen>
     with SingleTickerProviderStateMixin {
+  static const double _narrationSpeed = 0.88;
+
   final List<_MeditationCategory> _categories = const [
     _MeditationCategory(
       name: 'Stress Relief',
@@ -54,11 +104,20 @@ class _MeditationScreenState extends State<MeditationScreen>
           name: 'Quick Reset',
           description: 'A short pause to unclench and breathe.',
           guidingLines: [
-            'Find a comfortable position and let your shoulders drop.',
-            'Notice any tension, and breathe into it.',
-            'With each breath out, let a little more go.',
-            'You do not need to fix anything right now. Just be here.',
+            'Settle into a position that feels easy. Let your hands rest, and allow your shoulders to drop away from your ears.',
+            'Notice where your body is holding tension. You do not need to force it away. Breathe gently into that space.',
+            'As you breathe out, imagine releasing just a little of the pressure. Nothing else needs to be solved in this moment.',
+            'Take one more unhurried breath. Notice any small sense of space you have created, and carry it with you when you are ready.',
           ],
+          supportingLines: [
+            'Stay with this slow, steady breath.',
+            'Easy and unhurried. Let your body soften.',
+            'You’re doing well. Keep going gently.',
+            'Take your time. We’ll finish softly.',
+          ],
+          introAudioAsset: MindMateAudioAssets.quickResetIntro,
+          audioPrompts: MindMateAudioAssets.quickResetPrompts,
+          supportAudioPrompts: MindMateAudioAssets.quickResetSupportPrompts,
         ),
         _MeditationSession(
           name: 'Release Tension',
@@ -69,6 +128,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Notice your hands. Let them go loose and heavy.',
             'Let your whole body feel supported and at ease.',
           ],
+          supportingLines: [
+            'Soften one place. Then another.',
+            'Tightness can relax when you let it.',
+            'Heavy hands. Loose fingers.',
+            'Let the body take the weight.',
+          ],
+          introAudioAsset: MindMateAudioAssets.releaseTensionIntro,
+          audioPrompts: MindMateAudioAssets.releaseTensionPrompts,
+          supportAudioPrompts: MindMateAudioAssets.releaseTensionSupportPrompts,
         ),
         _MeditationSession(
           name: 'Calm the Storm',
@@ -79,6 +147,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Just this breath. Just this one.',
             'Let the next few minutes be a pause from the pressure.',
           ],
+          supportingLines: [
+            'The wave can rise and fall.',
+            'You don’t have to answer anything yet.',
+            'One breath is enough for now.',
+            'The pause is real. You’re in it.',
+          ],
+          introAudioAsset: MindMateAudioAssets.calmTheStormIntro,
+          audioPrompts: MindMateAudioAssets.calmTheStormPrompts,
+          supportAudioPrompts: MindMateAudioAssets.calmTheStormSupportPrompts,
         ),
       ],
     ),
@@ -96,6 +173,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'There is nothing else you need to complete right now.',
             'Let your thoughts drift without following them.',
           ],
+          supportingLines: [
+            'Sinking in, sinking down.',
+            'A little slower with each breath.',
+            'The day’s list can wait.',
+            'Drift is allowed here.',
+          ],
+          introAudioAsset: MindMateAudioAssets.windDownIntro,
+          audioPrompts: MindMateAudioAssets.windDownPrompts,
+          supportAudioPrompts: MindMateAudioAssets.windDownSupportPrompts,
         ),
         _MeditationSession(
           name: 'Quiet Night',
@@ -106,6 +192,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Nothing here needs your attention right now.',
             'Let the quiet hold you until rest arrives.',
           ],
+          supportingLines: [
+            'The room is still. So are you.',
+            'Deeper with every breath.',
+            'Your attention can rest now.',
+            'The quiet is holding you.',
+          ],
+          introAudioAsset: MindMateAudioAssets.quietNightIntro,
+          audioPrompts: MindMateAudioAssets.quietNightPrompts,
+          supportAudioPrompts: MindMateAudioAssets.quietNightSupportPrompts,
         ),
         _MeditationSession(
           name: 'Deep Rest',
@@ -116,6 +211,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Your body already knows how to rest. Give it time.',
             'Soft breath in. Slow breath out. That is enough for now.',
           ],
+          supportingLines: [
+            'Let it drift on by.',
+            'Not a task. Just weather.',
+            'Rest is already happening.',
+            'Soft in, slow out. Enough.',
+          ],
+          introAudioAsset: MindMateAudioAssets.deepRestIntro,
+          audioPrompts: MindMateAudioAssets.deepRestPrompts,
+          supportAudioPrompts: MindMateAudioAssets.deepRestSupportPrompts,
         ),
       ],
     ),
@@ -133,6 +237,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Notice distracting thoughts, then set them aside for now.',
             'Begin when you feel ready.',
           ],
+          supportingLines: [
+            'Arriving, one breath at a time.',
+            'Noted. Set aside. Back to now.',
+            'The clutter can wait outside.',
+            'Ready when you’re ready.',
+          ],
+          introAudioAsset: MindMateAudioAssets.clearMindIntro,
+          audioPrompts: MindMateAudioAssets.clearMindPrompts,
+          supportAudioPrompts: MindMateAudioAssets.clearMindSupportPrompts,
         ),
         _MeditationSession(
           name: 'Pre-Study Focus',
@@ -143,6 +256,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Let confidence settle in where doubt was sitting.',
             'Start with one clear, manageable action.',
           ],
+          supportingLines: [
+            'One step. That’s all it takes.',
+            'Next step, not the whole mountain.',
+            'Confidence is building quietly.',
+            'One clear action to begin with.',
+          ],
+          introAudioAsset: MindMateAudioAssets.preStudyFocusIntro,
+          audioPrompts: MindMateAudioAssets.preStudyFocusPrompts,
+          supportAudioPrompts: MindMateAudioAssets.preStudyFocusSupportPrompts,
         ),
         _MeditationSession(
           name: 'Deep Work Prep',
@@ -153,6 +275,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Distractions can wait. This block of time is protected.',
             'Settle into focus now, steady and clear.',
           ],
+          supportingLines: [
+            'Four in, four out. Keep the pace.',
+            'Narrowing in, gently.',
+            'The block is protected. Guard it.',
+            'Steady now. Clear now.',
+          ],
+          introAudioAsset: MindMateAudioAssets.deepWorkPrepIntro,
+          audioPrompts: MindMateAudioAssets.deepWorkPrepPrompts,
+          supportAudioPrompts: MindMateAudioAssets.deepWorkPrepSupportPrompts,
         ),
       ],
     ),
@@ -170,6 +301,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Notice the support beneath you in this moment.',
             'One breath at a time is all that is being asked of you.',
           ],
+          supportingLines: [
+            'Listen. That’s the now.',
+            'You’re here. The chair is here.',
+            'Supported, fully, right now.',
+            'Just the next breath. Nothing else.',
+          ],
+          introAudioAsset: MindMateAudioAssets.groundingIntro,
+          audioPrompts: MindMateAudioAssets.groundingPrompts,
+          supportAudioPrompts: MindMateAudioAssets.groundingSupportPrompts,
         ),
         _MeditationSession(
           name: 'Steady Breath',
@@ -180,6 +320,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Breathe out slowly, letting your shoulders drop.',
             'Each cycle can bring a little more steadiness.',
           ],
+          supportingLines: [
+            'Slow in, gentle hold.',
+            'Soft out, shoulders down.',
+            'Steadier with every cycle.',
+            'The body is settling in.',
+          ],
+          introAudioAsset: MindMateAudioAssets.steadyBreathIntro,
+          audioPrompts: MindMateAudioAssets.steadyBreathPrompts,
+          supportAudioPrompts: MindMateAudioAssets.steadyBreathSupportPrompts,
         ),
         _MeditationSession(
           name: 'Anxious Thoughts, Softened',
@@ -190,6 +339,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Let it drift past like weather, not a verdict.',
             'Return gently to the breath and the ground beneath you.',
           ],
+          supportingLines: [
+            'Noted. Not followed.',
+            'Weather passes. You remain.',
+            'Gentle return to the breath.',
+            'The ground is still under you.',
+          ],
+          introAudioAsset: MindMateAudioAssets.anxiousThoughtsSoftenedIntro,
+          audioPrompts: MindMateAudioAssets.anxiousThoughtsSoftenedPrompts,
+          supportAudioPrompts: MindMateAudioAssets.anxiousThoughtsSoftenedSupportPrompts,
         ),
       ],
     ),
@@ -207,6 +365,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Notice how that appreciation feels in your body.',
             'Carry a little of that warmth with you today.',
           ],
+          supportingLines: [
+            'Small, and it still counts.',
+            'Linger there a moment.',
+            'Feel the warmth settle in.',
+            'Carry it gently with you.',
+          ],
+          introAudioAsset: MindMateAudioAssets.smallJoysIntro,
+          audioPrompts: MindMateAudioAssets.smallJoysPrompts,
+          supportAudioPrompts: MindMateAudioAssets.smallJoysSupportPrompts,
         ),
         _MeditationSession(
           name: 'Gratitude for People',
@@ -217,6 +384,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'If you could, what would you want to tell them?',
             'Let that appreciation settle in, unhurried.',
           ],
+          supportingLines: [
+            'Let their face come into focus.',
+            'Whatever comes up is welcome.',
+            'Say it to them, silently if you need to.',
+            'Let it settle, softly.',
+          ],
+          introAudioAsset: MindMateAudioAssets.gratitudeForPeopleIntro,
+          audioPrompts: MindMateAudioAssets.gratitudeForPeoplePrompts,
+          supportAudioPrompts: MindMateAudioAssets.gratitudeForPeopleSupportPrompts,
         ),
         _MeditationSession(
           name: 'End of Day Thanks',
@@ -227,6 +403,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Let yourself acknowledge getting through today.',
             'Rest now, knowing today had something good in it.',
           ],
+          supportingLines: [
+            'Even brief counts as a win.',
+            'Small wins add up.',
+            'You got through today. That matters.',
+            'Rest now. You did enough.',
+          ],
+          introAudioAsset: MindMateAudioAssets.endOfDayThanksIntro,
+          audioPrompts: MindMateAudioAssets.endOfDayThanksPrompts,
+          supportAudioPrompts: MindMateAudioAssets.endOfDayThanksSupportPrompts,
         ),
       ],
     ),
@@ -244,6 +429,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Notice how your body feels without judgment.',
             'Carry this calm with you as you begin.',
           ],
+          supportingLines: [
+            'Welcome, new day.',
+            'Clean slate. Room to move.',
+            'Just notice. No fixing needed.',
+            'Calm is in your bag for today.',
+          ],
+          introAudioAsset: MindMateAudioAssets.freshStartIntro,
+          audioPrompts: MindMateAudioAssets.freshStartPrompts,
+          supportAudioPrompts: MindMateAudioAssets.freshStartSupportPrompts,
         ),
         _MeditationSession(
           name: 'Set an Intention',
@@ -254,6 +448,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Picture yourself carrying it through your day.',
             'Begin with that intention in mind.',
           ],
+          supportingLines: [
+            'Small and kind is enough.',
+            'True to you. That’s the test.',
+            'See it move with you today.',
+            'Carry it, lightly.',
+          ],
+          introAudioAsset: MindMateAudioAssets.setAnIntentionIntro,
+          audioPrompts: MindMateAudioAssets.setAnIntentionPrompts,
+          supportAudioPrompts: MindMateAudioAssets.setAnIntentionSupportPrompts,
         ),
         _MeditationSession(
           name: 'Morning Clarity',
@@ -264,6 +467,15 @@ class _MeditationScreenState extends State<MeditationScreen>
             'Today has space in it, even if it does not feel that way yet.',
             'Start from a clear, steady place.',
           ],
+          supportingLines: [
+            'Quiet, before the rush.',
+            'Fog out, clarity in.',
+            'Space is there. Trust it.',
+            'Clear and steady to begin.',
+          ],
+          introAudioAsset: MindMateAudioAssets.morningClarityIntro,
+          audioPrompts: MindMateAudioAssets.morningClarityPrompts,
+          supportAudioPrompts: MindMateAudioAssets.morningClaritySupportPrompts,
         ),
       ],
     ),
@@ -274,10 +486,13 @@ class _MeditationScreenState extends State<MeditationScreen>
   int? _selectedSessionIndex;
   int _selectedDurationMinutes = 3;
   bool _isRunning = false;
+  bool _isPaused = false;
   int _secondsRemaining = 0;
-  int _currentLineIndex = 0;
+  int _currentCueIndex = 0;
+  int _secondsPerCue = 0;
+  int _secondsUntilNextCue = 0;
   Timer? _timer;
-  Timer? _lineTimer;
+  AudioGuideService? _audioGuide;
   late AnimationController _pulseController;
 
   _MeditationCategory? get _openCategory => _openCategoryIndex == null
@@ -301,10 +516,17 @@ class _MeditationScreenState extends State<MeditationScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _audioGuide ??= context.read<AudioGuideService>();
+  }
+
+  @override
   void dispose() {
     _timer?.cancel();
-    _lineTimer?.cancel();
     _pulseController.dispose();
+    final audioGuide = _audioGuide;
+    if (audioGuide != null) unawaited(audioGuide.stop());
     super.dispose();
   }
 
@@ -313,76 +535,200 @@ class _MeditationScreenState extends State<MeditationScreen>
     if (session == null) return;
 
     final totalSeconds = _selectedDurationMinutes * 60;
+    final timedCues = session.timedCues;
     _timer?.cancel();
-    _lineTimer?.cancel();
+    _secondsPerCue =
+        (totalSeconds / timedCues.length).floor().clamp(3, 999).toInt();
 
     setState(() {
       _isRunning = true;
+      _isPaused = false;
       _secondsRemaining = totalSeconds;
-      _currentLineIndex = 0;
+      _currentCueIndex = 0;
+      _secondsUntilNextCue = _secondsPerCue;
     });
     _pulseController.repeat(reverse: true);
+
+    if (context.read<AppSettingsController>().soundEnabled &&
+        timedCues.first.audioAsset != null) {
+      unawaited(_playMeditationCue(0, showError: true));
+    }
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
-      setState(() => _secondsRemaining--);
-      if (_secondsRemaining <= 0) _finishSession();
-    });
+      if (_isPaused) return;
 
-    final secondsPerLine =
-        (totalSeconds / session.guidingLines.length).floor().clamp(3, 999).toInt();
-    _lineTimer = Timer.periodic(
-      Duration(seconds: secondsPerLine),
-      (timer) {
-        if (!mounted) {
-          timer.cancel();
+      var shouldFinish = false;
+      int? nextCueIndex;
+
+      setState(() {
+        _secondsRemaining--;
+        _secondsUntilNextCue--;
+
+        if (_secondsRemaining <= 0) {
+          shouldFinish = true;
           return;
         }
-        setState(() {
-          _currentLineIndex =
-              (_currentLineIndex + 1) % session.guidingLines.length;
-        });
-      },
+
+        if (_secondsUntilNextCue <= 0 &&
+            _currentCueIndex < timedCues.length - 1) {
+          _currentCueIndex++;
+          _secondsUntilNextCue = _secondsPerCue;
+          nextCueIndex = _currentCueIndex;
+        }
+      });
+
+      if (nextCueIndex != null &&
+          context.read<AppSettingsController>().soundEnabled &&
+          timedCues[nextCueIndex!].audioAsset != null) {
+        unawaited(_playMeditationCue(nextCueIndex!));
+      }
+
+      if (shouldFinish) {
+        timer.cancel();
+        unawaited(_finishSession());
+      }
+    });
+  }
+
+  Future<void> _playMeditationIntro({bool showError = false}) async {
+    final introAsset = _selectedSession?.introAudioAsset;
+    final audioGuide = _audioGuide;
+    if (introAsset == null || audioGuide == null) return;
+
+    final played = await audioGuide.playAsset(
+      introAsset,
+      speed: _narrationSpeed,
     );
+    if (!played && showError && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Voice preview could not start. The session is still available.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _playMeditationCue(
+    int index, {
+    bool showError = false,
+  }) async {
+    final session = _selectedSession;
+    final audioGuide = _audioGuide;
+    if (session == null || audioGuide == null) return;
+
+    final timedCues = session.timedCues;
+    if (index < 0 || index >= timedCues.length) return;
+    final audioAsset = timedCues[index].audioAsset;
+    if (audioAsset == null) return;
+
+    final played = await audioGuide.playAsset(
+      audioAsset,
+      speed: _narrationSpeed,
+    );
+    if (!played && showError && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Guided audio could not start. Text guidance is still available.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _setSoundEnabled(bool enabled) async {
+    final settings = context.read<AppSettingsController>();
+    final audioGuide = _audioGuide;
+    await settings.updateSoundEnabled(enabled);
+    if (!mounted) return;
+
+    if (!enabled) {
+      await audioGuide?.stop();
+      return;
+    }
+
+    if (_isRunning && !_isPaused && _selectedSession?.hasGuidedAudio == true) {
+      await _playMeditationCue(_currentCueIndex, showError: true);
+    }
+  }
+
+  void _togglePause() {
+    if (!_isRunning) return;
+
+    setState(() => _isPaused = !_isPaused);
+    final audioGuide = _audioGuide;
+
+    if (_isPaused) {
+      _pulseController.stop();
+      if (audioGuide != null) unawaited(audioGuide.pause());
+    } else {
+      _pulseController.repeat(reverse: true);
+      if (audioGuide != null &&
+          context.read<AppSettingsController>().soundEnabled) {
+        if (audioGuide.hasLoadedAudio) {
+          unawaited(audioGuide.resume());
+        } else {
+          unawaited(_playMeditationCue(_currentCueIndex, showError: true));
+        }
+      }
+    }
+  }
+
+  void _replayCurrentPrompt() {
+    final session = _selectedSession;
+    if (session?.hasGuidedAudio != true ||
+        !context.read<AppSettingsController>().soundEnabled) {
+      return;
+    }
+    unawaited(_playMeditationCue(_currentCueIndex, showError: true));
   }
 
   void _cancelSession() {
     _timer?.cancel();
-    _lineTimer?.cancel();
     _pulseController.stop();
+    final audioGuide = _audioGuide;
+    if (audioGuide != null) unawaited(audioGuide.stop());
     if (!mounted) return;
-    setState(() => _isRunning = false);
+    setState(() {
+      _isRunning = false;
+      _isPaused = false;
+    });
   }
 
   Future<void> _finishSession() async {
     _timer?.cancel();
-    _lineTimer?.cancel();
     _pulseController.stop();
 
     final session = _selectedSession;
     final uid = context.read<AuthService>().currentUser?.uid;
+    final firestore = context.read<FirestoreService>();
+    final category = _openCategory;
     var historySaveFailed = false;
 
-    if (uid != null && session != null && _openCategory != null) {
+    await _audioGuide?.stop();
+
+    if (uid != null && session != null && category != null) {
       try {
         final log = MeditationSessionModel(
           id: '',
           uid: uid,
-          sessionType: '${_openCategory!.name} — ${session.name}',
+          sessionType: '${category.name} — ${session.name}',
           durationMinutes: _selectedDurationMinutes,
           date: DateTime.now(),
         );
-        await context.read<FirestoreService>().addMeditationSession(log);
+        await firestore.addMeditationSession(log);
       } catch (_) {
         historySaveFailed = true;
       }
     }
 
     if (!mounted) return;
-    setState(() => _isRunning = false);
+    setState(() {
+      _isRunning = false;
+      _isPaused = false;
+    });
 
     showDialog<void>(
       context: context,
@@ -417,6 +763,8 @@ class _MeditationScreenState extends State<MeditationScreen>
             ? IconButton(
                 icon: const Icon(Icons.arrow_back_rounded),
                 onPressed: () {
+                  final audioGuide = _audioGuide;
+                  if (audioGuide != null) unawaited(audioGuide.stop());
                   setState(() {
                     if (_selectedSessionIndex != null) {
                       _selectedSessionIndex = null;
@@ -534,7 +882,11 @@ class _MeditationScreenState extends State<MeditationScreen>
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: InkWell(
-            onTap: () => setState(() => _selectedSessionIndex = index - 1),
+            onTap: () {
+              final audioGuide = _audioGuide;
+              if (audioGuide != null) unawaited(audioGuide.stop());
+              setState(() => _selectedSessionIndex = index - 1);
+            },
             borderRadius: BorderRadius.circular(22),
             child: Container(
               padding: const EdgeInsets.all(16),
@@ -613,6 +965,8 @@ class _MeditationScreenState extends State<MeditationScreen>
           const SizedBox(height: 20),
           _buildDurationPicker(),
           const SizedBox(height: 18),
+          _buildMeditationAudioCard(session),
+          const SizedBox(height: 18),
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
@@ -626,13 +980,13 @@ class _MeditationScreenState extends State<MeditationScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Preview guidance',
+                  'What to expect',
                   style: TextStyle(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 9),
-                Text(
-                  session.guidingLines.first,
-                  style: const TextStyle(
+                const Text(
+                  'A few gentle prompts will appear during the session, with quiet space between them.',
+                  style: TextStyle(
                     color: AppTheme.textLight,
                     height: 1.45,
                   ),
@@ -671,6 +1025,81 @@ class _MeditationScreenState extends State<MeditationScreen>
             onPressed: _startSession,
             child: const Text('Begin session'),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMeditationAudioCard(_MeditationSession session) {
+    final settings = context.watch<AppSettingsController>();
+    final audioGuide = context.watch<AudioGuideService>();
+    final hasAudio = session.hasGuidedAudio;
+    final previewAsset = session.introAudioAsset;
+    final previewPlaying = previewAsset != null &&
+        audioGuide.isCurrentAsset(previewAsset) &&
+        audioGuide.isPlaying;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: hasAudio
+              ? AppTheme.primary.withValues(alpha: 0.35)
+              : AppTheme.surfaceBorder.withValues(alpha: 0.78),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            hasAudio ? Icons.graphic_eq_rounded : Icons.subtitles_rounded,
+            color: hasAudio ? AppTheme.primary : AppTheme.textLight,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasAudio ? 'Meet your session guide' : 'Text guidance',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  hasAudio
+                      ? 'Hear a short welcome. Guidance begins after you tap Begin.'
+                      : 'Natural narration is still being added to this session.',
+                  style: const TextStyle(
+                    color: AppTheme.textLight,
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (session.hasIntroAudio && settings.soundEnabled)
+            IconButton(
+              tooltip: previewPlaying ? 'Stop introduction' : 'Meet your guide',
+              onPressed: () {
+                if (previewPlaying) {
+                  unawaited(audioGuide.stop());
+                } else {
+                  unawaited(_playMeditationIntro(showError: true));
+                }
+              },
+              icon: Icon(
+                previewPlaying
+                    ? Icons.stop_circle_outlined
+                    : Icons.play_circle_outline_rounded,
+              ),
+            ),
+          if (hasAudio)
+            Switch.adaptive(
+              value: settings.soundEnabled,
+              onChanged: _setSoundEnabled,
+            ),
         ],
       ),
     );
@@ -821,8 +1250,8 @@ class _MeditationScreenState extends State<MeditationScreen>
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 450),
                   child: Text(
-                    session.guidingLines[_currentLineIndex],
-                    key: ValueKey(_currentLineIndex),
+                    session.timedCues[_currentCueIndex].text,
+                    key: ValueKey(_currentCueIndex),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 17,
@@ -835,6 +1264,8 @@ class _MeditationScreenState extends State<MeditationScreen>
             ),
           ),
           const SizedBox(height: 20),
+          _buildMeditationSessionControls(session, settings),
+          const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: _cancelSession,
             icon: const Icon(Icons.close_rounded),
@@ -842,6 +1273,44 @@ class _MeditationScreenState extends State<MeditationScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMeditationSessionControls(
+    _MeditationSession session,
+    AppSettingsController settings,
+  ) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        OutlinedButton.icon(
+          onPressed: _togglePause,
+          icon: Icon(
+            _isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded,
+          ),
+          label: Text(_isPaused ? 'Resume session' : 'Pause session'),
+        ),
+        if (session.hasGuidedAudio)
+          OutlinedButton.icon(
+            onPressed: settings.soundEnabled ? _replayCurrentPrompt : null,
+            icon: const Icon(Icons.replay_rounded),
+            label: const Text('Replay prompt'),
+          ),
+        if (session.hasGuidedAudio)
+          IconButton.filledTonal(
+            tooltip: settings.soundEnabled
+                ? 'Turn guided voice off'
+                : 'Turn guided voice on',
+            onPressed: () => _setSoundEnabled(!settings.soundEnabled),
+            icon: Icon(
+              settings.soundEnabled
+                  ? Icons.volume_up_rounded
+                  : Icons.volume_off_rounded,
+            ),
+          ),
+      ],
     );
   }
 }
