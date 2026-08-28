@@ -17,10 +17,18 @@ plugins {
 // If the file is missing, release builds fall back to the debug key so
 // local builds never break.
 val keystorePropertiesFile = rootProject.file("key.properties")
-val keystoreProperties = java.util.Properties()
+val keystoreProperties = mutableMapOf<String, String>()
 if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+    keystorePropertiesFile.readLines().forEach { line ->
+        val separator = line.indexOf('=')
+        if (separator > 0) {
+            keystoreProperties[line.substring(0, separator).trim()] =
+                line.substring(separator + 1).trim()
+        }
+    }
 }
+val hasKeystoreConfig = keystorePropertiesFile.exists() &&
+    keystoreProperties.containsKey("storeFile")
 
 android {
     namespace = "com.jafgce.mindmate"
