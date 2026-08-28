@@ -150,7 +150,7 @@ Immediate prototype path:
 2. Deploy Batch 10 Worker source, explicit Llama 3.3 model, and recommended limiter.
 3. Verify `/health` and the complete live mode/crisis/error matrix.
 4. Keep deletion retry/recovery and external `/delete-account` in the release matrix.
-5. Verify emergency resources and sensitive content.
+5. Verify emergency resources and sensitive content — **Batch 11 part 1 done (26 Aug 2026):** all 36 states + FCT verified against the NEMSAS list of 19 Aug 2026 (15 added), 112 + international lines confirmed, demo-data banner added, full table in `docs/emergency_resource_verification.md`; device pass + re-verification before public release remain.
 6. Run the complete device/release test matrix and build the signed candidate APK.
 
 See `MINDMATE_REMAINING_BATCHES.md` for tasks and exit criteria for Batches 6–13.

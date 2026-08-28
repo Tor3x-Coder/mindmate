@@ -326,8 +326,8 @@ class _EmergencySupportScreenState extends State<EmergencySupportScreen> {
     return _HelpCard(
       title: entry.state.isEmpty ? 'Your state' : entry.state,
       subtitle: hasLocal
-          ? 'Local emergency call centre. Verify before public release.'
-          : 'No authenticated local number listed — use the national line.',
+          ? 'Local emergency call centre. 112 also works nationwide.'
+          : 'No local number listed for this state — use the national line.',
       actionLabel: hasLocal ? 'Call $label' : 'Call 112',
       icon: Icons.filter_center_focus_outlined,
       urgent: true,

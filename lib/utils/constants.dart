@@ -55,10 +55,12 @@ const List<String> appointmentStatuses = ['pending', 'approved', 'declined'];
 
 // ---------------------------------------------------------------------------
 // Emergency support resources (for Emergency Support screen).
-// National/state numbers below come from the NCC state emergency call-centre
-// list plus 112 as the nationwide fallback. Local numbers are only shown when
-// we have a verified source; otherwise the app tells the user to dial 112.
-// VERIFY EVERY LISTING BEFORE PUBLIC RELEASE.
+// National/state numbers below come from the NEMSAS (National Emergency
+// Medical Service and Ambulance System) state emergency call-centre list
+// published 19 August 2026, with 112 as the nationwide fallback (NCC).
+// Every entry was verified against that list on 26 August 2026 — see
+// docs/emergency_resource_verification.md for sources and dates.
+// Re-verify before any public release; numbers and operational status change.
 // ---------------------------------------------------------------------------
 
 class NigeriaStateEmergency {
@@ -82,6 +84,8 @@ const List<NigeriaStateEmergency> nigeriaStateEmergencies = [
   NigeriaStateEmergency(state: 'Bayelsa', localNumber: '08002200223'),
   NigeriaStateEmergency(state: 'Benue', note: 'Listed as not operational by NEMSAS'),
   NigeriaStateEmergency(state: 'Borno', localNumber: '08000000033'),
+  NigeriaStateEmergency(state: 'Cross River', note: 'Use 112'),
+  NigeriaStateEmergency(state: 'Delta', localNumber: '07041008130', note: 'Also 07041008131'),
   NigeriaStateEmergency(state: 'Ebonyi', localNumber: '08086446891', note: 'Also 08086445736'),
   NigeriaStateEmergency(state: 'Edo', localNumber: '09037999871', note: 'Also 739'),
   NigeriaStateEmergency(state: 'Ekiti', localNumber: '08000606606'),
@@ -94,10 +98,23 @@ const List<NigeriaStateEmergency> nigeriaStateEmergencies = [
   NigeriaStateEmergency(state: 'Imo', note: 'Listed as not operational by NEMSAS'),
   NigeriaStateEmergency(state: 'Jigawa', note: 'Use 112'),
   NigeriaStateEmergency(state: 'Kaduna', localNumber: '08064111599'),
-  NigeriaStateEmergency(state: 'Niger', localNumber: '08022422953'),
+  NigeriaStateEmergency(state: 'Kano', localNumber: '09019999920', note: 'Also 09049999914'),
+  NigeriaStateEmergency(state: 'Katsina', note: 'Use 112'),
+  NigeriaStateEmergency(state: 'Kebbi', note: 'Use 112'),
+  NigeriaStateEmergency(state: 'Kogi', note: 'Use 112'),
+  NigeriaStateEmergency(state: 'Kwara', localNumber: '09062010001', note: 'Also 09062010002'),
+  NigeriaStateEmergency(state: 'Lagos', localNumber: '767', note: 'Also 112'),
+  NigeriaStateEmergency(state: 'Nasarawa', localNumber: '08144911269'),
+  NigeriaStateEmergency(state: 'Niger', localNumber: '08022422953', note: 'Also 08155577513'),
+  NigeriaStateEmergency(state: 'Ogun', localNumber: '08112000033'),
+  NigeriaStateEmergency(state: 'Ondo', localNumber: '08055300300'),
   NigeriaStateEmergency(state: 'Osun', localNumber: '08111110532', note: 'Also 08111110561'),
+  NigeriaStateEmergency(state: 'Oyo', localNumber: '615', note: 'Also 112'),
+  NigeriaStateEmergency(state: 'Plateau', localNumber: '09136982496'),
+  NigeriaStateEmergency(state: 'Rivers', localNumber: '09040222281', note: 'Also 09040222283 and 09040222285'),
+  NigeriaStateEmergency(state: 'Sokoto', localNumber: '07045963318', note: 'Also 07071765080'),
   NigeriaStateEmergency(state: 'Taraba', localNumber: '07041122777', note: 'Also 07041100777'),
-  NigeriaStateEmergency(state: 'Yobe', localNumber: '09169981792'),
+  NigeriaStateEmergency(state: 'Yobe', localNumber: '09169981792', note: 'Also 08000090009'),
   NigeriaStateEmergency(state: 'Zamfara', note: 'Use 112'),
   NigeriaStateEmergency(state: 'FCT Abuja', localNumber: '09157892931', note: 'Also 09157892932'),
 ];

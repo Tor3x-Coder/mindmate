@@ -381,7 +381,9 @@ Implemented, deployed, and verified on 25 August 2026:
 - verified live `/health` returning version `2026-08-23-batch10` and default model `@cf/meta/llama-3.3-70b-instruct-fp8-fast`;
 - verified live responses for `make_plan`, `calm`, and immediate deterministic human crisis routing.
 
-### Batch 11 — Safety, content, and resource verification
+### Batch 11 — Safety, content, and resource verification — PART 1 COMPLETE (26 Aug 2026)
+
+**Status:** Resources verified — all 36 states + FCT now listed and matched 1:1 against the NEMSAS state call-centre list published 19 Aug 2026 (15 states added, incl. Lagos 767); 112 confirmed as the national fallback (NCC/FG); 9 international lines verified against standard references; findahelpline.com confirmed live; professional directory now carries a "Demo data" banner; unlisted-state behaviour documented (all listed + 112 safety net). Full table: `docs/emergency_resource_verification.md`. Remaining: device pass for `tel:`/`sms:`/browser actions (with Batch 12), fresh re-verification before any public release, and the qualified-reviewer wording review (documented limitation).
 
 **Purpose:** Verify the content people may rely on during distress.
 

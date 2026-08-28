@@ -64,6 +64,19 @@ class _ProfessionalDirectoryScreenState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildIntro(),
+            const SizedBox(height: 10),
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: AppTheme.textLight.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Demo data: the professionals shown in this prototype are sample listings for demonstration — not verified providers.',
+                style: TextStyle(fontSize: 12, color: AppTheme.textLight, height: 1.35),
+              ),
+            ),
             const SizedBox(height: 14),
             _buildNeedChoices(),
             const SizedBox(height: 12),
