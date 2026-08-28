@@ -404,7 +404,9 @@ Exit criteria:
 - support actions work on a real device;
 - review limitations are documented honestly.
 
-### Batch 12 — Meaningful automated and device testing
+### Batch 12 — Meaningful automated and device testing — automated tests DONE (26 Aug 2026); device matrix pending
+
+**Status:** 31 new automated tests added (4 files) covering model serialization for sensitive records, the mood→recommendation logic, Wellness Result band behaviour, and audio lifecycle guards (see `test/`). Device matrix (account flows, `tel:`/`sms:` launches, audio interruptions, weak/no network, themes) runs on the competition phone during the release pass.
 
 **Purpose:** Replace the current trivial smoke test with protection for the demo journey.
 
