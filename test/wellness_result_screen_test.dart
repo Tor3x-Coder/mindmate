@@ -81,11 +81,16 @@ void main() {
       await pumpResult(tester, 30);
       expect(find.text('Talk it through'), findsWidgets);
       expect(
-        find.textContaining('human-support options'),
+        find.text(
+          'If today feels heavier than usual, see the human-support options.',
+        ),
         findsOneWidget,
       );
       expect(
-        find.textContaining('heavier than usual'),
+        find.text(
+          'Your answers suggest today feels heavier than usual. '
+          'Be gentle with yourself.',
+        ),
         findsOneWidget,
       );
     });
@@ -102,7 +107,9 @@ void main() {
         ),
       );
       expect(
-        find.textContaining('human-support options'),
+        find.text(
+          'If today feels heavier than usual, see the human-support options.',
+        ),
         findsOneWidget,
       );
     });
