@@ -56,7 +56,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.mindmate"
+        applicationId = "com.jafgce.mindmate"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
