@@ -21,7 +21,7 @@ window.MINDMATE_LANDING = {
   // Google Play external deletion-request workflow (Batch 13A).
   // deleteRequestFormUrl: hosted form (Google Form / Tally) that former users
   // submit without reinstalling the app — set when the form is created.
-  deleteRequestFormUrl: '',
+  deleteRequestFormUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSfTh8fk8S7Pa54Xj2vjEaxXwlWOck_PVfO3IIGtTTwhbgq9iw/viewform',
   supportEmail: 'tor3x.akachukwu@gmail.com',
 
   // Final published URL (used by the QR code and share links).
