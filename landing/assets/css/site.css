@@ -93,7 +93,6 @@ a:hover { color: var(--tide); }
   width: 30px;
   height: 30px;
   border-radius: 9px;
-  background: linear-gradient(135deg, var(--tide), var(--sea-glass));
   display: inline-block;
 }
 .brand small {
