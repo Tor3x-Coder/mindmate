@@ -1,6 +1,6 @@
 # MindMate current status
 
-**Last updated:** 26 August 2026
+**Last updated:** 1 September 2026
 **Purpose:** This is the single source of truth for the current implementation checkpoint and the next task.
 
 Every agent or developer continuing MindMate must read this file together with:
@@ -23,7 +23,20 @@ Do not call a feature “finished” merely because it is implemented. State all
 
 ## Current checkpoint
 
-The repository contains backend/integration batches 1–5. The work from the interrupted Arena session was recovered exactly and committed to the active Arena branch.
+**Session handoff — 1 September 2026 (read this first when continuing):**
+
+- **Date correction:** the competition is **21 September 2026** (earlier docs said 11 September — that is when school starts). Full-team build window: **1–10 September**. Feature freeze: **~13–14 September**. Rehearsal window (school time, evenings only): 11–21 September.
+- **App is live on real phones.** Release APK v1.0.0 (62 MB) built and signed with `mindmate-release.jks` (on the developer's PC, with `android/key.properties` — both git-ignored, never committed). The launch crash (namespace vs MainActivity class mismatch + lost applicationId change) was fixed in commit `1fc3ef8`. Login/register verified working on device (Infinix X669, Android 12); an earlier auth failure was network-side (mobile data worked).
+- **Decisions locked on 1 September 2026:**
+  1. **Learn section = Option B:** featured card on Home (between the Wellness Score card and the quick-tile grid), list screen + reader screen, six articles (things that support the mind; things that damage it; substances and your brain; when coping becomes a problem; getting help in Nigeria; if your friend is struggling). Tone: calm, honest, non-preachy, never medical advice, each article ends pointing into the app's own tools. A health-literate team member skims articles 3–4 before the competition.
+  2. **Demo account = script seeding:** register the demo account through the app normally, then a one-off Firebase Admin SDK script (Node, service-account key, never committed) writes ~3 weeks of realistic history (mood logs with word-based impact, meditation/breathing sessions from the real 18/3 catalog, journal entries, thought records, matching feedback records).
+  3. **Professionals directory = Option two:** keep clearly-labeled demo data (the "Demo data" banner is already in the app). The team has no real professional contacts; do NOT cold-outreach strangers with days on the clock. The honest-limits slide states plainly: sample listings, request flow + duplicate guard + admin review fully built and security-tested, real consented providers join post-competition with verification.
+  4. **Tier-two features are now IN SCOPE** (time allows): weekly insight on the Progress screen, and a working local-notification daily reminder (the setting already exists; the notification does not).
+- **Build order for 1–10 September:** Learn section → demo seeding script → weekly insight → daily reminder → multi-phone device test matrix (the team's phones ARE the device fleet) + the 4 landing-page screenshots → honest-limits slide + five-question answer sheet for the team.
+- **Verify-or-complete item:** confirm whether the final (post-`1fc3ef8`) release APK was uploaded to a GitHub Release (`v1.0.0`) and whether `landing/assets/js/config.js` was flipped to the live download state (version/size/SHA-256/URL). If not: upload the APK to a Release, copy the SHA-256 GitHub shows, fill `config.js`, push, re-sync `gh-pages`.
+- **GitHub incident note (1 Sep):** GitHub reported degraded *Pull Request diff rendering*; git push/commit (Git Operations) was unaffected and we never use PRs, so no impact on this workflow.
+
+The repository contains backend/integration batches 1–10 plus completed Batch 7 (full audio), Batch 11 part 1 (resource verification), Batch 12 automated tests, and Batch 13A (landing site live). See the sections below for detail.
 
 The developer confirmed that the local checkout tracks `arena/01a02a49-mindmate`. Batch 8 passed all 13 emulator cases, Flutter analysis/tests, compiled successfully, and was released to Firestore project `mindmate-app-fcf2d` on 23 August 2026. Brief normal-flow live smoke checks remain.
 
@@ -437,3 +450,4 @@ Before editing code:
 7. treat Batch 10 as fully deployed and verified live (12/12 worker tests, 9/9 Flutter tests, live `/health` version `2026-08-23-batch10` with Llama 3.3 70B FP8 Fast);
 8. keep `/delete-account` web requests as a Play blocker and update relevant docs in every batch;
 9. treat Batch 7 (7A–7E Chrome) as complete: 184 clips recorded/wired, asset audit passed, dev-machine analyzer 0 errors/0 warnings + 9/9 tests, Chrome matrix user-confirmed on 26 Aug 2026; physical-device audio remains a documented release gate; Flutter commands still cannot run in the Arena sandbox.
+10. **continue from the "Session handoff — 1 September 2026" block at the top of this file:** competition is 21 September (school starts 11 September), build window is 1–10 September, the four locked decisions (Learn Option B + six articles, script demo seeding, professionals Option two, tier-two features in scope) and the build order are recorded there; the GitHub Release / landing-card item is verify-or-complete; do not start any batch work without reading that block first.

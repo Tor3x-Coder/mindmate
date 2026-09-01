@@ -505,6 +505,19 @@ Exit criteria:
 - Lighthouse-style accessibility/performance checks are acceptable;
 - deployed URL and hosting configuration are documented.
 
+## Approved additions — decided 1 September 2026 (pre-competition, in scope)
+
+Agreed with the developer on 1 September 2026, to be built during the 1–10 September window:
+
+1. **Learn section (Option B — featured card on Home).** A card between the Wellness Score card and the quick-tile grid on Home ("Learn — honest reads on what helps and hurts your mind"), opening a topic list screen with cards (title, one-line description, read-time hint) and a clean article reader. Six bundled static articles (no backend): (1) things that quietly support your mind; (2) things that quietly damage your mind; (3) substances and your brain — an honest conversation (cannabis, alcohol, codeine-based syrups, tramadol, inhalants; myth vs reality, non-preachy); (4) when "coping" becomes a problem (self-reflection questions, clearly not a diagnosis); (5) getting help in Nigeria (shame-free, hospital-based services, when to use emergency help, links into the app's Emergency Support); (6) if your friend is struggling (what to say/not say, when to involve an adult/professional). Voice matches the app: calm, honest, no fear-mongering, no medical advice; each article ends pointing into the app's own tools. A health-literate team member skims articles 3–4 before the competition.
+2. **Demo account via Admin SDK script.** Register the demo account through the app, then a one-off Node + Firebase Admin SDK script (service-account key, git-ignored, never committed) seeds ~3 weeks of realistic history with the exact production schemas (mood_logs with word-based impact, meditation_history, breathing sessions, journal_entries, thought_records, feedback_records). Repeatable/tweakable.
+3. **Weekly insight on the Progress screen.** A "Your week" summary computed from existing stored data (check-in count, hardest day, practices that followed low moods). Read-only; no new storage.
+4. **Working daily reminder.** The reminder-time setting already exists; add a local notification (flutter_local_notifications, no internet needed) that actually fires. New dependency + permission — test on the team's phones.
+5. **Multi-phone device matrix + screenshots.** The team's phones are the device fleet: run the Batch 12 device matrix across 3–4 phones/networks and capture the 4 landing-page screenshots (Home, Practice mid-session, Daily Snapshot, Emergency Support).
+6. **Honest-limits slide + five-question answer sheet** for the team (difference vs Wysa; how do you know it works; what if the emergency number isn't answered; what stops the AI saying something harmful; why trust the data). Written in full sentences for internalization, not fragments.
+
+**Professionals directory decision (1 September 2026): Option two — keep clearly-labeled demo data.** The team has no real professional contacts; cold-outreach to strangers days before the competition is an ethics and timing risk. The existing "Demo Data" banner stays; the honest-limits slide states plainly that listings are samples, the request flow + duplicate guard + admin review are built and security-tested, and real consented providers join post-competition with verification.
+
 ## Post-competition production batches
 
 These are important for a real product but should not displace the competition-critical sequence.

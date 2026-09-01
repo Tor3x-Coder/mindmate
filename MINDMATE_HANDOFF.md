@@ -178,9 +178,11 @@ Known backend/product limitations that may be deferred beyond the competition pr
 
 ## Competition
 
-- Competition: 11 September 2026.
-- Target feature freeze: 28 August 2026.
-- Current handoff date: 23 August 2026.
+- **Competition: 21 September 2026** (corrected 1 September 2026 — 11 September is when school starts, not the competition).
+- Full-team build window: **1–10 September 2026** (after school starts, the team only has evenings).
+- **Target feature freeze: ~13–14 September 2026.** After that, critical fixes only.
+- Rehearsal window: 11–21 September (demo script, live crisis-route moment, airplane-mode fallback, team drilling the five hard questions in pairs).
+- Current handoff date: 1 September 2026.
 - The competition accepts prototypes. Prioritise one polished, reliable demo journey over extra features.
 
 Demo journey:
@@ -195,4 +197,8 @@ Check in
 
 ## Immediate next action
 
-Batch 10 is fully validated, deployed to Cloudflare, and verified live with `/health` reporting `2026-08-23-batch10` and Llama 3.3 70B FP8 Fast. **Batch 7 is complete** (7A–7E: all 184 clips recorded/wired, asset audit passed, dev-machine analyzer 0 errors/0 warnings + 9/9 tests, Chrome playback matrix user-confirmed 26 Aug 2026; physical-device audio remains a documented release gate). **Batch 13A is in progress:** the landing site is implemented in `landing/` (GitHub Pages hosting, hosted-form deletion flow, identity "MindMate by Junior Achievers — FG Enugu (JA FGCE)"); waiting on the user's form URL, support email, and 4 real screenshots, then deploy. Remaining order: **13A finish → Batch 11 (emergency resource verification) → Batch 12 (end-to-end device testing)**.
+**Read the "Session handoff — 1 September 2026" block at the top of `MINDMATE_STATUS.md` first** — it carries the date correction (competition 21 September, school from 11 September), the four locked decisions (Learn section Option B with six articles, script-based demo seeding, professionals directory stays demo data by explicit decision, tier-two features in scope), and the build order.
+
+State as of 1 September 2026: Batches 1–10 done and verified; Batch 7 complete (184 clips, Chrome matrix confirmed); Batch 11 part 1 done (all 36 states + FCT verified against the 19 Aug 2026 NEMSAS list, table in `docs/emergency_resource_verification.md`); Batch 12 automated tests done (39 passing, user-confirmed); Batch 13A live at `tor3x-coder.github.io/mindmate` (logo, favicon, working /delete-account form); Batch 13 underway — signed release APK v1.0.0 built and running on real phones after the `1fc3ef8` identity fix.
+
+Build order for 1–10 September: **Learn section → demo seeding script → weekly insight (Progress) → daily local-notification reminder → multi-phone device matrix + 4 landing screenshots → honest-limits slide + five-question answer sheet.** Verify-or-complete: GitHub Release upload of the final APK and the landing `config.js` live-download flip (see the handoff block in `MINDMATE_STATUS.md`).
