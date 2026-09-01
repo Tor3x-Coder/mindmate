@@ -135,6 +135,17 @@ Current limitation: natural spoken guidance is a pilot only—Quick Reset and Bo
 
 Journal AI reflection is not implemented. If added later, it must be explicitly opt-in and must not send a user's full journal history automatically.
 
+### Learn
+
+- Home featured Learn card between the Wellness card and Quick starts;
+- six bundled, offline articles with topic descriptions and read-time hints;
+- scrollable article reader with calm, non-preachy general information;
+- articles about supportive and harmful patterns, substances and the brain, coping, getting help in Nigeria, and supporting a struggling friend;
+- article next-step buttons into existing breathing, check-in, journal, and Emergency Support tools;
+- no Learn content is fetched from the network or stored as personal data.
+
+Learn content is general information, not medical advice. Articles 3–4 require the planned health-literate review before the competition.
+
 ### Human support
 
 - professional-support directory and filters;
@@ -239,9 +250,9 @@ No AI provider key belongs in the Flutter app. The app talks only to the Cloudfl
 ```text
 lib/
   models/        Data classes with fromMap/toMap methods
-  screens/       User flows and feature screens
+  screens/       User flows and feature screens (including Learn)
   services/      Auth, Firestore, settings, and chat services
-  utils/         Theme, constants, and pattern logic
+  utils/         Theme, constants, pattern logic, and bundled Learn content
 assets/
   audio/         Offline guided narration and transcript/readme
   illustrations/ Onboarding and app illustrations

@@ -103,6 +103,7 @@ Selected/implemented directions:
 - Terms/Privacy: Option A — Readable Legal.
 - Wellness Check: Option A — Daily Snapshot.
 - Wellness Result: Option A — Reflection & Next Step.
+- Learn: Option B — Home featured card, topic list, clean reader, and six bundled articles.
 - The illustration onboarding carousel is confirmed.
 - Splash/illustration-first screens are excluded from further redesign.
 - Existing Login/Register screens are intentionally left as-is unless a functional bug is found.
@@ -114,6 +115,7 @@ Selected/implemented directions:
 - **Floating Tide Orb navigation is implemented, polished, and Chrome-validated:** four lower-positioned destinations, slower 520ms-base glide, restrained hop, visible labels, semantics, reduced-motion support, and existing IndexedStack state preservation.
 - **First-use guide is implemented and Chrome-validated:** four coach marks for Home, Practice, Chat, and Me with Skip/Next/Got it, `tourVersion = 1` persistence, Settings replay, and a lightweight Flutter-drawn 2D figure. Automatic display is requested only after new-user onboarding; Login/Splash do not force it. It never appears on Emergency Support or autoplays speech. Fresh-account and physical-device release checks remain.
 - **Quiet Tide Modern shell is focused, not a full redesign:** global app bars use consistent height/spacing and no scroll tint/elevation. The user confirmed the combined shell works; child-screen polish remains intentionally deferred.
+- **Learn Option B is implemented locally:** Home places the featured Learn card between the Wellness card and Quick starts; the list shows all six approved static topics with descriptions/read times; each article has a readable scroll view, safety boundary, and a button into an existing MindMate tool. Content lives in `lib/utils/learn_articles.dart` and uses no backend or personal data. Articles 3–4 still require the planned health-literate skim, and Flutter/Chrome/device validation remains open.
 - **Approved landing direction:** use the supplied Spouse Finder page only as visual/interaction inspiration. Build a separate lightweight informational MindMate site, not a hosted Flutter version of the app. It must include a functional `/delete-account` request resource for Google Play, plus truthful product/safety/privacy information, screenshots, FAQ, and a signed release APK download—not the debug APK.
 - **Light is the validated first-run/reset default.** Dark and System remain optional user choices.
 - **Registration contrast is Chrome-validated:** Name/Email/Password match Login's dark 16px style; setup choices use readable surface text.
