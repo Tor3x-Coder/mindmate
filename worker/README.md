@@ -12,19 +12,19 @@ Flutter calls the Worker; it never contains a model/provider secret.
 - Worker tests: **13/13 passed** with Node's built-in test runner.
 - Flutter client sanitization: updated locally; the developer PC full Flutter suite is **47/47 passed** and analyzer has 0 errors/0 warnings.
 - Selected default model: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`.
-- Live Worker deployment: Batch 10 is live; deployment of the `2026-09-02-learn-context` source was approved on 2 September 2026 but is still pending Cloudflare authentication and binding verification.
+- Live Worker deployment: `2026-09-02-learn-context` was deployed from the Cloudflare dashboard on 2 September 2026; `/health` now confirms the new version. Live POST smoke tests are still pending.
 - Live endpoint currently configured in Flutter:
 
 ```text
 https://mindmate-ai-chat.tor3x-akachukwu.workers.dev
 ```
 
-The existing Batch 10 deployment is live. Do not call the Learn-context
-Worker update deployed until the live `/health` endpoint reports the new
-version and the live POST matrix passes. A local Wrangler dry run without a
-configuration reports `No bindings found`; do not deploy that way because the
-Worker requires the existing `AI` binding and should preserve any configured
-rate-limit/KV bindings.
+The Learn-context Worker is now deployed and `/health` reports the new
+version. Do not call the deployment fully verified until the live POST matrix
+passes. A local Wrangler dry run without a configuration reports `No bindings
+found`; do not use that path for future updates because the Worker requires
+the existing `AI` binding and should preserve any configured rate-limit/KV
+bindings.
 
 ## Why Llama 3.3 70B FP8 Fast
 
