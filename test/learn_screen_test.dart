@@ -32,14 +32,21 @@ void main() {
       ),
       findsOneWidget,
     );
-    await tester.scrollUntilVisible(
-      find.text('Ask MindMate about this'),
-      400,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('Ask MindMate about this'), findsOneWidget);
 
-    await tester.tap(find.text('Ask MindMate about this'));
+    // Jump to the end so the action itself, rather than only its label, is
+    // inside the test viewport before tapping it.
+    final scrollableState = tester.state<ScrollableState>(
+      find.byType(Scrollable).first,
+    );
+    scrollableState.position.jumpTo(scrollableState.position.maxScrollExtent);
+    await tester.pumpAndSettle();
+
+    final askButton = find.widgetWithText(
+      OutlinedButton,
+      'Ask MindMate about this',
+    );
+    expect(askButton, findsOneWidget);
+    await tester.tap(askButton);
     await tester.pumpAndSettle();
 
     expect(
