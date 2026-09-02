@@ -32,6 +32,11 @@ void main() {
       ),
       findsOneWidget,
     );
+    await tester.scrollUntilVisible(
+      find.text('Ask MindMate about this'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Ask MindMate about this'), findsOneWidget);
 
     await tester.tap(find.text('Ask MindMate about this'));
