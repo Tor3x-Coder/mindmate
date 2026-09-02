@@ -12,7 +12,8 @@ Flutter calls the Worker; it never contains a model/provider secret.
 - Worker tests: **13/13 passed** with Node's built-in test runner.
 - Flutter client sanitization: updated locally; the developer PC full Flutter suite is **47/47 passed** and analyzer has 0 errors/0 warnings.
 - Selected default model: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`.
-- Live Worker deployment: `2026-09-02-learn-context` was deployed from the Cloudflare dashboard on 2 September 2026; `/health` now confirms the new version. The dashboard shows the required `AI` Workers AI binding and the explicit `AI_MODEL` variable. No optional rate-limit or metrics bindings were previously configured or added. Live POST smoke tests are still pending.
+- Live Worker deployment: `2026-09-02-learn-context` was deployed from the Cloudflare dashboard on 2 September 2026; `/health` confirms the new version. The dashboard shows the required `AI` Workers AI binding and the explicit `AI_MODEL` variable. No optional rate-limit or metrics bindings were previously configured or added.
+- Live POST smoke matrix: **passed** for normal plan, calm, Learn article context, and deterministic crisis guidance.
 - Live endpoint currently configured in Flutter:
 
 ```text
