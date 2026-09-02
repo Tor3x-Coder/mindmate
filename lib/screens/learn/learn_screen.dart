@@ -131,7 +131,7 @@ class _LearnIntroCard extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.62),
               shape: BoxShape.circle,
             ),
-            child: Icon(
+            child: const Icon(
               Icons.menu_book_rounded,
               color: AppTheme.primary,
               size: 29,
