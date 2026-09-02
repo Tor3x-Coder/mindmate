@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../models/learn_article_model.dart';
 import '../../services/chat_service.dart';
 import '../../utils/app_theme.dart';
 
@@ -15,7 +17,12 @@ class _ChatMessage {
 }
 
 class ChatTabScreen extends StatefulWidget {
-  const ChatTabScreen({super.key});
+  final LearnArticle? learnArticle;
+
+  const ChatTabScreen({
+    super.key,
+    this.learnArticle,
+  });
 
   @override
   State<ChatTabScreen> createState() => _ChatTabScreenState();
@@ -30,6 +37,13 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
   final List<_ChatMessage> _messages = [];
   bool _isSending = false;
   String? _activeMode;
+  LearnArticle? _activeLearnArticle;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeLearnArticle = widget.learnArticle;
+  }
 
   @override
   void dispose() {
@@ -114,6 +128,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
         .toList();
 
     final modeToSend = _activeMode;
+    final learnContextToSend = _activeLearnArticle?.aiContext;
     setState(() {
       _messages.add(_ChatMessage(role: 'user', content: text));
       _isSending = true;
@@ -127,6 +142,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
         userMessage: text,
         history: history,
         mode: modeToSend,
+        learnContext: learnContextToSend,
       );
 
       if (!mounted) return;
@@ -171,6 +187,8 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            if (_activeLearnArticle != null)
+              _buildLearnContextBanner(_activeLearnArticle!),
             Expanded(
               child: _messages.isEmpty
                   ? _buildGuidedStart(isDark)
@@ -191,6 +209,52 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
             _buildInputBar(isDark),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLearnContextBanner(LearnArticle article) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+      decoration: BoxDecoration(
+        color: AppTheme.secondary.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.secondary.withValues(alpha: 0.38),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.menu_book_rounded,
+            color: AppTheme.primary,
+            size: 20,
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              'Using this read: ${article.title}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppTheme.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                height: 1.25,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => setState(() => _activeLearnArticle = null),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('Clear'),
+          ),
+        ],
       ),
     );
   }

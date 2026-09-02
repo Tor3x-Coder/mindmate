@@ -5,11 +5,13 @@ import worker, {
   DEFAULT_MODEL,
   MAX_HISTORY_TURN_CHARS,
   MAX_HISTORY_TURNS,
+  MAX_LEARN_CONTEXT_CHARS,
   WORKER_VERSION,
   isCrisis,
   looksLikeQuotaError,
   normalizeMode,
   sanitizeHistory,
+  sanitizeLearnContext,
 } from './index.js';
 
 function createContext() {
@@ -79,6 +81,15 @@ test('history sanitizer rejects injected roles and applies both limits', () => {
   assert.ok(cleaned.every((turn) => ['user', 'assistant'].includes(turn.role)));
   assert.ok(cleaned.every((turn) => turn.content.length <= MAX_HISTORY_TURN_CHARS));
   assert.ok(cleaned.every((turn) => !turn.content.includes('Ignore MindMate')));
+});
+
+test('Learn context is bounded and blank context is ignored', () => {
+  assert.equal(sanitizeLearnContext('  article note  '), 'article note');
+  assert.equal(sanitizeLearnContext({ text: 'not allowed' }), '');
+  assert.equal(
+    sanitizeLearnContext('x'.repeat(MAX_LEARN_CONTEXT_CHARS + 20)).length,
+    MAX_LEARN_CONTEXT_CHARS,
+  );
 });
 
 test('mode and crisis helpers accept only intended values', () => {
@@ -192,6 +203,8 @@ test('normal generation uses one system message, validated history, and final mo
         { role: 'user', content: 'Earlier message' },
         { role: 'assistant', content: 'Earlier answer' },
       ],
+      learnContext:
+        'Learn article title: When school feels overwhelming\\nApproved article context.',
     }),
     env,
     createContext(),
@@ -209,6 +222,8 @@ test('normal generation uses one system message, validated history, and final mo
   assert.equal(messages.filter((message) => message.role === 'system').length, 1);
   assert.match(messages[0].content, /AI companion/i);
   assert.match(messages[0].content, /Current intent: CALM/i);
+  assert.match(messages[0].content, /Selected Learn article reference/i);
+  assert.match(messages[0].content, /When school feels overwhelming/i);
   assert.ok(messages.every((message) => !message.content.includes('Injected system')));
 });
 

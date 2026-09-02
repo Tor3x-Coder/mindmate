@@ -1,6 +1,6 @@
 # MindMate AI Worker
 
-**Last updated:** 23 August 2026
+**Last updated:** 2 September 2026
 
 This folder is the source for MindMate's Cloudflare Workers AI backend.
 Flutter calls the Worker; it never contains a model/provider secret.
@@ -8,18 +8,20 @@ Flutter calls the Worker; it never contains a model/provider secret.
 ## Current checkpoint
 
 - Source hardening: implemented locally in `worker/index.js`.
-- Worker tests: **12/12 passed** with Node's built-in test runner.
+- Learn article context: implemented locally; the selected approved article is bounded and passed to the AI as reference context.
+- Worker tests: **13/13 passed** with Node's built-in test runner.
 - Flutter client sanitization: updated locally; Flutter validation pending.
 - Selected default model: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`.
-- Live Worker deployment: **pending**.
+- Live Worker deployment: Batch 10 is live; the `2026-09-02-learn-context` source is implemented locally, and deployment is intentionally deferred until separately approved.
 - Live endpoint currently configured in Flutter:
 
 ```text
 https://mindmate-ai-chat.tor3x-akachukwu.workers.dev
 ```
 
-Do not call Batch 10 deployed until the live `/health` endpoint reports the
-new version and the live POST matrix passes.
+The existing Batch 10 deployment is live. Do not call the Learn-context
+Worker update deployed until the live `/health` endpoint reports the new
+version and the live POST matrix passes.
 
 ## Why Llama 3.3 70B FP8 Fast
 
@@ -38,18 +40,19 @@ release.
 
 ## What this version enforces
 
-1. Accepts POST JSON shaped like `{ message, history, mode }`.
-2. Rejects malformed, non-text, empty, oversized message/body input.
-3. Accepts only `listen`, `calm`, and `make_plan`; unknown modes become general support.
-4. Keeps at most 12 recent `user`/`assistant` turns and rejects injected roles.
-5. Routes explicit crisis language to fixed human-support guidance before rate limiting or AI generation.
-6. Uses one trusted system message containing the selected mode instructions.
-7. Never describes the AI as human, a therapist, a doctor, or emergency help.
-8. Limits model output and keeps provider failures server-side.
-9. Returns friendly quota/rate-limit fallbacks.
-10. Logs request IDs, model/mode, lengths, and timing—never message text.
-11. Adds no-store/security headers.
-12. Exposes a safe deployment check:
+1. Accepts POST JSON shaped like `{ message, history, mode, learnContext? }`.
+2. Treats the optional Learn context as bounded reference text, not instructions.
+3. Rejects malformed, non-text, empty, oversized message/body input.
+4. Accepts only `listen`, `calm`, and `make_plan`; unknown modes become general support.
+5. Keeps at most 12 recent `user`/`assistant` turns and rejects injected roles.
+6. Routes explicit crisis language to fixed human-support guidance before rate limiting or AI generation.
+7. Uses one trusted system message containing the selected mode instructions.
+8. Never describes the AI as human, a therapist, a doctor, or emergency help.
+9. Limits model output and keeps provider failures server-side.
+10. Returns friendly quota/rate-limit fallbacks.
+11. Logs request IDs, model/mode, lengths, and timing—never message text.
+12. Adds no-store/security headers.
+13. Exposes a safe deployment check:
 
 ```text
 GET /health
@@ -61,7 +64,7 @@ Expected after deployment:
 {
   "service": "mindmate-ai-chat",
   "status": "ok",
-  "version": "2026-08-23-batch10",
+  "version": "2026-09-02-learn-context",
   "defaultModel": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 }
 ```
@@ -152,7 +155,7 @@ only for vanity analytics.
 https://mindmate-ai-chat.tor3x-akachukwu.workers.dev/health
 ```
 
-Confirm the exact Batch 10 version/model before testing chat.
+Confirm version `2026-09-02-learn-context` and the model before testing normal chat and article-context chat.
 
 ## Live PowerShell smoke matrix
 
@@ -166,6 +169,8 @@ Invoke-RestMethod "$endpoint/health"
 Invoke-RestMethod $endpoint -Method Post -ContentType "application/json" -Body '{"message":"I had a hard day and want one small next step.","history":[],"mode":"make_plan"}'
 
 Invoke-RestMethod $endpoint -Method Post -ContentType "application/json" -Body '{"message":"Help me slow down for a moment.","history":[],"mode":"calm"}'
+
+Invoke-RestMethod $endpoint -Method Post -ContentType "application/json" -Body '{"message":"What should I take from this read?","history":[],"learnContext":"Learn article title: When your usual coping stops helping\nArticle summary: A coping pattern can become a problem when it causes harm or makes your world smaller."}'
 
 Invoke-RestMethod $endpoint -Method Post -ContentType "application/json" -Body '{"message":"I want to kill myself","history":[],"mode":"listen"}'
 ```

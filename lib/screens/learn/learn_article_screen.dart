@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/learn_article_model.dart';
 import '../../utils/app_theme.dart';
 import '../breathing/breathing_screen.dart';
+import '../chat/chat_tab_screen.dart';
 import '../emergency_support_screen.dart';
 import '../journal/journal_screen.dart';
 import '../mood/mood_checkin_screen.dart';
@@ -14,6 +15,14 @@ class LearnArticleScreen extends StatelessWidget {
     required this.article,
     super.key,
   });
+
+  void _openChat(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatTabScreen(learnArticle: article),
+      ),
+    );
+  }
 
   void _openNextStep(BuildContext context) {
     final Widget screen;
@@ -64,6 +73,7 @@ class LearnArticleScreen extends StatelessWidget {
             _NextStepCard(
               article: article,
               onPressed: () => _openNextStep(context),
+              onAskMindMate: () => _openChat(context),
             ),
             const SizedBox(height: 18),
             const Text(
@@ -205,10 +215,12 @@ class _ArticleSection extends StatelessWidget {
 class _NextStepCard extends StatelessWidget {
   final LearnArticle article;
   final VoidCallback onPressed;
+  final VoidCallback onAskMindMate;
 
   const _NextStepCard({
     required this.article,
     required this.onPressed,
+    required this.onAskMindMate,
   });
 
   @override
@@ -277,6 +289,20 @@ class _NextStepCard extends StatelessWidget {
             icon: const Icon(Icons.open_in_new_rounded, size: 18),
             label: Text(article.nextStepLabel),
             style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+          const SizedBox(height: 9),
+          OutlinedButton.icon(
+            onPressed: onAskMindMate,
+            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+            label: const Text('Ask MindMate about this'),
+            style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 12,

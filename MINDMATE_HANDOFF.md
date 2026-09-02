@@ -1,6 +1,6 @@
 # MindMate handoff for a new chat
 
-**Last updated:** 25 August 2026
+**Last updated:** 2 September 2026
 
 ## Read these first
 
@@ -103,7 +103,7 @@ Selected/implemented directions:
 - Terms/Privacy: Option A — Readable Legal.
 - Wellness Check: Option A — Daily Snapshot.
 - Wellness Result: Option A — Reflection & Next Step.
-- Learn: Option B — Home featured card, topic list, clean reader, and six bundled articles.
+- Learn: Option B — Home featured card, four situation-based shelves, clean reader, sixteen core reads, eight bundled Explore more reads, and article-scoped AI questions.
 - The illustration onboarding carousel is confirmed.
 - Splash/illustration-first screens are excluded from further redesign.
 - Existing Login/Register screens are intentionally left as-is unless a functional bug is found.
@@ -115,7 +115,7 @@ Selected/implemented directions:
 - **Floating Tide Orb navigation is implemented, polished, and Chrome-validated:** four lower-positioned destinations, slower 520ms-base glide, restrained hop, visible labels, semantics, reduced-motion support, and existing IndexedStack state preservation.
 - **First-use guide is implemented and Chrome-validated:** four coach marks for Home, Practice, Chat, and Me with Skip/Next/Got it, `tourVersion = 1` persistence, Settings replay, and a lightweight Flutter-drawn 2D figure. Automatic display is requested only after new-user onboarding; Login/Splash do not force it. It never appears on Emergency Support or autoplays speech. Fresh-account and physical-device release checks remain.
 - **Quiet Tide Modern shell is focused, not a full redesign:** global app bars use consistent height/spacing and no scroll tint/elevation. The user confirmed the combined shell works; child-screen polish remains intentionally deferred.
-- **Learn Option B is implemented locally:** Home places the featured Learn card between the Wellness card and Quick starts; the list shows all six approved static topics with descriptions/read times; each article has a readable scroll view, safety boundary, and a button into an existing MindMate tool. Content lives in `lib/utils/learn_articles.dart` and uses no backend or personal data. The developer-PC analyzer now has 0 errors/0 warnings and 23 informational notices after the unused-const Learn fix. Three test runs reached 40/41 while the widget test was adjusted for lazily-built list cards and the reader’s end card; it now taps the visible first topic and scrolls to the reader’s next-step card before checking it, while the static content test covers all six articles. The test rerun, Android/Web/Chrome/device validation, and articles 3–4 health-literate skim remain open.
+- **Learn Option B is expanded locally:** Home places the featured Learn card between the Wellness card and Quick starts. The Learn screen groups sixteen core reads (the six foundational articles plus ten approved scenarios) into Everyday life, Love and people, Understanding difficult moments, and Getting help. Explore more contains eight additional bundled scenario reads with search and local Add to Learn persistence. Each article has a readable scroll view, safety boundary, an existing-tool next step, and article-scoped Ask MindMate context. Content lives in `lib/utils/learn_articles.dart` and uses no Firestore or personal reading-history collection. The selected article context is bounded in Flutter and the Worker; the Worker source is versioned `2026-09-02-learn-context`, while its deployment is intentionally deferred because deployment was not part of this code-only batch. The live Worker remains the previously verified Batch 10 deployment. Flutter/Worker test reruns, Android/Web/Chrome/device validation, and articles 3–4 health-literate skim remain open; live Worker context smoke is only needed after a separately approved deployment.
 - **Approved landing direction:** use the supplied Spouse Finder page only as visual/interaction inspiration. Build a separate lightweight informational MindMate site, not a hosted Flutter version of the app. It must include a functional `/delete-account` request resource for Google Play, plus truthful product/safety/privacy information, screenshots, FAQ, and a signed release APK download—not the debug APK.
 - **Light is the validated first-run/reset default.** Dark and System remain optional user choices.
 - **Registration contrast is Chrome-validated:** Name/Email/Password match Login's dark 16px style; setup choices use readable surface text.
@@ -199,7 +199,7 @@ Check in
 
 ## Immediate next action
 
-**Read the "Session handoff — 1 September 2026" block at the top of `MINDMATE_STATUS.md` first** — it carries the date correction (competition 21 September, school from 11 September), the four locked decisions (Learn section Option B with six articles, script-based demo seeding, professionals directory stays demo data by explicit decision, tier-two features in scope), and the build order.
+**Read the "Session handoff — 1 September 2026" block at the top of `MINDMATE_STATUS.md` first** — it carries the date correction (competition 21 September, school from 11 September), the four locked decisions (expanded Learn, script-based demo seeding, professionals directory stays demo data by explicit decision, and tier-two features in scope), the mandatory safety boundaries, and the build order.
 
 State as of 1 September 2026: Batches 1–10 done and verified; Batch 7 complete (184 clips, Chrome matrix confirmed); Batch 11 part 1 done (all 36 states + FCT verified against the 19 Aug 2026 NEMSAS list, table in `docs/emergency_resource_verification.md`); Batch 12 automated tests done (39 passing, user-confirmed); Batch 13A live at `tor3x-coder.github.io/mindmate` (logo, favicon, working /delete-account form); Batch 13 underway — signed release APK v1.0.0 built and running on real phones after the `1fc3ef8` identity fix.
 

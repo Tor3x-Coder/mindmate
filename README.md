@@ -43,7 +43,7 @@ Guided audio has a controlled pilot: one shared offline player, separate Quick R
 
 The Quiet Tide Modern shell includes a lower/slower Floating Tide bar, consistent app-bar behavior, lightweight 2D guide, four-step first-use tour, persisted completion, and Settings replay. The user confirmed the combined shell, navigation, tour controls/replay, and 8-cue Quick Reset work in Chrome. Physical-device and fresh-registration release checks remain. See `assets/audio/README.md` and `MINDMATE_REMAINING_BATCHES.md`.
 
-Post-audio builds/Chrome pilot, Batch 8 authorization, and Batch 9's implemented account/runtime work pass. Batch 9B has 5/5 tests and Flutter 0 errors/0 warnings. Retry/recovery and weak-network evidence remain in the release matrix; live Worker deployment, broader device testing, and emergency-resource verification are next. See `MINDMATE_STATUS.md` for exact status.
+Post-audio builds/Chrome pilot, Batch 8 authorization, and Batch 9's implemented account/runtime work pass. Batch 9B has 5/5 tests and Flutter 0 errors/0 warnings. The existing Batch 10 Worker deployment is live; the new Learn-context Worker source is intentionally not deployed in this code-only batch. Retry/recovery, broader device testing, and emergency-resource verification remain in the release matrix. See `MINDMATE_STATUS.md` for exact status.
 
 ## Core experience
 
@@ -138,13 +138,15 @@ Journal AI reflection is not implemented. If added later, it must be explicitly 
 ### Learn
 
 - Home featured Learn card between the Wellness card and Quick starts;
-- six bundled, offline articles with topic descriptions and read-time hints;
-- scrollable article reader with calm, non-preachy general information;
-- articles about supportive and harmful patterns, substances and the brain, coping, getting help in Nigeria, and supporting a struggling friend;
+- sixteen core reads grouped into Everyday life, Love and people, Understanding difficult moments, and Getting help;
+- eight additional bundled scenario reads available through Explore more search;
+- Add to Learn persistence using local preferences, without a fake download claim or new backend collection;
+- scrollable article reader with conversational headings and calm, non-preachy general information;
 - article next-step buttons into existing breathing, check-in, journal, and Emergency Support tools;
-- no Learn content is fetched from the network or stored as personal data.
+- Ask MindMate about this, with only the selected article sent as bounded reference context;
+- no Learn content is fetched from the network or stored as personal reading history.
 
-Learn content is general information, not medical advice. Articles 3–4 require the planned health-literate review before the competition.
+Learn content is general information, not medical advice. The expanded scenarios, especially urgent-help content, and articles 3–4 require the planned health-literate review before the competition.
 
 ### Human support
 
@@ -169,12 +171,14 @@ The duplicate-appointment guard is not authoritative server-side uniqueness enfo
 - transparently identifies as AI, never human/therapist/emergency care;
 - structured modes: Listen, Calm me, and Make a plan;
 - strict body/message/mode/history validation in Flutter and Worker;
+- article-scoped Learn context is bounded and sent only when the user asks about a selected read;
 - deterministic crisis route before rate limits and AI generation;
 - Llama 3.3 70B FP8 Fast final default with `AI_MODEL` override;
 - concise 220-token maximum model output;
 - friendly unavailable, rate-limit, and quota states;
 - request IDs and structured length/timing logs with no message text;
 - versioned `/health` deployment verification;
+- Learn article context is implemented in the client and Worker source; Worker deployment is intentionally deferred until separately approved;
 - optional KV counter intentionally deferred.
 
 Chat messages currently remain in memory while the session is open. Persistent chat sessions and a past-chat screen are future work.
@@ -222,7 +226,7 @@ Before a public or competition build:
 - verify Batch 9A interruption/retry and missing-profile restoration without risking the real/admin account;
 - keep Batch 9 weak-network/retry evidence in the release matrix;
 - publish a functional external `/delete-account` request resource for Google Play;
-- pass Worker/Flutter AI tests, deploy Batch 10, verify `/health`, and enable the 20/60 limiter;
+- for any separately approved Worker release, pass Worker/Flutter AI tests, deploy the intended source, verify `/health`, and enable the 20/60 limiter;
 - test all owner/admin denial cases;
 - test every live AI mode, safety route, limit, and failure state;
 - verify every emergency number and external support resource against authoritative current sources;

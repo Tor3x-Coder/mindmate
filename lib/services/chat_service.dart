@@ -21,6 +21,7 @@ class ChatService {
   static const int _maxMessageChars = 4000;
   static const int _maxHistoryChars = 4000;
   static const int _maxHistoryTurns = 12;
+  static const int _maxLearnContextChars = 5000;
   static const Set<String> _allowedModes = {
     'listen',
     'calm',
@@ -45,14 +46,18 @@ class ChatService {
   // [history] should be a list of maps shaped like:
   //   {'role': 'user', 'content': 'some earlier message'}
   //   {'role': 'assistant', 'content': 'the AI's earlier reply'}
-  // This matches exactly what the Worker expects and just gets passed
-  // straight through to it.
+  // The optional learnContext field contains only the selected approved Learn
+  // article and is passed separately from the user's chat history.
   //
   // [mode] is optional and tells the Worker the kind of reply to aim for:
   //   'listen'    - reflective listening, minimal advice
   //   'calm'      - grounding, calming language
   //   'make_plan' - help make one small, realistic next step
   //   null        - general supportive conversation
+  //
+  // [learnContext] is the selected, bundled Learn article. It is optional and
+  // limited before being sent so the AI can answer a question about that read
+  // without receiving the whole library or the user's reading history.
   //
   // Returns the AI's reply as a plain string.
   // Throws an Exception with a human-readable message if anything goes
@@ -63,6 +68,7 @@ class ChatService {
     required String userMessage,
     required List<Map<String, String>> history,
     String? mode,
+    String? learnContext,
   }) async {
     final message = userMessage.trim();
     if (message.isEmpty) {
@@ -94,10 +100,16 @@ class ChatService {
         : cleanHistory;
 
     final normalizedMode = mode?.trim() ?? '';
+    final normalizedLearnContext = learnContext?.trim() ?? '';
+    final limitedLearnContext = normalizedLearnContext.length >
+            _maxLearnContextChars
+        ? normalizedLearnContext.substring(0, _maxLearnContextChars)
+        : normalizedLearnContext;
     final body = <String, dynamic>{
       'message': message,
       'history': limitedHistory,
       if (_allowedModes.contains(normalizedMode)) 'mode': normalizedMode,
+      if (limitedLearnContext.isNotEmpty) 'learnContext': limitedLearnContext,
     };
 
     try {
