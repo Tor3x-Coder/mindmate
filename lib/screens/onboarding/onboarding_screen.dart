@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../services/app_settings_controller.dart';
 import '../../services/auth_service.dart';
+import '../../services/reminder_service.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/constants.dart';
 import '../main_nav_screen.dart';
@@ -31,11 +33,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final authService = context.read<AuthService>();
       final uid = authService.currentUser!.uid;
 
+      final reminderTime = _selectedReminderTime!;
       await authService.saveOnboardingData(
         uid: uid,
         goals: _selectedGoals.toList(),
-        reminderTime: _selectedReminderTime!,
+        reminderTime: reminderTime,
       );
+
+      await context
+          .read<AppSettingsController>()
+          .updateCheckInWindow(reminderTime);
+      await context.read<ReminderService>().scheduleDaily(
+            reminderTime,
+            requestPermission: true,
+          );
 
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(

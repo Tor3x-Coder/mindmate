@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../services/app_settings_controller.dart';
 import '../../services/auth_service.dart';
+import '../../services/reminder_service.dart';
 import '../../utils/app_theme.dart';
 import '../onboarding/onboarding_screen.dart';
 import '../settings/delete_account_screen.dart';
@@ -68,6 +69,9 @@ class _MissingProfileScreenState extends State<MissingProfileScreen> {
   }
 
   Future<void> _logout() async {
+    final reminderService = context.read<ReminderService>();
+    await reminderService.cancelDaily();
+    await reminderService.cancelTestNotification();
     await context.read<AuthService>().logout();
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(

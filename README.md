@@ -81,6 +81,7 @@ The AI companion is for supportive conversation and reflection. Clear crisis phr
 - goals and preferred check-in window;
 - session persistence through Firebase Auth;
 - light/dark/system theme, text-size, and animation preferences;
+- local daily check-in reminders on Android/iOS using the selected Morning, Afternoon, or Evening window; notification permission is requested explicitly, Settings includes a test reminder action, and no reminder data is sent to Firestore;
 - custom slower/lower Floating Tide Orb navigation for Home, Practice, Chat, and Me, preserving tab state with `IndexedStack`;
 - first-use four-step contextual tour with a Flutter-drawn 2D MindMate guide and Settings replay;
 - Batch 9A in-app deletion/retry and missing-profile recovery with tested/deployed rules and successful disposable-account deletion;
@@ -131,6 +132,7 @@ Current limitation: natural spoken guidance is a pilot only—Quick Reset and Bo
 - optional journal prompts;
 - diary-style recent entries;
 - effort-focused progress and achievement screens;
+- a read-only seven-day Progress insight with activity counts, cautious heavier-day observations, and practice feedback context;
 - rule-based mood and wellness pattern insights.
 
 Journal AI reflection is not implemented. If added later, it must be explicitly opt-in and must not send a user's full journal history automatically.
@@ -249,6 +251,8 @@ Before a public or competition build:
 - Cloudflare Workers AI
 - `model_viewer_plus`
 - `just_audio` for bundled guided narration
+- `flutter_local_notifications` for on-device daily reminders
+- `flutter_timezone` and `timezone` for local-time scheduling
 - `url_launcher`
 
 No AI provider key belongs in the Flutter app. The app talks only to the Cloudflare Worker, where the AI binding/model is configured.
@@ -259,8 +263,8 @@ No AI provider key belongs in the Flutter app. The app talks only to the Cloudfl
 lib/
   models/        Data classes with fromMap/toMap methods
   screens/       User flows and feature screens (including Learn)
-  services/      Auth, Firestore, settings, and chat services
-  utils/         Theme, constants, pattern logic, and bundled Learn content
+  services/      Auth, Firestore, settings, reminders, and chat services
+  utils/         Theme, constants, pattern/reminder logic, and bundled Learn content
 assets/
   audio/         Offline guided narration and transcript/readme
   illustrations/ Onboarding and app illustrations
@@ -290,6 +294,8 @@ Install dependencies:
 ```bash
 flutter pub get
 ```
+
+Daily reminders use `flutter_local_notifications`, `flutter_timezone`, and `timezone`. Android asks for notification permission when the user enters the app after choosing a reminder window; scheduled reminders are local to the device and use inexact timing so no exact-alarm access is required. Chrome can display the Settings UI but does not deliver the OS reminder.
 
 Configure Firebase for the intended project using FlutterFire. Review `lib/firebase_options.dart` for the target environment.
 

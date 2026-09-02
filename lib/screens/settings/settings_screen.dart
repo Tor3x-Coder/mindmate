@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/app_settings_controller.dart';
+import '../../services/reminder_service.dart';
 import '../../utils/app_theme.dart';
 import 'delete_account_screen.dart';
 
@@ -116,7 +119,7 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
                   const Text(
-                    'This saves your preference. Notifications will be connected in a later batch.',
+                    'This sets a local daily reminder on this device. Times are approximate: Morning 9:00, Afternoon 15:00, or Evening 19:00.',
                     style: TextStyle(
                       color: AppTheme.textLight,
                       fontSize: 12,
@@ -140,11 +143,26 @@ class SettingsScreen extends StatelessWidget {
                               selected ? FontWeight.w700 : FontWeight.w500,
                         ),
                         showCheckmark: false,
-                        onSelected: (_) => settings.updateCheckInWindow(time),
+                        onSelected: (_) {
+                          unawaited(
+                            _updateReminderChoice(context, settings, time),
+                          );
+                        },
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: () {
+                        unawaited(_sendTestReminder(context));
+                      },
+                      icon: const Icon(Icons.notifications_active_outlined),
+                      label: const Text('Send a test reminder'),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   const Text(
                     'Preferred session length',
                     style: TextStyle(fontWeight: FontWeight.w800),
@@ -208,6 +226,42 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _updateReminderChoice(
+    BuildContext context,
+    AppSettingsController settings,
+    String time,
+  ) async {
+    await settings.updateCheckInWindow(time);
+    final scheduled = await context.read<ReminderService>().scheduleDaily(
+          time,
+          requestPermission: true,
+        );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          scheduled
+              ? '$time daily check-in reminder set on this device.'
+              : 'Your time preference was saved, but notifications are unavailable or permission was declined.',
+        ),
+      ),
+    );
+  }
+
+  Future<void> _sendTestReminder(BuildContext context) async {
+    final sent = await context.read<ReminderService>().showTestNotification();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          sent
+              ? 'Test reminder sent. Check your notification shade.'
+              : 'Notifications are unavailable or permission was declined.',
         ),
       ),
     );

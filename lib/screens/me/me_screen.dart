@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
+import '../../services/reminder_service.dart';
 import '../../utils/app_theme.dart';
 import '../achievements_screen.dart';
 import '../professional/my_appointments_screen.dart';
@@ -79,6 +80,9 @@ class _MeScreenState extends State<MeScreen> {
 
     if (confirmed != true) return;
 
+    final reminderService = context.read<ReminderService>();
+    await reminderService.cancelDaily();
+    await reminderService.cancelTestNotification();
     await authService.logout();
 
     if (!mounted) return;
