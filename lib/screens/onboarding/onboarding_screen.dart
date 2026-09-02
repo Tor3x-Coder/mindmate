@@ -22,7 +22,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _handleFinish() async {
     if (_selectedGoals.isEmpty || _selectedReminderTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please pick at least one goal and a reminder time.')),
+        const SnackBar(
+            content:
+                Text('Please pick at least one goal and a reminder time.')),
       );
       return;
     }
@@ -58,7 +60,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Something went wrong. Please try again.')),
+          const SnackBar(
+              content: Text('Something went wrong. Please try again.')),
         );
       }
     } finally {
@@ -96,12 +99,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   return GestureDetector(
                     onTap: () {
                       setState(() {
-                        isSelected ? _selectedGoals.remove(goal) : _selectedGoals.add(goal);
+                        isSelected
+                            ? _selectedGoals.remove(goal)
+                            : _selectedGoals.add(goal);
                       });
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? AppTheme.primary
@@ -141,7 +147,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   return RadioListTile<String>(
                     value: time,
                     groupValue: _selectedReminderTime,
-                    onChanged: (value) => setState(() => _selectedReminderTime = value),
+                    onChanged: (value) =>
+                        setState(() => _selectedReminderTime = value),
                     title: Text(
                       time,
                       style: TextStyle(color: onSurface),
@@ -150,7 +157,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     tileColor: isSelected
                         ? AppTheme.primary.withValues(alpha: 0.12)
                         : Theme.of(context).colorScheme.surface,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   );
                 }).toList(),
@@ -164,7 +172,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
                         )
                       : const Text('Finish Setup'),
                 ),

@@ -27,9 +27,7 @@ class _MissingProfileScreenState extends State<MissingProfileScreen> {
     final user = context.read<AuthService>().currentUser;
     final suggestedName = user?.displayName?.trim();
     _nameController = TextEditingController(
-      text: suggestedName == null || suggestedName.isEmpty
-          ? ''
-          : suggestedName,
+      text: suggestedName == null || suggestedName.isEmpty ? '' : suggestedName,
     );
   }
 
@@ -168,9 +166,8 @@ class _MissingProfileScreenState extends State<MissingProfileScreen> {
               ],
               const SizedBox(height: 14),
               ElevatedButton(
-                onPressed: _isRestoring || deletionPending
-                    ? null
-                    : _restoreProfile,
+                onPressed:
+                    _isRestoring || deletionPending ? null : _restoreProfile,
                 child: _isRestoring
                     ? const SizedBox(
                         width: 20,
