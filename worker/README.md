@@ -10,9 +10,9 @@ Flutter calls the Worker; it never contains a model/provider secret.
 - Source hardening: implemented locally in `worker/index.js`.
 - Learn article context: implemented locally; the selected approved article is bounded and passed to the AI as reference context.
 - Worker tests: **13/13 passed** with Node's built-in test runner.
-- Flutter client sanitization: updated locally; Flutter validation pending.
+- Flutter client sanitization: updated locally; the developer PC full Flutter suite is **47/47 passed** and analyzer has 0 errors/0 warnings.
 - Selected default model: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`.
-- Live Worker deployment: Batch 10 is live; the `2026-09-02-learn-context` source is implemented locally, and deployment is intentionally deferred until separately approved.
+- Live Worker deployment: Batch 10 is live; deployment of the `2026-09-02-learn-context` source was approved on 2 September 2026 but is still pending Cloudflare authentication and binding verification.
 - Live endpoint currently configured in Flutter:
 
 ```text
@@ -21,7 +21,10 @@ https://mindmate-ai-chat.tor3x-akachukwu.workers.dev
 
 The existing Batch 10 deployment is live. Do not call the Learn-context
 Worker update deployed until the live `/health` endpoint reports the new
-version and the live POST matrix passes.
+version and the live POST matrix passes. A local Wrangler dry run without a
+configuration reports `No bindings found`; do not deploy that way because the
+Worker requires the existing `AI` binding and should preserve any configured
+rate-limit/KV bindings.
 
 ## Why Llama 3.3 70B FP8 Fast
 
@@ -81,7 +84,7 @@ npm test
 Expected:
 
 ```text
-12 passed
+13 passed
 0 failed
 ```
 
@@ -140,16 +143,22 @@ A KV binding named `MINDMATE_METRICS` enables the basic daily request counter.
 Structured Cloudflare logs are enough for the competition, so do not add KV
 only for vanity analytics.
 
-## Deploy from the Cloudflare dashboard
+## Deploy from the Cloudflare dashboard — approved 2 September 2026
+
+The repository has no Wrangler binding configuration, and this sandbox is not
+authenticated to Cloudflare. Use the dashboard path below, or first complete
+`npx wrangler login` on an authenticated developer machine. Do not run a bare
+`wrangler deploy index.js`: it would have no `AI` binding.
 
 1. Cloudflare → Workers & Pages → `mindmate-ai-chat`.
-2. Open **Edit code**.
-3. Replace the Worker source with the complete `worker/index.js` file.
-4. Confirm the `AI` binding.
-5. Set the explicit `AI_MODEL` variable above.
-6. Add the recommended `MINDMATE_RATE_LIMIT` binding if available.
-7. Click **Deploy**.
-8. Open:
+2. Before editing, record the current **Settings → Bindings** and **Variables**; do not remove existing `AI`, `MINDMATE_RATE_LIMIT`, or `MINDMATE_METRICS` entries.
+3. Open **Edit code**.
+4. Replace the Worker source with the complete `worker/index.js` file.
+5. Confirm the `AI` binding still points to Workers AI.
+6. Set the explicit `AI_MODEL` variable above.
+7. Preserve the existing optional `MINDMATE_RATE_LIMIT` and `MINDMATE_METRICS` bindings, including their current namespace/configuration. If an existing binding is not shown in the editor, recreate that same binding before deploying; do not add a new optional binding solely for this update.
+8. Click **Deploy**.
+9. Open:
 
 ```text
 https://mindmate-ai-chat.tor3x-akachukwu.workers.dev/health
