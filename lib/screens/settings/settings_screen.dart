@@ -66,7 +66,8 @@ class SettingsScreen extends StatelessWidget {
                   ),
                   _SliderSetting(
                     title: 'Animation intensity',
-                    valueLabel: '${(settings.animationIntensity * 100).round()}%',
+                    valueLabel:
+                        '${(settings.animationIntensity * 100).round()}%',
                     value: settings.animationIntensity,
                     min: 0.6,
                     max: 1.3,
@@ -83,14 +84,16 @@ class SettingsScreen extends StatelessWidget {
                 children: [
                   _SwitchSetting(
                     title: 'Haptics',
-                    subtitle: 'Use small vibrations during supported interactions.',
+                    subtitle:
+                        'Use small vibrations during supported interactions.',
                     value: settings.hapticsEnabled,
                     onChanged: settings.updateHapticsEnabled,
                   ),
                   const Divider(height: 18),
                   _SwitchSetting(
                     title: 'Guided voice',
-                    subtitle: 'Play natural voice prompts in supported sessions.',
+                    subtitle:
+                        'Play natural voice prompts in supported sessions.',
                     value: settings.soundEnabled,
                     onChanged: settings.updateSoundEnabled,
                   ),
@@ -136,9 +139,8 @@ class SettingsScreen extends StatelessWidget {
                         selected: selected,
                         selectedColor: AppTheme.primary.withValues(alpha: 0.18),
                         labelStyle: TextStyle(
-                          color: selected
-                              ? AppTheme.primary
-                              : AppTheme.textDark,
+                          color:
+                              selected ? AppTheme.primary : AppTheme.textDark,
                           fontWeight:
                               selected ? FontWeight.w700 : FontWeight.w500,
                         ),
@@ -178,9 +180,8 @@ class SettingsScreen extends StatelessWidget {
                         selected: selected,
                         selectedColor: AppTheme.primary.withValues(alpha: 0.18),
                         labelStyle: TextStyle(
-                          color: selected
-                              ? AppTheme.primary
-                              : AppTheme.textDark,
+                          color:
+                              selected ? AppTheme.primary : AppTheme.textDark,
                           fontWeight:
                               selected ? FontWeight.w700 : FontWeight.w500,
                         ),
@@ -205,8 +206,7 @@ class SettingsScreen extends StatelessWidget {
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => DeleteAccountScreen(
-                        resumePendingDeletion:
-                            settings.accountDeletionPending,
+                        resumePendingDeletion: settings.accountDeletionPending,
                       ),
                     ),
                   );

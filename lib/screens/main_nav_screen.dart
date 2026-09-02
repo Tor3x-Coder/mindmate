@@ -138,8 +138,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
   }
 
   void _selectDestination(int index) {
-    if (index == _currentIndex &&
-        (!_showTour || index == _tourStepIndex)) {
+    if (index == _currentIndex && (!_showTour || index == _tourStepIndex)) {
       return;
     }
 
