@@ -17,6 +17,13 @@ void main() {
     await tester.tap(find.text('Things that quietly support your mind'));
     await tester.pumpAndSettle();
 
+    // The reader is also a lazy ListView, so move to the end before checking
+    // the article's in-app next-step card.
+    await tester.scrollUntilVisible(
+      find.text('A small next step'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('A small next step'), findsOneWidget);
     expect(find.text('Try one small practice'), findsOneWidget);
     expect(find.text('Open a breathing practice and give yourself a few quiet minutes. You can stop whenever you need to.'), findsOneWidget);
