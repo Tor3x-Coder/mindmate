@@ -49,8 +49,7 @@ class ProgressScreen extends StatelessWidget {
                           return _buildErrorState();
                         }
 
-                        final isLoading =
-                            moodSnapshot.connectionState ==
+                        final isLoading = moodSnapshot.connectionState ==
                                 ConnectionState.waiting ||
                             wellnessSnapshot.connectionState ==
                                 ConnectionState.waiting ||
@@ -296,7 +295,8 @@ class ProgressScreen extends StatelessWidget {
       eyebrow: 'WELLNESS REFLECTIONS',
       icon: Icons.favorite_outline_rounded,
       iconColor: AppTheme.danger,
-      title: '${assessments.length} reflection${assessments.length == 1 ? '' : 's'} saved',
+      title:
+          '${assessments.length} reflection${assessments.length == 1 ? '' : 's'} saved',
       subtitle:
           'Use these check-ins to notice how your routines and feelings change over time.',
       trailing: const Text(

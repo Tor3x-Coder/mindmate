@@ -66,8 +66,8 @@ class WeeklyInsight {
   }) {
     final start = now.subtract(const Duration(days: 6));
     final recentMoods = moods.where((mood) => _inWindow(mood.date, start, now));
-    final recentJournals = journalEntries
-        .where((entry) => _inWindow(entry.date, start, now));
+    final recentJournals =
+        journalEntries.where((entry) => _inWindow(entry.date, start, now));
     final recentAssessments = assessments
         .where((assessment) => _inWindow(assessment.date, start, now));
     final recentFeedback = feedbackRecords
@@ -79,12 +79,13 @@ class WeeklyInsight {
     final hardest = _hardestDay(difficultMoods);
     final practices = <String>[];
     for (final feedback in recentFeedback) {
-      final followsHardCheckIn =
-          _isDifficultMoodLabel(feedback.moodLabel) ||
+      final followsHardCheckIn = _isDifficultMoodLabel(feedback.moodLabel) ||
           feedback.moodImpact == 'A lot' ||
           feedback.moodImpact == 'Overwhelming';
       final title = feedback.activityTitle.trim();
-      if (followsHardCheckIn && title.isNotEmpty && !practices.contains(title)) {
+      if (followsHardCheckIn &&
+          title.isNotEmpty &&
+          !practices.contains(title)) {
         practices.add(title);
       }
       if (practices.length == 2) break;
@@ -116,8 +117,7 @@ class WeeklyInsight {
     final grouped = <String, List<MoodLogModel>>{};
     for (final mood in moods) {
       final localDate = mood.date.toLocal();
-      final key =
-          '${localDate.year}-${localDate.month}-${localDate.day}';
+      final key = '${localDate.year}-${localDate.month}-${localDate.day}';
       grouped.putIfAbsent(key, () => []).add(mood);
     }
 

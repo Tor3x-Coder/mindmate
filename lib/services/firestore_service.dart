@@ -175,7 +175,7 @@ class FirestoreService {
         .get();
     return snapshot.docs.isNotEmpty;
   }
-  
+
   Stream<List<AppointmentModel>> allAppointmentsForAdmin() {
     return _db
         .collection(FirestoreCollections.appointments)
@@ -234,7 +234,7 @@ class FirestoreService {
         .doc(entryId)
         .delete();
   }
-  
+
   // ---- CBT Thought Records ----
   // Saves a completed thought-reframe exercise (situation, automatic
   // thought, evidence for/against, and the reframed "balanced" thought).
@@ -276,12 +276,12 @@ class FirestoreService {
         .where('uid', isEqualTo: uid)
         .snapshots()
         .map((snap) {
-          final records = snap.docs
-              .map((doc) => FeedbackRecordModel.fromMap(doc.data(), doc.id))
-              .toList();
-          records.sort((a, b) => b.date.compareTo(a.date));
-          return records;
-        });
+      final records = snap.docs
+          .map((doc) => FeedbackRecordModel.fromMap(doc.data(), doc.id))
+          .toList();
+      records.sort((a, b) => b.date.compareTo(a.date));
+      return records;
+    });
   }
 
   // ---- Trusted Contacts ----
@@ -293,12 +293,12 @@ class FirestoreService {
         .where('uid', isEqualTo: uid)
         .snapshots()
         .map((snap) {
-          final contacts = snap.docs
-              .map((d) => TrustedContactModel.fromMap(d.data(), d.id))
-              .toList();
-          contacts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return contacts;
-        });
+      final contacts = snap.docs
+          .map((d) => TrustedContactModel.fromMap(d.data(), d.id))
+          .toList();
+      contacts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return contacts;
+    });
   }
 
   Future<void> addTrustedContact(TrustedContactModel contact) async {
@@ -325,8 +325,6 @@ class FirestoreService {
   // Logs when a user taps a support action or answers the follow-up
   // question. Personal data is owner-only via Firestore rules.
   Future<void> addSupportEvent(SupportEventModel event) async {
-    await _db
-        .collection(FirestoreCollections.supportEvents)
-        .add(event.toMap());
+    await _db.collection(FirestoreCollections.supportEvents).add(event.toMap());
   }
 }
