@@ -267,6 +267,23 @@ class FirestoreService {
         .add(record.toMap());
   }
 
+  // Feedback is read-only from the Progress screen. Query by uid only and
+  // sort client-side so this small per-user list does not require a composite
+  // Firestore index.
+  Stream<List<FeedbackRecordModel>> feedbackRecordsForUser(String uid) {
+    return _db
+        .collection(FirestoreCollections.feedbackRecords)
+        .where('uid', isEqualTo: uid)
+        .snapshots()
+        .map((snap) {
+          final records = snap.docs
+              .map((doc) => FeedbackRecordModel.fromMap(doc.data(), doc.id))
+              .toList();
+          records.sort((a, b) => b.date.compareTo(a.date));
+          return records;
+        });
+  }
+
   // ---- Trusted Contacts ----
   // We query by uid only and sort client-side so this does not require a
   // composite Firestore index for this small, per-user list.
