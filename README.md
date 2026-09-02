@@ -148,6 +148,10 @@ Journal AI reflection is not implemented. If added later, it must be explicitly 
 
 Learn content is general information, not medical advice. The expanded scenarios, especially urgent-help content, and articles 3–4 require the planned health-literate review before the competition.
 
+### Demo history seeding
+
+`scripts/demo_seed/` contains the one-off competition demo seeder. Register the demo account through the app first, then use the Node + Firebase Admin SDK script to preview or explicitly apply 21 days of synthetic history. It writes only deterministic `demo_seed_v1_*` documents to existing personal-history collections, never writes the user profile, and never deletes data. The default is a credential-free dry run; actual writes require both `--apply` and `--confirm-demo`. Keep the service-account JSON outside the repository. See `scripts/demo_seed/README.md` for the exact PowerShell commands.
+
 ### Human support
 
 - professional-support directory and filters;
@@ -264,6 +268,9 @@ assets/
 worker/
   index.js       Cloudflare AI Worker source
   README.md      Worker setup and deployment guide
+scripts/demo_seed/
+  seed_demo_data.mjs       Dry-run-first Firebase demo history seeder
+  README.md                Safe setup and apply instructions
 firestore_tests/ Firebase Emulator authorization suite
 web/
   index.html     Flutter Web and model-viewer setup

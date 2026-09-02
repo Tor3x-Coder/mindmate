@@ -1,0 +1,14 @@
+{
+  "name": "mindmate-demo-seed",
+  "private": true,
+  "version": "1.0.0",
+  "description": "One-off Firebase Admin SDK seeder for the MindMate competition demo account",
+  "type": "module",
+  "scripts": {
+    "test": "node --test seed_demo_data.test.mjs",
+    "dry-run": "node seed_demo_data.mjs --email demo@example.com"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}

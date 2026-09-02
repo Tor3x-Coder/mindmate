@@ -54,3 +54,7 @@ app.*.map.json
 
 # Firebase Android config — contains API keys, keep out of the public repo
 /android/app/google-services.json
+
+# Demo seed credentials/config — keep service-account files outside the repo
+/scripts/demo_seed/service-account*.json
+/scripts/demo_seed/*.local.json
