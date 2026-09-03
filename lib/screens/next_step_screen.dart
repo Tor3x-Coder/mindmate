@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/feedback_record_model.dart';
+import '../models/learn_article_model.dart';
 import '../services/auth_service.dart';
 import '../services/firestore_service.dart';
 import '../utils/app_theme.dart';
+import '../utils/learn_articles.dart';
 import 'breathing/breathing_screen.dart';
 import 'cbt/cbt_thought_reframe_screen.dart';
 import 'chat/chat_tab_screen.dart';
@@ -13,7 +15,6 @@ import 'learn/learn_article_screen.dart';
 import 'meditation/meditation_screen.dart';
 import 'progress/progress_screen.dart';
 import 'professional/professional_directory_screen.dart';
-import '../utils/learn_articles.dart';
 
 /// MindMate's connected One Safe Step experience.
 ///
