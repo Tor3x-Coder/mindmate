@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../services/account_deletion_service.dart';
 import '../../services/app_settings_controller.dart';
+import '../../services/reminder_service.dart';
 import '../../utils/app_theme.dart';
 import '../onboarding_carousel_screen.dart';
 
@@ -92,6 +93,9 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         // Passwords are never trimmed. Spaces may be part of a password.
         password: _passwordController.text,
       );
+      final reminderService = context.read<ReminderService>();
+      await reminderService.cancelDaily();
+      await reminderService.cancelTestNotification();
       await settings.clearAllLocalData();
 
       if (!mounted) return;

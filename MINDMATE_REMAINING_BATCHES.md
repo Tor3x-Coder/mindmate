@@ -1,6 +1,6 @@
 # MindMate remaining batches and competitive audit
 
-**Last updated:** 22 August 2026  
+**Last updated:** 2 September 2026
 **Status:** Planning document; no app-code change is approved by this document.  
 **Source of current implementation status:** `MINDMATE_STATUS.md`
 
@@ -12,10 +12,10 @@ The immediate objective is not to copy every mature wellness app. It is to deliv
 
 ```text
 Check in
-  -> understand the need
-  -> recommend one small action
-  -> guide the action
+  -> choose One Safe Step for the moment
+  -> guide breathing / meditation / journaling / CBT / Learn / chat
   -> ask whether it helped
+  -> save feedback into Progress
   -> offer another action or human support
 ```
 
@@ -465,6 +465,29 @@ Exit criteria:
 - backend versions and test evidence are documented;
 - rollback/demo fallback is ready.
 
+### Batch 12A — One Safe Step connection pass — implementation added (3 Sep 2026)
+
+**Purpose:** Make the core journey feel like one product instead of separate feature screens.
+
+Implemented locally:
+
+- Home now names the entry point **One Safe Step** and explains the check-in → action → feedback promise.
+- The post-check-in screen shows a visible **Checked in → One safe step → Reflect** trail.
+- Every mood keeps its existing safe rule-based recommendation, plus a mood-matched Learn guide bridge. From that guide, the user can use the existing article-specific Ask MindMate path.
+- Difficult or high-impact check-ins show a calm human-support bridge without diagnosing or escalating ordinary feelings.
+- Saved activity feedback links directly to the existing Progress screen.
+- No new Firestore collection or AI safety decision was added; existing feedback and support boundaries remain in place.
+
+Validation still required on the developer PC:
+
+1. `flutter analyze`;
+2. `flutter test test/next_step_recommendation_test.dart`;
+3. full `flutter test`;
+4. Chrome and real-device flow from Home check-in through activity, feedback, Learn context, and Progress;
+5. keep Android/Web builds and release APK work after the markdown/implementation work is complete.
+
+Freeze this feature after the validation pass unless a critical navigation or safety bug appears. Do not add unrelated social, medication, diagnostic, or gamification features for the competition.
+
 ### Optional Batch 13A — Competition landing page — IN PROGRESS (26 Aug 2026)
 
 **Status:** site implemented in `landing/` (vanilla HTML/CSS/JS, no build step): index (hero, loop, features, screenshot frames, safety/privacy, FAQ, honest APK download card, QR) + `/delete-account/` page (identity, exact deletion list, in-app steps, external request flow). Hosting chosen: **GitHub Pages** (folder `/landing`). Deletion flow chosen: **hosted form (Google Form/Tally) + support email** — form URL and email pending from the user. Identity: "MindMate by Junior Achievers — FG Enugu (JA FGCE)" (all credits to the team, no individual credit). APK download card is config-driven (`landing/assets/js/config.js`) and honestly shows "release build being prepared" until Batch 13's signed APK metadata is filled in. Real screenshots pending from the user. Not yet deployed.
@@ -509,10 +532,10 @@ Exit criteria:
 
 Agreed with the developer on 1 September 2026, to be built during the 1–10 September window:
 
-1. **Learn section (Option B — featured card on Home).** A card between the Wellness Score card and the quick-tile grid on Home ("Learn — honest reads on what helps and hurts your mind"), opening a topic list screen with cards (title, one-line description, read-time hint) and a clean article reader. Six bundled static articles (no backend): (1) things that quietly support your mind; (2) things that quietly damage your mind; (3) substances and your brain — an honest conversation (cannabis, alcohol, codeine-based syrups, tramadol, inhalants; myth vs reality, non-preachy); (4) when "coping" becomes a problem (self-reflection questions, clearly not a diagnosis); (5) getting help in Nigeria (shame-free, hospital-based services, when to use emergency help, links into the app's Emergency Support); (6) if your friend is struggling (what to say/not say, when to involve an adult/professional). Voice matches the app: calm, honest, no fear-mongering, no medical advice; each article ends pointing into the app's own tools. A health-literate team member skims articles 3–4 before the competition.
-2. **Demo account via Admin SDK script.** Register the demo account through the app, then a one-off Node + Firebase Admin SDK script (service-account key, git-ignored, never committed) seeds ~3 weeks of realistic history with the exact production schemas (mood_logs with word-based impact, meditation_history, breathing sessions, journal_entries, thought_records, feedback_records). Repeatable/tweakable.
-3. **Weekly insight on the Progress screen.** A "Your week" summary computed from existing stored data (check-in count, hardest day, practices that followed low moods). Read-only; no new storage.
-4. **Working daily reminder.** The reminder-time setting already exists; add a local notification (flutter_local_notifications, no internet needed) that actually fires. New dependency + permission — test on the team's phones.
+1. **Learn section (Option B — featured card on Home) — implementation and automated validation complete 2 September 2026; release validation pending.** Home now has a card between the Wellness card and Quick starts. The Learn screen groups sixteen core reads (the six foundational articles plus ten approved everyday, relationship, difficult-moment, and urgent-help scenarios) into four sections: Everyday life, Love and people, Understanding difficult moments, and Getting help. Explore more contains eight additional bundled scenario reads with search and Add to Learn persistence in local preferences. Every reader has a conversational heading style, an existing-tool next step, a general-information boundary, and an Ask MindMate about this action. The selected article is sent as bounded reference context to ChatService and the Worker; the source Worker version is `2026-09-02-learn-context`, but Worker deployment is intentionally deferred because it was not part of this code-only batch. Developer-PC validation is complete: analyzer 0 errors/0 warnings with 29 informational notices, focused Learn 2/2, catalogue/Chat 6/6, and full Flutter 43/43. Android/Web builds, Chrome/device validation, and health-literate review of articles 3–4 remain open; live Worker context smoke belongs to a separately approved deployment.
+2. **Demo account via Admin SDK script — implemented, applied, and app-verified 2 September 2026.** `scripts/demo_seed/seed_demo_data.mjs` targets a registered account by email or UID and defaults to a credential-free dry run. With explicit `--apply --confirm-demo`, it writes 50 deterministic documents across the existing production-shaped `mood_logs`, `journal_entries`, `wellness_assessments`, `meditation_history`, `breathing_sessions`, `thought_records`, and `feedback_records` collections. It never writes the user profile, deletes data, or commits credentials. Script tests pass 4/4; the developer successfully applied the seed and confirmed the seeded history in the app. The account can be reseeded safely if the demo data needs refreshing.
+3. **Weekly insight on the Progress screen — implemented and validated 2 September 2026.** A read-only "Your week" summary uses the recent seven-day window and existing mood check-ins, journal entries, wellness reflections, and feedback records. It reports activity counts, avoids inventing patterns when data is thin, uses calm non-diagnostic wording, and can mention a heavier day or practices only when the stored data supports those observations. No new storage, schema, or AI call was added. Developer PC validation: focused test 2/2, full Flutter suite 45/45, analyzer 0 errors/0 warnings with 23 informational notices, and seeded demo screenshot confirmed.
+4. **Working daily reminder — implementation in progress 2 September 2026.** The existing reminder-time setting now connects to timezone-aware `flutter_local_notifications` scheduling for Morning 09:00, Afternoon 15:00, or Evening 19:00. It uses inexact daily alarms, explicit Android/iOS permission requests, Android reboot rescheduling, a Settings test notification, and cancellation on logout/account deletion. No new Firestore data is used. Dependency resolution, focused tests/analyzer, and Android/iOS phone or emulator firing checks remain.
 5. **Multi-phone device matrix + screenshots.** The team's phones are the device fleet: run the Batch 12 device matrix across 3–4 phones/networks and capture the 4 landing-page screenshots (Home, Practice mid-session, Daily Snapshot, Emergency Support).
 6. **Honest-limits slide + five-question answer sheet** for the team (difference vs Wysa; how do you know it works; what if the emergency number isn't answered; what stops the AI saying something harmful; why trust the data). Written in full sentences for internalization, not fragments.
 

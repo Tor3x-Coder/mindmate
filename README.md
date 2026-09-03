@@ -43,16 +43,16 @@ Guided audio has a controlled pilot: one shared offline player, separate Quick R
 
 The Quiet Tide Modern shell includes a lower/slower Floating Tide bar, consistent app-bar behavior, lightweight 2D guide, four-step first-use tour, persisted completion, and Settings replay. The user confirmed the combined shell, navigation, tour controls/replay, and 8-cue Quick Reset work in Chrome. Physical-device and fresh-registration release checks remain. See `assets/audio/README.md` and `MINDMATE_REMAINING_BATCHES.md`.
 
-Post-audio builds/Chrome pilot, Batch 8 authorization, and Batch 9's implemented account/runtime work pass. Batch 9B has 5/5 tests and Flutter 0 errors/0 warnings. Retry/recovery and weak-network evidence remain in the release matrix; live Worker deployment, broader device testing, and emergency-resource verification are next. See `MINDMATE_STATUS.md` for exact status.
+Post-audio builds/Chrome pilot, Batch 8 authorization, and Batch 9's implemented account/runtime work pass. Batch 9B has 5/5 tests and Flutter 0 errors/0 warnings. The Learn-context Worker is deployed and live normal, calm, Learn-context, and crisis smoke tests pass. One Safe Step is now the connected check-in flow; Android/Web builds, broader device testing, and emergency-resource verification remain in the release matrix. See `MINDMATE_STATUS.md` for exact status.
 
 ## Core experience
 
 ```text
 Mood check-in
-  -> understand the current need
-  -> recommend one next step
-  -> breathing / meditation / journaling / CBT / chat / support
+  -> choose One Safe Step for this moment
+  -> breathing / meditation / journaling / CBT / Learn / chat
   -> ask whether it helped
+  -> save feedback to Progress
   -> offer another approach or human support
 ```
 
@@ -81,6 +81,7 @@ The AI companion is for supportive conversation and reflection. Clear crisis phr
 - goals and preferred check-in window;
 - session persistence through Firebase Auth;
 - light/dark/system theme, text-size, and animation preferences;
+- local daily check-in reminders on Android/iOS using the selected Morning, Afternoon, or Evening window; notification permission is requested explicitly, Settings includes a test reminder action, and no reminder data is sent to Firestore;
 - custom slower/lower Floating Tide Orb navigation for Home, Practice, Chat, and Me, preserving tab state with `IndexedStack`;
 - first-use four-step contextual tour with a Flutter-drawn 2D MindMate guide and Settings replay;
 - Batch 9A in-app deletion/retry and missing-profile recovery with tested/deployed rules and successful disposable-account deletion;
@@ -94,7 +95,10 @@ The AI companion is for supportive conversation and reflection. Clear crisis phr
   - A lot;
   - Overwhelming;
   - Not sure yet;
-- one recommended action plus a small set of alternatives;
+- branded `One Safe Step` journey after every check-in, with a visible Check in → One safe step → Reflect trail;
+- one mood-aware recommended action plus a small set of alternatives;
+- a context bridge to a relevant bundled Learn guide, with article-scoped Ask MindMate available after reading;
+- a human-support bridge for difficult or high-impact check-ins;
 - post-activity feedback:
   - Much worse;
   - A little worse;
@@ -131,9 +135,27 @@ Current limitation: natural spoken guidance is a pilot only—Quick Reset and Bo
 - optional journal prompts;
 - diary-style recent entries;
 - effort-focused progress and achievement screens;
+- a read-only seven-day Progress insight with activity counts, cautious heavier-day observations, and practice feedback context;
 - rule-based mood and wellness pattern insights.
 
 Journal AI reflection is not implemented. If added later, it must be explicitly opt-in and must not send a user's full journal history automatically.
+
+### Learn
+
+- Home featured Learn card between the Wellness card and Quick starts;
+- sixteen core reads grouped into Everyday life, Love and people, Understanding difficult moments, and Getting help;
+- eight additional bundled scenario reads available through Explore more search;
+- Add to Learn persistence using local preferences, without a fake download claim or new backend collection;
+- scrollable article reader with conversational headings and calm, non-preachy general information;
+- article next-step buttons into existing breathing, check-in, journal, and Emergency Support tools;
+- Ask MindMate about this, with only the selected article sent as bounded reference context;
+- no Learn content is fetched from the network or stored as personal reading history.
+
+Learn content is general information, not medical advice. The expanded scenarios, especially urgent-help content, and articles 3–4 require the planned health-literate review before the competition.
+
+### Demo history seeding
+
+`scripts/demo_seed/` contains the one-off competition demo seeder. Register the demo account through the app first, then use the Node + Firebase Admin SDK script to preview or explicitly apply 21 days of synthetic history. It writes only deterministic `demo_seed_v1_*` documents to existing personal-history collections, never writes the user profile, and never deletes data. The default is a credential-free dry run; actual writes require both `--apply` and `--confirm-demo`. Keep the service-account JSON outside the repository. See `scripts/demo_seed/README.md` for the exact PowerShell commands.
 
 ### Human support
 
@@ -158,12 +180,14 @@ The duplicate-appointment guard is not authoritative server-side uniqueness enfo
 - transparently identifies as AI, never human/therapist/emergency care;
 - structured modes: Listen, Calm me, and Make a plan;
 - strict body/message/mode/history validation in Flutter and Worker;
+- article-scoped Learn context is bounded and sent only when the user asks about a selected read;
 - deterministic crisis route before rate limits and AI generation;
 - Llama 3.3 70B FP8 Fast final default with `AI_MODEL` override;
 - concise 220-token maximum model output;
 - friendly unavailable, rate-limit, and quota states;
 - request IDs and structured length/timing logs with no message text;
 - versioned `/health` deployment verification;
+- Learn article context is implemented in the client and Worker source; Worker deployment is intentionally deferred until separately approved;
 - optional KV counter intentionally deferred.
 
 Chat messages currently remain in memory while the session is open. Persistent chat sessions and a past-chat screen are future work.
@@ -211,7 +235,7 @@ Before a public or competition build:
 - verify Batch 9A interruption/retry and missing-profile restoration without risking the real/admin account;
 - keep Batch 9 weak-network/retry evidence in the release matrix;
 - publish a functional external `/delete-account` request resource for Google Play;
-- pass Worker/Flutter AI tests, deploy Batch 10, verify `/health`, and enable the 20/60 limiter;
+- for any separately approved Worker release, pass Worker/Flutter AI tests, deploy the intended source, verify `/health`, and enable the 20/60 limiter;
 - test all owner/admin denial cases;
 - test every live AI mode, safety route, limit, and failure state;
 - verify every emergency number and external support resource against authoritative current sources;
@@ -230,6 +254,8 @@ Before a public or competition build:
 - Cloudflare Workers AI
 - `model_viewer_plus`
 - `just_audio` for bundled guided narration
+- `flutter_local_notifications` for on-device daily reminders
+- `flutter_timezone` and `timezone` for local-time scheduling
 - `url_launcher`
 
 No AI provider key belongs in the Flutter app. The app talks only to the Cloudflare Worker, where the AI binding/model is configured.
@@ -239,9 +265,9 @@ No AI provider key belongs in the Flutter app. The app talks only to the Cloudfl
 ```text
 lib/
   models/        Data classes with fromMap/toMap methods
-  screens/       User flows and feature screens
-  services/      Auth, Firestore, settings, and chat services
-  utils/         Theme, constants, and pattern logic
+  screens/       User flows and feature screens (including Learn)
+  services/      Auth, Firestore, settings, reminders, and chat services
+  utils/         Theme, constants, pattern/reminder logic, and bundled Learn content
 assets/
   audio/         Offline guided narration and transcript/readme
   illustrations/ Onboarding and app illustrations
@@ -249,6 +275,9 @@ assets/
 worker/
   index.js       Cloudflare AI Worker source
   README.md      Worker setup and deployment guide
+scripts/demo_seed/
+  seed_demo_data.mjs       Dry-run-first Firebase demo history seeder
+  README.md                Safe setup and apply instructions
 firestore_tests/ Firebase Emulator authorization suite
 web/
   index.html     Flutter Web and model-viewer setup
@@ -268,6 +297,8 @@ Install dependencies:
 ```bash
 flutter pub get
 ```
+
+Daily reminders use `flutter_local_notifications`, `flutter_timezone`, and `timezone`. Android asks for notification permission when the user enters the app after choosing a reminder window; scheduled reminders are local to the device and use inexact timing so no exact-alarm access is required. Chrome can display the Settings UI but does not deliver the OS reminder.
 
 Configure Firebase for the intended project using FlutterFire. Review `lib/firebase_options.dart` for the target environment.
 

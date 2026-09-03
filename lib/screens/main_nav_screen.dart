@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/app_settings_controller.dart';
+import '../services/reminder_service.dart';
 import '../widgets/floating_tide_navigation_bar.dart';
 import '../widgets/mindmate_contextual_tour.dart';
 import 'home/home_tab_screen.dart';
@@ -94,6 +95,21 @@ class _MainNavScreenState extends State<MainNavScreen> {
     MeScreen(),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final settings = context.read<AppSettingsController>();
+      unawaited(
+        context.read<ReminderService>().scheduleDaily(
+              settings.checkInWindow,
+              requestPermission: true,
+            ),
+      );
+    });
+  }
+
   void _syncTourState(AppSettingsController settings) {
     if (!_replayRequestInitialized) {
       _lastReplayRequest = settings.tourReplayRequest;
@@ -122,8 +138,7 @@ class _MainNavScreenState extends State<MainNavScreen> {
   }
 
   void _selectDestination(int index) {
-    if (index == _currentIndex &&
-        (!_showTour || index == _tourStepIndex)) {
+    if (index == _currentIndex && (!_showTour || index == _tourStepIndex)) {
       return;
     }
 

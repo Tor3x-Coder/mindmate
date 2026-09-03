@@ -9,15 +9,18 @@ import 'breathing/breathing_screen.dart';
 import 'cbt/cbt_thought_reframe_screen.dart';
 import 'chat/chat_tab_screen.dart';
 import 'journal/journal_screen.dart';
+import 'learn/learn_article_screen.dart';
 import 'meditation/meditation_screen.dart';
+import 'progress/progress_screen.dart';
 import 'professional/professional_directory_screen.dart';
+import '../utils/learn_articles.dart';
 
-/// The first frontend version of MindMate's core NextStep experience.
+/// MindMate's connected One Safe Step experience.
 ///
-/// This screen is intentionally frontend-only for now. It uses simple
-/// rule-based options and keeps feedback in local screen state. Later, the
-/// selected action and feedback can be connected to Firestore and the AI
-/// recommendation layer without redesigning the UI.
+/// A mood check-in leads to one rule-based action, a bounded Learn bridge,
+/// and honest feedback that is already stored for the user's Progress view.
+/// It stays deliberately non-clinical: the app suggests a starting point,
+/// never a diagnosis or a promise that an activity will fix the moment.
 class NextStepScreen extends StatefulWidget {
   final String moodLabel;
   final String moodEmoji;
@@ -60,8 +63,19 @@ class _NextStepScreenState extends State<NextStepScreen> {
     super.dispose();
   }
 
+  LearnArticle _learnArticleForMood(String mood) {
+    final articleId = mood.contains('sad') || mood.contains('tired')
+        ? 'supports'
+        : mood.contains('stressed') || mood.contains('angry')
+            ? 'coping'
+            : 'supports';
+
+    return learnArticles.firstWhere((article) => article.id == articleId);
+  }
+
   List<_NextStepOption> _optionsForMood(String label) {
     final mood = label.toLowerCase();
+    final learnArticle = _learnArticleForMood(mood);
 
     final breathing = _NextStepOption(
       id: 'breathing',
@@ -149,25 +163,36 @@ class _NextStepScreenState extends State<NextStepScreen> {
       builder: (_) => const ProfessionalDirectoryScreen(),
     );
 
+    final learn = _NextStepOption(
+      id: 'learn_${learnArticle.id}',
+      title: 'Understand the feeling',
+      subtitle: 'Read a short, honest guide that fits this kind of moment.',
+      detail: 'You can ask MindMate about the article after you read it.',
+      icon: Icons.menu_book_rounded,
+      color: AppTheme.secondary,
+      ctaLabel: 'Read the guide',
+      builder: (_) => LearnArticleScreen(article: learnArticle),
+    );
+
     // These are simple frontend rules for the first prototype. The later
     // recommendation layer can use mood, intensity, history, and feedback.
     if (mood.contains('sad')) {
-      return [chat, journal, breathing, reframe, support];
+      return [chat, journal, breathing, learn, reframe, support];
     }
 
     if (mood.contains('stressed') || mood.contains('angry')) {
-      return [breathing, reframe, journal, chat, support];
+      return [breathing, reframe, journal, learn, chat, support];
     }
 
     if (mood.contains('tired')) {
-      return [meditation, breathing, journal, chat, support];
+      return [meditation, breathing, journal, learn, chat, support];
     }
 
     if (mood.contains('happy') || mood.contains('excited')) {
-      return [positiveChat, positiveJournal, breathing, reframe, support];
+      return [positiveChat, positiveJournal, breathing, learn, reframe, support];
     }
 
-    return [breathing, journal, meditation, chat, support];
+    return [breathing, journal, meditation, learn, chat, support];
   }
 
   Future<void> _openSelectedActivity() async {
@@ -203,10 +228,9 @@ class _NextStepScreenState extends State<NextStepScreen> {
     });
   }
 
-  void _selectAlternative() {
+  void _selectOption(int index) {
     setState(() {
-      _selectedOptionIndex =
-          (_selectedOptionIndex + 1) % _options.length;
+      _selectedOptionIndex = index;
       _feedback = null;
       _showFeedback = false;
       _hasSavedFeedback = false;
@@ -218,6 +242,10 @@ class _NextStepScreenState extends State<NextStepScreen> {
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOut,
     );
+  }
+
+  void _selectAlternative() {
+    _selectOption((_selectedOptionIndex + 1) % _options.length);
   }
 
   Future<void> _saveFeedback(_ActionFeedback feedback) async {
@@ -355,6 +383,19 @@ class _NextStepScreenState extends State<NextStepScreen> {
     return indexes.take(2).toList();
   }
 
+  int get _learnOptionIndex =>
+      _options.indexWhere((option) => option.id.startsWith('learn_'));
+
+  bool get _shouldShowHumanSupport {
+    final mood = widget.moodLabel.toLowerCase();
+    return mood.contains('sad') ||
+        mood.contains('stressed') ||
+        mood.contains('angry') ||
+        mood.contains('tired') ||
+        widget.impactLabel == 'A lot' ||
+        widget.impactLabel == 'Overwhelming';
+  }
+
   @override
   Widget build(BuildContext context) {
     final selected = _options[_selectedOptionIndex];
@@ -362,7 +403,7 @@ class _NextStepScreenState extends State<NextStepScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Your next step'),
+        title: const Text('One Safe Step'),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -372,6 +413,8 @@ class _NextStepScreenState extends State<NextStepScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildCheckInSummary(textColor),
+              const SizedBox(height: 14),
+              _buildJourneyTrail(),
               const SizedBox(height: 24),
               Text(
                 _momentTitle,
@@ -397,6 +440,17 @@ class _NextStepScreenState extends State<NextStepScreen> {
               ..._alternativeIndexes.map(
                 (index) => _buildAlternativeTile(_options[index], index),
               ),
+              if (_learnOptionIndex >= 0) ...[
+                const SizedBox(height: 4),
+                _buildLearnBridge(
+                  _options[_learnOptionIndex],
+                  _learnOptionIndex,
+                ),
+              ],
+              if (_shouldShowHumanSupport) ...[
+                const SizedBox(height: 10),
+                _buildHumanSupportBridge(),
+              ],
               if (_hasOpenedAnActivity && _showFeedback) ...[
                 const SizedBox(height: 14),
                 _buildFeedbackCard(),
@@ -409,6 +463,51 @@ class _NextStepScreenState extends State<NextStepScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildJourneyTrail() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppTheme.surfaceBorder.withValues(alpha: 0.8),
+        ),
+      ),
+      child: Row(
+        children: [
+          const _JourneyStage(
+            icon: Icons.check_rounded,
+            label: 'Checked in',
+            isComplete: true,
+          ),
+          Expanded(
+            child: Divider(
+              indent: 8,
+              endIndent: 8,
+              color: AppTheme.primary.withValues(alpha: 0.35),
+            ),
+          ),
+          const _JourneyStage(
+            icon: Icons.near_me_rounded,
+            label: 'One safe step',
+            isActive: true,
+          ),
+          Expanded(
+            child: Divider(
+              indent: 8,
+              endIndent: 8,
+              color: AppTheme.surfaceBorder.withValues(alpha: 0.9),
+            ),
+          ),
+          const _JourneyStage(
+            icon: Icons.edit_note_rounded,
+            label: 'Reflect',
+          ),
+        ],
       ),
     );
   }
@@ -497,7 +596,7 @@ class _NextStepScreenState extends State<NextStepScreen> {
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
-                  'RECOMMENDED FOR RIGHT NOW',
+                  'ONE SAFE STEP FOR RIGHT NOW',
                   style: TextStyle(
                     color: AppTheme.textLight,
                     fontSize: 11,
@@ -548,17 +647,131 @@ class _NextStepScreenState extends State<NextStepScreen> {
     );
   }
 
+  Widget _buildHumanSupportBridge() {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: AppTheme.danger.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppTheme.danger.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppTheme.danger.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.people_outline_rounded,
+              color: AppTheme.danger,
+              size: 21,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Want a person in the loop?',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+                SizedBox(height: 3),
+                Text(
+                  'You can explore human support instead of handling this alone.',
+                  style: TextStyle(
+                    color: AppTheme.textLight,
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const ProfessionalDirectoryScreen(),
+              ),
+            ),
+            child: const Text('Explore'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLearnBridge(_NextStepOption option, int index) {
+    return Semantics(
+      button: true,
+      label: 'Understand this moment with a Learn guide',
+      child: InkWell(
+        onTap: () => _selectOption(index),
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: AppTheme.secondary.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: AppTheme.secondary.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppTheme.secondary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(option.icon, color: AppTheme.secondary, size: 21),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Want a little context first?',
+                      style: TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'Choose an honest Learn guide, then ask MindMate about it.',
+                      style: TextStyle(
+                        color: AppTheme.textLight,
+                        fontSize: 12,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppTheme.secondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildAlternativeTile(_NextStepOption option, int index) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
-        onTap: () {
-          setState(() {
-            _selectedOptionIndex = index;
-            _feedback = null;
-            _showFeedback = false;
-          });
-        },
+        onTap: () => _selectOption(index),
         borderRadius: BorderRadius.circular(18),
         child: Container(
           padding: const EdgeInsets.all(14),
@@ -686,6 +899,14 @@ class _NextStepScreenState extends State<NextStepScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ProgressScreen()),
+              ),
+              icon: const Icon(Icons.show_chart_rounded),
+              label: const Text('See this in Progress'),
+            ),
           ],
           if (selectedFeedback != null && !_isSavingFeedback) ...[
             const SizedBox(height: 14),
@@ -714,6 +935,53 @@ class _NextStepScreenState extends State<NextStepScreen> {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _JourneyStage extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool isComplete;
+  final bool isActive;
+
+  const _JourneyStage({
+    required this.icon,
+    required this.label,
+    this.isComplete = false,
+    this.isActive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isComplete || isActive
+        ? AppTheme.primary
+        : AppTheme.textLight;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: isActive ? 0.16 : 0.10),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 17),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: color,
+            fontSize: 10,
+            fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

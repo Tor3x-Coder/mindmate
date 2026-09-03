@@ -8,6 +8,7 @@ import '../breathing/breathing_screen.dart';
 import '../chat/chat_tab_screen.dart';
 import '../emergency_support_screen.dart';
 import '../journal/journal_screen.dart';
+import '../learn/learn_screen.dart';
 import '../mood/mood_checkin_screen.dart';
 import '../settings/settings_screen.dart';
 import '../wellness/wellness_assessment_screen.dart';
@@ -142,6 +143,15 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                     const SizedBox(height: 12),
                     _buildNeedHelpCard(),
                     const SizedBox(height: 26),
+                    _buildRoutineCard(
+                      reminderTime: reminderTime,
+                      goalsCount: goals.length,
+                    ),
+                    const SizedBox(height: 14),
+                    _buildWellnessCard(onSurface),
+                    const SizedBox(height: 14),
+                    _buildLearnCard(),
+                    const SizedBox(height: 26),
                     Text(
                       'Quick starts',
                       style: theme.textTheme.titleMedium,
@@ -192,13 +202,6 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 26),
-                    _buildRoutineCard(
-                      reminderTime: reminderTime,
-                      goalsCount: goals.length,
-                    ),
-                    const SizedBox(height: 14),
-                    _buildWellnessCard(onSurface),
                   ],
                 ),
               ),
@@ -222,7 +225,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'FOR RIGHT NOW',
+                  'ONE SAFE STEP',
                   style: TextStyle(
                     color: Color(0xFF35545B),
                     fontSize: 11,
@@ -232,7 +235,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'What would feel useful?',
+                  'Find one safe step for right now.',
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurface,
                     fontSize: 23,
@@ -241,7 +244,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                 ),
                 const SizedBox(height: 7),
                 const Text(
-                  'A quick check-in helps us choose your next step.',
+                  'Check in, try one small action, then tell MindMate how it felt.',
                   style: TextStyle(
                     color: Color(0xFF35545B),
                     fontSize: 13,
@@ -261,7 +264,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  child: const Text('Check in now'),
+                  child: const Text('Find my next step'),
                 ),
               ],
             ),
@@ -339,6 +342,89 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
               color: AppTheme.danger,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLearnCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? AppTheme.textOnDark : AppTheme.textDark;
+    final supportingColor = isDark
+        ? const Color(0xFFB9D3CE)
+        : const Color(0xFF35545B);
+
+    return Semantics(
+      button: true,
+      label: 'Learn: honest reads on what helps and hurts your mind',
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const LearnScreen()),
+        ),
+        borderRadius: BorderRadius.circular(23),
+        child: Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            gradient: AppTheme.heroGradientFor(Theme.of(context).brightness),
+            borderRadius: BorderRadius.circular(23),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.52),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Icon(
+                  Icons.menu_book_rounded,
+                  color: AppTheme.primary,
+                ),
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'LEARN',
+                      style: TextStyle(
+                        color: supportingColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Learn — honest reads on what helps and hurts your mind',
+                      style: TextStyle(
+                        color: titleColor,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Take what is useful. Leave the lecture.',
+                      style: TextStyle(
+                        color: supportingColor,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppTheme.primary,
+              ),
+            ],
+          ),
         ),
       ),
     );

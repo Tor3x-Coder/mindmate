@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../services/app_settings_controller.dart';
 import '../../services/auth_service.dart';
+import '../../services/reminder_service.dart';
 import '../../utils/app_theme.dart';
 import '../../utils/constants.dart';
 import '../main_nav_screen.dart';
@@ -20,7 +22,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _handleFinish() async {
     if (_selectedGoals.isEmpty || _selectedReminderTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please pick at least one goal and a reminder time.')),
+        const SnackBar(
+            content:
+                Text('Please pick at least one goal and a reminder time.')),
       );
       return;
     }
@@ -31,11 +35,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final authService = context.read<AuthService>();
       final uid = authService.currentUser!.uid;
 
+      final reminderTime = _selectedReminderTime!;
       await authService.saveOnboardingData(
         uid: uid,
         goals: _selectedGoals.toList(),
-        reminderTime: _selectedReminderTime!,
+        reminderTime: reminderTime,
       );
+
+      await context
+          .read<AppSettingsController>()
+          .updateCheckInWindow(reminderTime);
+      await context.read<ReminderService>().scheduleDaily(
+            reminderTime,
+            requestPermission: true,
+          );
 
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
@@ -47,7 +60,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Something went wrong. Please try again.')),
+          const SnackBar(
+              content: Text('Something went wrong. Please try again.')),
         );
       }
     } finally {
@@ -85,12 +99,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   return GestureDetector(
                     onTap: () {
                       setState(() {
-                        isSelected ? _selectedGoals.remove(goal) : _selectedGoals.add(goal);
+                        isSelected
+                            ? _selectedGoals.remove(goal)
+                            : _selectedGoals.add(goal);
                       });
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? AppTheme.primary
@@ -130,7 +147,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   return RadioListTile<String>(
                     value: time,
                     groupValue: _selectedReminderTime,
-                    onChanged: (value) => setState(() => _selectedReminderTime = value),
+                    onChanged: (value) =>
+                        setState(() => _selectedReminderTime = value),
                     title: Text(
                       time,
                       style: TextStyle(color: onSurface),
@@ -139,7 +157,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     tileColor: isSelected
                         ? AppTheme.primary.withValues(alpha: 0.12)
                         : Theme.of(context).colorScheme.surface,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                   );
                 }).toList(),
@@ -153,7 +172,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ? const SizedBox(
                           height: 20,
                           width: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
                         )
                       : const Text('Finish Setup'),
                 ),

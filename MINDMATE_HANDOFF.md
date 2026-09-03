@@ -1,6 +1,6 @@
 # MindMate handoff for a new chat
 
-**Last updated:** 25 August 2026
+**Last updated:** 2 September 2026
 
 ## Read these first
 
@@ -39,10 +39,10 @@ Core loop:
 
 ```text
 Mood check-in
-  -> understand the need
-  -> recommend one action
-  -> user tries it
+  -> choose One Safe Step for this moment
+  -> user tries breathing / meditation / journaling / CBT / Learn / chat
   -> ask whether it helped
+  -> save feedback into Progress
   -> offer another approach or human support
 ```
 
@@ -74,8 +74,8 @@ Implemented in the repository:
 - safe quota/provider/missing-binding responses;
 - 12/12 local Worker tests; 4 Flutter ChatService tests added (9/9 total tests passing, 0 analyzer errors);
 - live Worker deployed to `mindmate-ai-chat.tor3x-akachukwu.workers.dev`;
-- `/health` confirmed returning version `2026-08-23-batch10` with model `@cf/meta/llama-3.3-70b-instruct-fp8-fast`;
-- live plan, calm, and crisis safety routes verified.
+- `/health` confirmed returning version `2026-09-02-learn-context` with model `@cf/meta/llama-3.3-70b-instruct-fp8-fast`;
+- live normal, calm, Learn-context, and deterministic crisis safety routes verified.
 
 ## Frontend decisions and current implementation
 
@@ -103,6 +103,7 @@ Selected/implemented directions:
 - Terms/Privacy: Option A — Readable Legal.
 - Wellness Check: Option A — Daily Snapshot.
 - Wellness Result: Option A — Reflection & Next Step.
+- Learn: Option B — Home featured card, four situation-based shelves, clean reader, sixteen core reads, eight bundled Explore more reads, and article-scoped AI questions.
 - The illustration onboarding carousel is confirmed.
 - Splash/illustration-first screens are excluded from further redesign.
 - Existing Login/Register screens are intentionally left as-is unless a functional bug is found.
@@ -114,6 +115,11 @@ Selected/implemented directions:
 - **Floating Tide Orb navigation is implemented, polished, and Chrome-validated:** four lower-positioned destinations, slower 520ms-base glide, restrained hop, visible labels, semantics, reduced-motion support, and existing IndexedStack state preservation.
 - **First-use guide is implemented and Chrome-validated:** four coach marks for Home, Practice, Chat, and Me with Skip/Next/Got it, `tourVersion = 1` persistence, Settings replay, and a lightweight Flutter-drawn 2D figure. Automatic display is requested only after new-user onboarding; Login/Splash do not force it. It never appears on Emergency Support or autoplays speech. Fresh-account and physical-device release checks remain.
 - **Quiet Tide Modern shell is focused, not a full redesign:** global app bars use consistent height/spacing and no scroll tint/elevation. The user confirmed the combined shell works; child-screen polish remains intentionally deferred.
+- **Learn Option B is expanded locally:** Home places the featured Learn card between the Wellness card and Quick starts. The Learn screen groups sixteen core reads (the six foundational articles plus ten approved scenarios) into Everyday life, Love and people, Understanding difficult moments, and Getting help. Explore more contains eight additional bundled scenario reads with search and local Add to Learn persistence. Each article has a readable scroll view, safety boundary, an existing-tool next step, and article-scoped Ask MindMate context. Content lives in `lib/utils/learn_articles.dart` and uses no Firestore or personal reading-history collection. The selected article context is bounded in Flutter and the Worker; the Worker source is versioned `2026-09-02-learn-context`, while its deployment is intentionally deferred because deployment was not part of this code-only batch. The live Worker remains the previously verified Batch 10 deployment. Developer-PC automated validation is complete: analyzer 0 errors/0 warnings with 29 informational notices, focused Learn 2/2, catalogue/Chat 6/6, and full Flutter 43/43. Android/Web/Chrome/device validation and articles 3–4 health-literate skim remain open; live Worker context smoke is only needed after a separately approved deployment.
+- **Demo account seed is implemented, applied, and app-verified:** `scripts/demo_seed/` contains a dry-run-first Node/Firebase Admin SDK seeder that writes 50 deterministic, synthetic documents across the existing personal-history collections only after `--apply --confirm-demo`. It resolves the account by registered email or UID, never deletes data or writes the profile, and keeps service-account JSON outside the repo. Pure script tests pass 4/4; the developer successfully applied the 50-document seed and confirmed the seeded history in Progress, Journal, Achievements, and the app's history views.
+- **Weekly Progress insight is implemented and validated:** `ProgressScreen` computes a read-only last-seven-days `Your week` card from existing mood, journal, wellness, and feedback records. It shows activity counts, uses cautious language for a heavier day, and only mentions practices when feedback supports that observation. Developer PC validation passed: focused test **2/2**, full Flutter suite **45/45**, and analyzer **0 errors/0 warnings with 23 informational notices**; the seeded demo screenshot confirmed the expected data.
+- **One Safe Step is the connected check-in path:** `NextStepScreen` now brands the journey as Check in → One safe step → Reflect, adds a mood-matched Learn bridge, keeps a human-support bridge visible for difficult/high-impact moments, and links saved feedback directly to Progress. It reuses existing tools and writes no new collection.
+- **Daily local reminder is the active batch:** the existing Morning/Afternoon/Evening setting is being connected to timezone-aware local notifications for Android/iOS. Keep it local, permission-aware, non-exact, and non-blocking; include Android reboot rescheduling, a Settings test notification, and cancellation on logout/account deletion. Validate on a phone or emulator before moving to device matrix/screenshots.
 - **Approved landing direction:** use the supplied Spouse Finder page only as visual/interaction inspiration. Build a separate lightweight informational MindMate site, not a hosted Flutter version of the app. It must include a functional `/delete-account` request resource for Google Play, plus truthful product/safety/privacy information, screenshots, FAQ, and a signed release APK download—not the debug APK.
 - **Light is the validated first-run/reset default.** Dark and System remain optional user choices.
 - **Registration contrast is Chrome-validated:** Name/Email/Password match Login's dark 16px style; setup choices use readable surface text.
@@ -197,8 +203,8 @@ Check in
 
 ## Immediate next action
 
-**Read the "Session handoff — 1 September 2026" block at the top of `MINDMATE_STATUS.md` first** — it carries the date correction (competition 21 September, school from 11 September), the four locked decisions (Learn section Option B with six articles, script-based demo seeding, professionals directory stays demo data by explicit decision, tier-two features in scope), and the build order.
+**Read the "Session handoff — 1 September 2026" block at the top of `MINDMATE_STATUS.md` first** — it carries the date correction (competition 21 September, school from 11 September), the four locked decisions (expanded Learn, script-based demo seeding, professionals directory stays demo data by explicit decision, and tier-two features in scope), the mandatory safety boundaries, and the build order.
 
-State as of 1 September 2026: Batches 1–10 done and verified; Batch 7 complete (184 clips, Chrome matrix confirmed); Batch 11 part 1 done (all 36 states + FCT verified against the 19 Aug 2026 NEMSAS list, table in `docs/emergency_resource_verification.md`); Batch 12 automated tests done (39 passing, user-confirmed); Batch 13A live at `tor3x-coder.github.io/mindmate` (logo, favicon, working /delete-account form); Batch 13 underway — signed release APK v1.0.0 built and running on real phones after the `1fc3ef8` identity fix.
+State as of 2 September 2026: Batches 1–10 done and verified; Batch 7 complete (184 clips, Chrome matrix confirmed); Batch 11 part 1 done (all 36 states + FCT verified against the 19 August 2026 NEMSAS list, table in `docs/emergency_resource_verification.md`); Batch 12 automated tests done (39 passing, user-confirmed); Batch 13A live at `tor3x-coder.github.io/mindmate` (logo, favicon, working `/delete-account` form); Batch 13 underway — signed release APK v1.0.0 built and running on real phones after the `1fc3ef8` identity fix. Demo seeding is applied and app-verified; weekly Progress insight is validated; daily local reminder implementation is in progress.
 
-Build order for 1–10 September: **Learn section → demo seeding script → weekly insight (Progress) → daily local-notification reminder → multi-phone device matrix + 4 landing screenshots → honest-limits slide + five-question answer sheet.** Verify-or-complete: GitHub Release upload of the final APK and the landing `config.js` live-download flip (see the handoff block in `MINDMATE_STATUS.md`).
+Build order for 1–10 September: **Learn section → demo seeding script → weekly insight (Progress; validated) → daily local-notification reminder (active) → multi-phone device matrix + 4 landing screenshots → honest-limits slide + five-question answer sheet.** Verify-or-complete: GitHub Release upload of the final APK and the landing `config.js` live-download flip (see the handoff block in `MINDMATE_STATUS.md`).

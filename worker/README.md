@@ -1,6 +1,6 @@
 # MindMate AI Worker
 
-**Last updated:** 23 August 2026
+**Last updated:** 2 September 2026
 
 This folder is the source for MindMate's Cloudflare Workers AI backend.
 Flutter calls the Worker; it never contains a model/provider secret.
@@ -8,18 +8,24 @@ Flutter calls the Worker; it never contains a model/provider secret.
 ## Current checkpoint
 
 - Source hardening: implemented locally in `worker/index.js`.
-- Worker tests: **12/12 passed** with Node's built-in test runner.
-- Flutter client sanitization: updated locally; Flutter validation pending.
+- Learn article context: implemented locally; the selected approved article is bounded and passed to the AI as reference context.
+- Worker tests: **13/13 passed** with Node's built-in test runner.
+- Flutter client sanitization: updated locally; the developer PC full Flutter suite is **47/47 passed** and analyzer has 0 errors/0 warnings.
 - Selected default model: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`.
-- Live Worker deployment: **pending**.
+- Live Worker deployment: `2026-09-02-learn-context` was deployed from the Cloudflare dashboard on 2 September 2026; `/health` confirms the new version. The dashboard shows the required `AI` Workers AI binding and the explicit `AI_MODEL` variable. No optional rate-limit or metrics bindings were previously configured or added.
+- Live POST smoke matrix: **passed** for normal plan, calm, Learn article context, and deterministic crisis guidance.
 - Live endpoint currently configured in Flutter:
 
 ```text
 https://mindmate-ai-chat.tor3x-akachukwu.workers.dev
 ```
 
-Do not call Batch 10 deployed until the live `/health` endpoint reports the
-new version and the live POST matrix passes.
+The Learn-context Worker is now deployed and `/health` reports the new
+version. Do not call the deployment fully verified until the live POST matrix
+passes. A local Wrangler dry run without a configuration reports `No bindings
+found`; do not use that path for future updates because the Worker requires
+the existing `AI` binding and should preserve any configured rate-limit/KV
+bindings.
 
 ## Why Llama 3.3 70B FP8 Fast
 
@@ -38,18 +44,19 @@ release.
 
 ## What this version enforces
 
-1. Accepts POST JSON shaped like `{ message, history, mode }`.
-2. Rejects malformed, non-text, empty, oversized message/body input.
-3. Accepts only `listen`, `calm`, and `make_plan`; unknown modes become general support.
-4. Keeps at most 12 recent `user`/`assistant` turns and rejects injected roles.
-5. Routes explicit crisis language to fixed human-support guidance before rate limiting or AI generation.
-6. Uses one trusted system message containing the selected mode instructions.
-7. Never describes the AI as human, a therapist, a doctor, or emergency help.
-8. Limits model output and keeps provider failures server-side.
-9. Returns friendly quota/rate-limit fallbacks.
-10. Logs request IDs, model/mode, lengths, and timing—never message text.
-11. Adds no-store/security headers.
-12. Exposes a safe deployment check:
+1. Accepts POST JSON shaped like `{ message, history, mode, learnContext? }`.
+2. Treats the optional Learn context as bounded reference text, not instructions.
+3. Rejects malformed, non-text, empty, oversized message/body input.
+4. Accepts only `listen`, `calm`, and `make_plan`; unknown modes become general support.
+5. Keeps at most 12 recent `user`/`assistant` turns and rejects injected roles.
+6. Routes explicit crisis language to fixed human-support guidance before rate limiting or AI generation.
+7. Uses one trusted system message containing the selected mode instructions.
+8. Never describes the AI as human, a therapist, a doctor, or emergency help.
+9. Limits model output and keeps provider failures server-side.
+10. Returns friendly quota/rate-limit fallbacks.
+11. Logs request IDs, model/mode, lengths, and timing—never message text.
+12. Adds no-store/security headers.
+13. Exposes a safe deployment check:
 
 ```text
 GET /health
@@ -61,7 +68,7 @@ Expected after deployment:
 {
   "service": "mindmate-ai-chat",
   "status": "ok",
-  "version": "2026-08-23-batch10",
+  "version": "2026-09-02-learn-context",
   "defaultModel": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 }
 ```
@@ -78,7 +85,7 @@ npm test
 Expected:
 
 ```text
-12 passed
+13 passed
 0 failed
 ```
 
@@ -137,22 +144,28 @@ A KV binding named `MINDMATE_METRICS` enables the basic daily request counter.
 Structured Cloudflare logs are enough for the competition, so do not add KV
 only for vanity analytics.
 
-## Deploy from the Cloudflare dashboard
+## Deploy from the Cloudflare dashboard — approved 2 September 2026
+
+The repository has no Wrangler binding configuration, and this sandbox is not
+authenticated to Cloudflare. Use the dashboard path below, or first complete
+`npx wrangler login` on an authenticated developer machine. Do not run a bare
+`wrangler deploy index.js`: it would have no `AI` binding.
 
 1. Cloudflare → Workers & Pages → `mindmate-ai-chat`.
-2. Open **Edit code**.
-3. Replace the Worker source with the complete `worker/index.js` file.
-4. Confirm the `AI` binding.
-5. Set the explicit `AI_MODEL` variable above.
-6. Add the recommended `MINDMATE_RATE_LIMIT` binding if available.
-7. Click **Deploy**.
-8. Open:
+2. Before editing, record the current **Settings → Bindings** and **Variables**; do not remove existing `AI`, `MINDMATE_RATE_LIMIT`, or `MINDMATE_METRICS` entries.
+3. Open **Edit code**.
+4. Replace the Worker source with the complete `worker/index.js` file.
+5. Confirm the `AI` binding still points to Workers AI.
+6. Set the explicit `AI_MODEL` variable above.
+7. Preserve the existing optional `MINDMATE_RATE_LIMIT` and `MINDMATE_METRICS` bindings, including their current namespace/configuration. If an existing binding is not shown in the editor, recreate that same binding before deploying; do not add a new optional binding solely for this update.
+8. Click **Deploy**.
+9. Open:
 
 ```text
 https://mindmate-ai-chat.tor3x-akachukwu.workers.dev/health
 ```
 
-Confirm the exact Batch 10 version/model before testing chat.
+Confirm version `2026-09-02-learn-context` and the model before testing normal chat and article-context chat.
 
 ## Live PowerShell smoke matrix
 
@@ -166,6 +179,8 @@ Invoke-RestMethod "$endpoint/health"
 Invoke-RestMethod $endpoint -Method Post -ContentType "application/json" -Body '{"message":"I had a hard day and want one small next step.","history":[],"mode":"make_plan"}'
 
 Invoke-RestMethod $endpoint -Method Post -ContentType "application/json" -Body '{"message":"Help me slow down for a moment.","history":[],"mode":"calm"}'
+
+Invoke-RestMethod $endpoint -Method Post -ContentType "application/json" -Body '{"message":"What should I take from this read?","history":[],"learnContext":"Learn article title: When your usual coping stops helping\nArticle summary: A coping pattern can become a problem when it causes harm or makes your world smaller."}'
 
 Invoke-RestMethod $endpoint -Method Post -ContentType "application/json" -Body '{"message":"I want to kill myself","history":[],"mode":"listen"}'
 ```

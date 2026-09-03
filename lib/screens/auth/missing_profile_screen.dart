@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../services/app_settings_controller.dart';
 import '../../services/auth_service.dart';
+import '../../services/reminder_service.dart';
 import '../../utils/app_theme.dart';
 import '../onboarding/onboarding_screen.dart';
 import '../settings/delete_account_screen.dart';
@@ -26,9 +27,7 @@ class _MissingProfileScreenState extends State<MissingProfileScreen> {
     final user = context.read<AuthService>().currentUser;
     final suggestedName = user?.displayName?.trim();
     _nameController = TextEditingController(
-      text: suggestedName == null || suggestedName.isEmpty
-          ? ''
-          : suggestedName,
+      text: suggestedName == null || suggestedName.isEmpty ? '' : suggestedName,
     );
   }
 
@@ -68,6 +67,9 @@ class _MissingProfileScreenState extends State<MissingProfileScreen> {
   }
 
   Future<void> _logout() async {
+    final reminderService = context.read<ReminderService>();
+    await reminderService.cancelDaily();
+    await reminderService.cancelTestNotification();
     await context.read<AuthService>().logout();
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
@@ -164,9 +166,8 @@ class _MissingProfileScreenState extends State<MissingProfileScreen> {
               ],
               const SizedBox(height: 14),
               ElevatedButton(
-                onPressed: _isRestoring || deletionPending
-                    ? null
-                    : _restoreProfile,
+                onPressed:
+                    _isRestoring || deletionPending ? null : _restoreProfile,
                 child: _isRestoring
                     ? const SizedBox(
                         width: 20,

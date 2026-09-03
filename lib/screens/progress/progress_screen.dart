@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/feedback_record_model.dart';
 import '../../models/journal_entry_model.dart';
 import '../../models/mood_log_model.dart';
 import '../../models/wellness_assessment_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/app_theme.dart';
+import '../../utils/weekly_insight.dart';
 
 class ProgressScreen extends StatelessWidget {
   const ProgressScreen({super.key});
@@ -40,22 +42,39 @@ class ProgressScreen extends StatelessWidget {
                   builder: (context, journalSnapshot) {
                     if (journalSnapshot.hasError) return _buildErrorState();
 
-                    final isLoading =
-                        moodSnapshot.connectionState == ConnectionState.waiting ||
-                        wellnessSnapshot.connectionState == ConnectionState.waiting ||
-                        journalSnapshot.connectionState == ConnectionState.waiting;
+                    return StreamBuilder<List<FeedbackRecordModel>>(
+                      stream: firestoreService.feedbackRecordsForUser(uid),
+                      builder: (context, feedbackSnapshot) {
+                        if (feedbackSnapshot.hasError) {
+                          return _buildErrorState();
+                        }
 
-                    if (isLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+                        final isLoading = moodSnapshot.connectionState ==
+                                ConnectionState.waiting ||
+                            wellnessSnapshot.connectionState ==
+                                ConnectionState.waiting ||
+                            journalSnapshot.connectionState ==
+                                ConnectionState.waiting ||
+                            feedbackSnapshot.connectionState ==
+                                ConnectionState.waiting;
 
-                    return _buildProgressView(
-                      context: context,
-                      moods: moodSnapshot.data ?? const <MoodLogModel>[],
-                      assessments: wellnessSnapshot.data ??
-                          const <WellnessAssessmentModel>[],
-                      journalEntries: journalSnapshot.data ??
-                          const <JournalEntryModel>[],
+                        if (isLoading) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+
+                        return _buildProgressView(
+                          context: context,
+                          moods: moodSnapshot.data ?? const <MoodLogModel>[],
+                          assessments: wellnessSnapshot.data ??
+                              const <WellnessAssessmentModel>[],
+                          journalEntries: journalSnapshot.data ??
+                              const <JournalEntryModel>[],
+                          feedbackRecords: feedbackSnapshot.data ??
+                              const <FeedbackRecordModel>[],
+                        );
+                      },
                     );
                   },
                 );
@@ -72,26 +91,22 @@ class ProgressScreen extends StatelessWidget {
     required List<MoodLogModel> moods,
     required List<WellnessAssessmentModel> assessments,
     required List<JournalEntryModel> journalEntries,
+    required List<FeedbackRecordModel> feedbackRecords,
   }) {
-    final weekMoodCount = _countThisWeek(moods.map((mood) => mood.date));
-    final weekJournalCount =
-        _countThisWeek(journalEntries.map((entry) => entry.date));
-    final weekAssessmentCount =
-        _countThisWeek(assessments.map((assessment) => assessment.date));
-    final hasAnyData =
-        moods.isNotEmpty || assessments.isNotEmpty || journalEntries.isNotEmpty;
+    final weeklyInsight = WeeklyInsight.fromData(
+      now: DateTime.now(),
+      moods: moods,
+      journalEntries: journalEntries,
+      assessments: assessments,
+      feedbackRecords: feedbackRecords,
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildWeeklyStory(
-            hasAnyData: hasAnyData,
-            moodCount: weekMoodCount,
-            journalCount: weekJournalCount,
-            assessmentCount: weekAssessmentCount,
-          ),
+          _buildWeeklyInsightCard(weeklyInsight),
           const SizedBox(height: 24),
           _buildObservationCard(moods, journalEntries),
           const SizedBox(height: 14),
@@ -109,36 +124,22 @@ class ProgressScreen extends StatelessWidget {
     );
   }
 
-  int _countThisWeek(Iterable<DateTime> dates) {
-    final now = DateTime.now();
-    final start = now.subtract(const Duration(days: 6));
-    return dates.where((date) => !date.isBefore(start)).length;
-  }
-
-  Widget _buildWeeklyStory({
-    required bool hasAnyData,
-    required int moodCount,
-    required int journalCount,
-    required int assessmentCount,
-  }) {
-    final summary = hasAnyData
-        ? 'You made space for yourself this week.'
-        : 'Your story can start with one small check-in.';
-
+  Widget _buildWeeklyInsightCard(WeeklyInsight insight) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: AppTheme.heroGradientLight,
         borderRadius: BorderRadius.circular(28),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'THIS WEEK',
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Expanded(
+                child: Text(
+                  'YOUR WEEK',
                   style: TextStyle(
                     color: Color(0xFF59646F),
                     fontSize: 11,
@@ -146,35 +147,49 @@ class ProgressScreen extends StatelessWidget {
                     letterSpacing: 1,
                   ),
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  summary,
-                  style: const TextStyle(
-                    color: AppTheme.textDark,
-                    fontSize: 21,
-                    fontWeight: FontWeight.w800,
-                  ),
+              ),
+              Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.62),
+                  shape: BoxShape.circle,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  '$moodCount check-ins  •  $journalCount journal entries  •  $assessmentCount reflections',
-                  style: const TextStyle(
-                    color: Color(0xFF59646F),
-                    fontSize: 12,
-                  ),
+                child: const Text(
+                  '✦',
+                  style: TextStyle(fontSize: 24, color: AppTheme.primary),
                 ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            insight.headline,
+            style: const TextStyle(
+              color: AppTheme.textDark,
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+              height: 1.15,
             ),
           ),
-          Container(
-            width: 58,
-            height: 58,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.62),
-              shape: BoxShape.circle,
+          const SizedBox(height: 8),
+          Text(
+            insight.countsLabel,
+            style: const TextStyle(
+              color: Color(0xFF59646F),
+              fontSize: 12,
             ),
-            child: const Text('✦', style: TextStyle(fontSize: 28, color: AppTheme.primary)),
+          ),
+          const SizedBox(height: 16),
+          _WeeklyInsightLine(
+            icon: Icons.insights_outlined,
+            text: insight.observation,
+          ),
+          const SizedBox(height: 10),
+          _WeeklyInsightLine(
+            icon: Icons.auto_awesome_outlined,
+            text: insight.practiceObservation,
           ),
         ],
       ),
@@ -280,7 +295,8 @@ class ProgressScreen extends StatelessWidget {
       eyebrow: 'WELLNESS REFLECTIONS',
       icon: Icons.favorite_outline_rounded,
       iconColor: AppTheme.danger,
-      title: '${assessments.length} reflection${assessments.length == 1 ? '' : 's'} saved',
+      title:
+          '${assessments.length} reflection${assessments.length == 1 ? '' : 's'} saved',
       subtitle:
           'Use these check-ins to notice how your routines and feelings change over time.',
       trailing: const Text(
@@ -303,6 +319,41 @@ class ProgressScreen extends StatelessWidget {
           style: TextStyle(color: AppTheme.danger),
         ),
       ),
+    );
+  }
+}
+
+class _WeeklyInsightLine extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _WeeklyInsightLine({
+    required this.icon,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 18,
+          color: AppTheme.primary,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              color: Color(0xFF59646F),
+              fontSize: 12,
+              height: 1.35,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

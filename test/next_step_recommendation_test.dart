@@ -15,8 +15,8 @@ void main() {
 
   group('NextStep recommendation logic', () {
     // The screen keeps itself calm by showing the recommended option plus
-    // exactly two alternatives at a time, so these tests assert on what is
-    // actually rendered for each mood.
+    // exactly two alternatives at a time. A separate Learn bridge remains
+    // visible so context is connected without turning the page into a library.
 
     testWidgets('Sad mood leads with talking it through', (tester) async {
       await pumpNextStep(tester, 'Sad');
@@ -101,6 +101,13 @@ void main() {
       expect(find.text('You seem steady right now.'), findsOneWidget);
     });
 
+    testWidgets('difficult moments keep a human-support bridge visible',
+        (tester) async {
+      await pumpNextStep(tester, 'Stressed');
+      expect(find.text('Want a person in the loop?'), findsOneWidget);
+      expect(find.text('Explore'), findsOneWidget);
+    });
+
     testWidgets('every mood renders the calm 1-recommended + 2-alternatives '
         'structure', (tester) async {
       // One recommended card ("Recommended for you") plus two alternative
@@ -108,8 +115,14 @@ void main() {
       for (final mood in ['Happy', 'Excited', 'Okay', 'Sad', 'Stressed',
         'Angry', 'Tired']) {
         await pumpNextStep(tester, mood);
-        expect(find.text('Your next step'), findsOneWidget,
+        expect(find.text('One Safe Step'), findsOneWidget,
             reason: 'app bar for mood: $mood');
+        expect(find.text('Checked in'), findsOneWidget,
+            reason: 'journey trail for mood: $mood');
+        expect(find.text('Reflect'), findsOneWidget,
+            reason: 'journey trail for mood: $mood');
+        expect(find.text('Want a little context first?'), findsOneWidget,
+            reason: 'Learn bridge for mood: $mood');
         expect(find.text('Other ways to help'), findsOneWidget,
             reason: 'alternatives header for mood: $mood');
         expect(find.text('I’m done for now'), findsOneWidget,

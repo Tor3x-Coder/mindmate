@@ -15,6 +15,7 @@ class AppSettingsController extends ChangeNotifier {
   static const _preferredSessionMinutesKey = 'preferred_session_minutes';
   static const _completedTourVersionKey = 'completed_tour_version';
   static const _accountDeletionPendingKey = 'account_deletion_pending';
+  static const _learnAddedArticleIdsKey = 'learn_added_article_ids';
 
   ThemeMode _themeMode = ThemeMode.light;
   double _textScale = 1.0;
@@ -26,6 +27,7 @@ class AppSettingsController extends ChangeNotifier {
   int _completedTourVersion = 0;
   int _tourReplayRequest = 0;
   bool _accountDeletionPending = false;
+  Set<String> _addedLearnArticleIds = <String>{};
   bool _isLoaded = false;
 
   AppSettingsController() {
@@ -42,6 +44,8 @@ class AppSettingsController extends ChangeNotifier {
   int get completedTourVersion => _completedTourVersion;
   int get tourReplayRequest => _tourReplayRequest;
   bool get accountDeletionPending => _accountDeletionPending;
+  Set<String> get addedLearnArticleIds =>
+      Set.unmodifiable(_addedLearnArticleIds);
   bool get isLoaded => _isLoaded;
   Future<void> get loaded => _loadCompleter.future;
 
@@ -59,6 +63,9 @@ class AppSettingsController extends ChangeNotifier {
       _completedTourVersion = prefs.getInt(_completedTourVersionKey) ?? 0;
       _accountDeletionPending =
           prefs.getBool(_accountDeletionPendingKey) ?? false;
+      _addedLearnArticleIds =
+          (prefs.getStringList(_learnAddedArticleIdsKey) ?? const <String>[])
+              .toSet();
     } finally {
       // Never leave Splash waiting forever if local preferences are damaged.
       _isLoaded = true;
@@ -136,6 +143,31 @@ class AppSettingsController extends ChangeNotifier {
     await prefs.setBool(_accountDeletionPendingKey, value);
   }
 
+  Future<void> addLearnArticle(String articleId) async {
+    final cleanId = articleId.trim();
+    if (cleanId.isEmpty || _addedLearnArticleIds.contains(cleanId)) return;
+
+    _addedLearnArticleIds = {..._addedLearnArticleIds, cleanId};
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _learnAddedArticleIdsKey,
+      _addedLearnArticleIds.toList(),
+    );
+  }
+
+  Future<void> removeLearnArticle(String articleId) async {
+    if (!_addedLearnArticleIds.contains(articleId)) return;
+
+    _addedLearnArticleIds = {..._addedLearnArticleIds}..remove(articleId);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _learnAddedArticleIdsKey,
+      _addedLearnArticleIds.toList(),
+    );
+  }
+
   Future<void> clearAllLocalData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
@@ -150,6 +182,7 @@ class AppSettingsController extends ChangeNotifier {
     _completedTourVersion = 0;
     _tourReplayRequest = 0;
     _accountDeletionPending = false;
+    _addedLearnArticleIds = <String>{};
     _isLoaded = true;
     notifyListeners();
   }

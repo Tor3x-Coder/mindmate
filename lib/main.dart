@@ -6,6 +6,7 @@ import 'services/app_settings_controller.dart';
 import 'services/audio_guide_service.dart';
 import 'services/auth_service.dart';
 import 'services/firestore_service.dart';
+import 'services/reminder_service.dart';
 import 'utils/app_theme.dart';
 import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
@@ -33,6 +34,7 @@ class MindMateApp extends StatelessWidget {
         ),
         Provider<AuthService>(create: (_) => AuthService()),
         Provider<FirestoreService>(create: (_) => FirestoreService()),
+        Provider<ReminderService>(create: (_) => ReminderService()),
         Provider<AccountDeletionService>(
           create: (_) => AccountDeletionService(),
         ),

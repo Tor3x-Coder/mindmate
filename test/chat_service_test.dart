@@ -32,11 +32,13 @@ void main() {
       userMessage: '  Help me settle.  ',
       history: history,
       mode: 'calm',
+      learnContext: 'Learn article title: A rough day',
     );
 
     expect(reply, 'A gentle reply.');
     expect(sentBody!['message'], 'Help me settle.');
     expect(sentBody!['mode'], 'calm');
+    expect(sentBody!['learnContext'], 'Learn article title: A rough day');
 
     final sentHistory = sentBody!['history'] as List<dynamic>;
     expect(sentHistory, hasLength(12));
