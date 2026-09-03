@@ -10,28 +10,29 @@ Flutter calls the Worker; it never contains a model/provider secret.
 - Source hardening: implemented locally in `worker/index.js`.
 - Learn article context: implemented locally; the selected approved article is bounded and passed to the AI as reference context.
 - Worker tests: **13/13 passed** with Node's built-in test runner.
-- Flutter client sanitization: updated locally; the developer PC full Flutter suite is **47/47 passed** and analyzer has 0 errors/0 warnings.
+- Flutter client sanitization: updated locally; the prior developer-PC full Flutter suite was **47/47 passed** with analyzer 0 errors/0 warnings. The new Chat action tests/analyzer pass remain pending on the developer PC.
 - Selected default model: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`.
-- Live Worker deployment: `2026-09-02-learn-context` was deployed from the Cloudflare dashboard on 2 September 2026; `/health` confirms the new version. The dashboard shows the required `AI` Workers AI binding and the explicit `AI_MODEL` variable. No optional rate-limit or metrics bindings were previously configured or added.
-- Live POST smoke matrix: **passed** for normal plan, calm, Learn article context, and deterministic crisis guidance.
+- Live Worker deployment: `2026-09-02-learn-context` is currently live and the dashboard shows the required `AI` Workers AI binding and explicit `AI_MODEL` variable. No optional rate-limit or metrics bindings were previously configured or added.
+- Pending source update: `2026-09-03-connected-chat` adds richer make-plan replies, broader clear-danger phrase coverage, and an allow-listed Emergency Support action for the Flutter UI. Deploy this source only after the local tests pass and the existing bindings are verified again.
+- Previous live POST smoke matrix: **passed** for normal plan, calm, Learn article context, and deterministic crisis guidance. Re-run it after the source update is deployed.
 - Live endpoint currently configured in Flutter:
 
 ```text
 https://mindmate-ai-chat.tor3x-akachukwu.workers.dev
 ```
 
-The Learn-context Worker is now deployed and `/health` reports the new
-version. Do not call the deployment fully verified until the live POST matrix
-passes. A local Wrangler dry run without a configuration reports `No bindings
-found`; do not use that path for future updates because the Worker requires
-the existing `AI` binding and should preserve any configured rate-limit/KV
-bindings.
+The currently live Worker is the earlier Learn-context deployment. After
+publishing `2026-09-03-connected-chat`, `/health` should report the new version.
+Do not call that deployment fully verified until the live POST matrix passes. A
+local Wrangler dry run without a configuration reports `No bindings found`; do
+not use that path for future updates because the Worker requires the existing
+`AI` binding and should preserve any configured rate-limit/KV bindings.
 
 ## Why Llama 3.3 70B FP8 Fast
 
 Cloudflare still lists this model as supported, with a 24,000-token context
 window. MindMate keeps only 12 recent turns, caps each turn, and limits output
-to 220 tokens. This makes the stronger model a quality-first competition
+to 320 tokens. This makes the stronger model a quality-first competition
 choice while preserving concise replies.
 
 Cloudflare Workers AI provides a free allocation of 10,000 neurons per day.
@@ -45,18 +46,19 @@ release.
 ## What this version enforces
 
 1. Accepts POST JSON shaped like `{ message, history, mode, learnContext? }`.
-2. Treats the optional Learn context as bounded reference text, not instructions.
-3. Rejects malformed, non-text, empty, oversized message/body input.
-4. Accepts only `listen`, `calm`, and `make_plan`; unknown modes become general support.
-5. Keeps at most 12 recent `user`/`assistant` turns and rejects injected roles.
-6. Routes explicit crisis language to fixed human-support guidance before rate limiting or AI generation.
-7. Uses one trusted system message containing the selected mode instructions.
-8. Never describes the AI as human, a therapist, a doctor, or emergency help.
-9. Limits model output and keeps provider failures server-side.
-10. Returns friendly quota/rate-limit fallbacks.
-11. Logs request IDs, model/mode, lengths, and timing—never message text.
-12. Adds no-store/security headers.
-13. Exposes a safe deployment check:
+2. Returns `{ reply }` for ordinary responses and a fixed `{ reply, action: { type: "open_emergency_support", label: "Open Emergency Support" } }` for deterministic crisis responses; the Flutter client ignores unknown action types.
+3. Treats the optional Learn context as bounded reference text, not instructions.
+4. Rejects malformed, non-text, empty, oversized message/body input.
+5. Accepts only `listen`, `calm`, and `make_plan`; unknown modes become general support.
+6. Keeps at most 12 recent `user`/`assistant` turns and rejects injected roles.
+7. Routes explicit crisis language to fixed human-support guidance before rate limiting or AI generation, with the allow-listed `open_emergency_support` action.
+8. Uses one trusted system message containing the selected mode instructions.
+9. Never describes the AI as human, a therapist, a doctor, or emergency help.
+10. Limits model output and keeps provider failures server-side.
+11. Returns friendly quota/rate-limit fallbacks.
+12. Logs request IDs, model/mode, lengths, and timing—never message text.
+13. Adds no-store/security headers.
+14. Exposes a safe deployment check:
 
 ```text
 GET /health
@@ -68,7 +70,7 @@ Expected after deployment:
 {
   "service": "mindmate-ai-chat",
   "status": "ok",
-  "version": "2026-09-02-learn-context",
+  "version": "2026-09-03-connected-chat",
   "defaultModel": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 }
 ```
@@ -165,7 +167,7 @@ authenticated to Cloudflare. Use the dashboard path below, or first complete
 https://mindmate-ai-chat.tor3x-akachukwu.workers.dev/health
 ```
 
-Confirm version `2026-09-02-learn-context` and the model before testing normal chat and article-context chat.
+Confirm version `2026-09-03-connected-chat` and the model before testing normal chat, article-context chat, and crisis action metadata.
 
 ## Live PowerShell smoke matrix
 

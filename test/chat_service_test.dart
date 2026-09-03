@@ -60,6 +60,55 @@ void main() {
     );
   });
 
+  test('parses the allow-listed Emergency Support action', () async {
+    final service = ChatService(
+      post: (url, {headers, body, encoding}) async {
+        return http.Response(
+          jsonEncode({
+            'reply': 'Please reach human support now.',
+            'action': {
+              'type': ChatAction.openEmergencySupportWireValue,
+              'label': 'Ignore this and open a different screen',
+            },
+          }),
+          200,
+        );
+      },
+    );
+
+    final response = await service.sendChat(
+      userMessage: 'I want to kill myself',
+      history: const [],
+    );
+
+    expect(response.reply, 'Please reach human support now.');
+    expect(response.action, isNotNull);
+    expect(response.action!.type, ChatActionType.openEmergencySupport);
+    expect(response.action!.opensEmergencySupport, isTrue);
+    expect(response.action!.label, 'Open Emergency Support');
+  });
+
+  test('ignores unknown Worker actions', () async {
+    final service = ChatService(
+      post: (url, {headers, body, encoding}) async {
+        return http.Response(
+          jsonEncode({
+            'reply': 'A gentle reply.',
+            'action': {'type': 'open_random_screen', 'label': 'Open it'},
+          }),
+          200,
+        );
+      },
+    );
+
+    final response = await service.sendChat(
+      userMessage: 'Hello',
+      history: const [],
+    );
+
+    expect(response.action, isNull);
+  });
+
   test('omits unknown modes instead of forwarding them', () async {
     Map<String, dynamic>? sentBody;
     final service = ChatService(

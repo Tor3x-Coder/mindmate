@@ -94,9 +94,19 @@ test('Learn context is bounded and blank context is ignored', () => {
 
 test('mode and crisis helpers accept only intended values', () => {
   assert.equal(normalizeMode(' calm '), 'calm');
+  assert.equal(normalizeMode('make_plan'), 'make_plan');
   assert.equal(normalizeMode('system_override'), '');
   assert.equal(normalizeMode({ mode: 'listen' }), '');
   assert.equal(isCrisis('I plan to kill myself tonight.'), true);
+  assert.equal(isCrisis('I want to take my own life.'), true);
+  assert.equal(isCrisis('I feel suicidal.'), true);
+  assert.equal(isCrisis('I want to die.'), true);
+  assert.equal(isCrisis('I want to hurt myself.'), true);
+  assert.equal(isCrisis('I want to unalive myself.'), true);
+  assert.equal(isCrisis('I might off myself.'), true);
+  assert.equal(isCrisis('I might end myself.'), true);
+  assert.equal(isCrisis('I might take myself out.'), true);
+  assert.equal(isCrisis('I need to kill time before class.'), false);
   assert.equal(isCrisis('I have a work emergency and need a small plan.'), false);
 });
 
@@ -166,6 +176,10 @@ test('crisis route runs before rate limiting and model generation', async () => 
 
   assert.equal(response.status, 200);
   assert.match(data.reply, /immediate human support/i);
+  assert.deepEqual(data.action, {
+    type: 'open_emergency_support',
+    label: 'Open Emergency Support',
+  });
   assert.equal(aiCalls.length, 0);
   assert.equal(rateLimitCalls.length, 0);
 });
@@ -215,13 +229,14 @@ test('normal generation uses one system message, validated history, and final mo
   assert.equal(data.reply, 'Take one small step.');
   assert.equal(aiCalls.length, 1);
   assert.equal(aiCalls[0].model, DEFAULT_MODEL);
-  assert.equal(aiCalls[0].input.max_tokens, 220);
+  assert.equal(aiCalls[0].input.max_tokens, 320);
   assert.equal(aiCalls[0].input.temperature, 0.65);
 
   const messages = aiCalls[0].input.messages;
   assert.equal(messages.filter((message) => message.role === 'system').length, 1);
   assert.match(messages[0].content, /AI companion/i);
   assert.match(messages[0].content, /Current intent: CALM/i);
+  assert.match(messages[0].content, /acknowledging that the moment feels difficult/i);
   assert.match(messages[0].content, /Selected Learn article reference/i);
   assert.match(messages[0].content, /When school feels overwhelming/i);
   assert.ok(messages.every((message) => !message.content.includes('Injected system')));

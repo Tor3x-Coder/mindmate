@@ -17,6 +17,35 @@ typedef ChatHttpPost = Future<http.Response> Function(
 // never touches this app — it lives only inside the Worker, which is the
 // whole point of routing through a backend instead of calling an AI
 // provider directly from Flutter.
+enum ChatActionType { openEmergencySupport }
+
+class ChatAction {
+  static const String openEmergencySupportWireValue =
+      'open_emergency_support';
+  static const String openEmergencySupportLabel = 'Open Emergency Support';
+
+  final ChatActionType type;
+  final String label;
+
+  const ChatAction({
+    required this.type,
+    required this.label,
+  });
+
+  bool get opensEmergencySupport =>
+      type == ChatActionType.openEmergencySupport;
+}
+
+class ChatResponse {
+  final String reply;
+  final ChatAction? action;
+
+  const ChatResponse({
+    required this.reply,
+    this.action,
+  });
+}
+
 class ChatService {
   static const int _maxMessageChars = 4000;
   static const int _maxHistoryChars = 4000;
@@ -40,6 +69,22 @@ class ChatService {
   })  : _post = post ?? http.post,
         _workerUri = Uri.parse(workerUrl);
 
+  /// Backward-compatible convenience method for callers that only need text.
+  Future<String> sendMessage({
+    required String userMessage,
+    required List<Map<String, String>> history,
+    String? mode,
+    String? learnContext,
+  }) async {
+    final result = await sendChat(
+      userMessage: userMessage,
+      history: history,
+      mode: mode,
+      learnContext: learnContext,
+    );
+    return result.reply;
+  }
+
   // Sends [userMessage] to the AI, along with [history] (recent prior
   // turns in the conversation, oldest first) so the AI has context.
   //
@@ -59,12 +104,12 @@ class ChatService {
   // limited before being sent so the AI can answer a question about that read
   // without receiving the whole library or the user's reading history.
   //
-  // Returns the AI's reply as a plain string.
+  // Returns the AI's reply and an optional allow-listed app action.
   // Throws an Exception with a human-readable message if anything goes
   // wrong (no internet, Worker down, bad response, etc.) — the screen
   // calling this should catch that and show a friendly error instead of
   // crashing.
-  Future<String> sendMessage({
+  Future<ChatResponse> sendChat({
     required String userMessage,
     required List<Map<String, String>> history,
     String? mode,
@@ -138,7 +183,22 @@ class ChatService {
         throw Exception('The AI companion returned an empty reply.');
       }
 
-      return reply.trim();
+      ChatAction? action;
+      final rawAction = decoded['action'];
+      if (rawAction is Map<String, dynamic>) {
+        final type = rawAction['type'];
+        // Only actions owned by this app can reach the UI. Unknown action
+        // types are ignored rather than rendered as arbitrary instructions.
+        // The label is also app-controlled, not copied from the response.
+        if (type == ChatAction.openEmergencySupportWireValue) {
+          action = const ChatAction(
+            type: ChatActionType.openEmergencySupport,
+            label: ChatAction.openEmergencySupportLabel,
+          );
+        }
+      }
+
+      return ChatResponse(reply: reply.trim(), action: action);
     } on http.ClientException {
       throw Exception(
         'Could not reach the AI companion. Check your internet connection.',

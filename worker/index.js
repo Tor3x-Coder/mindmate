@@ -8,7 +8,7 @@
 //   - Client history/modes are treated as untrusted input.
 //   - Logs contain request metadata and lengths, never message text.
 
-const WORKER_VERSION = '2026-09-02-learn-context';
+const WORKER_VERSION = '2026-09-03-connected-chat';
 const DEFAULT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const ALLOWED_MODES = new Set(['listen', 'calm', 'make_plan']);
 const MAX_BODY_CHARS = 64_000;
@@ -24,34 +24,40 @@ Safety and scope:
 - Do not diagnose, prescribe, or present guesses as clinical facts.
 - Do not invent assumptions about the user's location, budget, relationships, identity, or preferences.
 - Focus on supportive conversation, reflection, grounding, and one small realistic next step.
+- When a user shares a difficult moment, acknowledge it before asking a question or giving advice.
 - Avoid robotic therapy formulas and avoid simply repeating the user's words.
-- Keep replies easy to read, usually 2 to 4 sentences.
-- Ask at most one question unless the user clearly asks for a deeper exercise.
+- For ordinary conversation, use enough detail to be useful: usually 3 to 6 short sentences, or a short introduction followed by up to 3 simple bullet options when choices help.
+- If a heading or bullets help, use plain text because the app displays replies without Markdown formatting. Do not create Markdown links.
+- Ask at most one natural question, and place it after the useful response rather than opening with an interview question.
+- Do not invent web links or citations. Use the app's existing Learn and Practice tools when suggesting a resource.
 - If urgent danger or self-harm becomes clear, point to Emergency Support and immediate human help instead of treating it as normal chat.`;
 
 function modePrompt(mode) {
   switch (mode) {
     case 'listen':
       return `Current intent: LISTEN.
-- Prioritise genuine listening and validation.
-- Keep it to 1 to 3 sentences.
+- Start by acknowledging what the user shared in a warm, natural way.
+- Reflect the feeling briefly, without repeating their whole message.
 - Do not jump into solutions or a checklist unless asked.
-- Invite the user to continue only if it feels natural.`;
+- Use 2 to 4 short sentences and end with at most one gentle question.`;
     case 'calm':
       return `Current intent: CALM.
-- Help the user slow down in the present moment.
-- Offer at most one simple grounding or breathing action.
-- Keep it to 1 to 3 sentences and avoid clinical claims.`;
+- Start by acknowledging that the moment feels difficult.
+- Then offer one simple grounding or breathing action with clear, gentle wording.
+- Use 2 to 4 short sentences and avoid clinical claims.
+- End with at most one natural question if it helps.`;
     case 'make_plan':
       return `Current intent: MAKE A SMALL PLAN.
-- Help choose one small, realistic action for now or today.
-- Ask at most one short question only if necessary.
-- Avoid long checklists and end with a tiny doable step.`;
+- First acknowledge that the user's day or situation sounds difficult.
+- Then give one small realistic next step; offer up to 3 short choices only when that is more useful than one suggestion.
+- Do not open with a question and do not use a long checklist.
+- End with one natural question about what made the moment difficult, when appropriate.`;
     default:
       return `Current intent: SUPPORTIVE CONVERSATION.
-- Respond naturally to what was shared.
-- Offer at most one gentle next step when useful.
-- Keep it to 2 to 4 sentences.`;
+- Respond naturally to what was shared, and acknowledge a difficult feeling before advice.
+- Offer one small next step, or up to 3 short practical options when choices would help.
+- Keep it warm and useful without becoming a long checklist.
+- End with at most one gentle question when appropriate.`;
   }
 }
 
@@ -89,16 +95,36 @@ function isCrisis(message) {
     "can't keep myself safe",
     'cannot keep myself safe',
     'not safe with myself',
+    'unalive myself',
+    'want to unalive myself',
+    'end myself',
+    'off myself',
+    'take myself out',
+    'i do not want to be here anymore',
+    "i don't want to be here anymore",
     'i want to hurt someone',
     'going to hurt someone',
     'kill someone',
+    'overdose',
+    'overdosed',
+    'took too many pills',
+    'not breathing',
+    "can't breathe",
+    'cannot breathe',
+    'having a seizure',
+    'passed out',
   ];
   return patterns.some((pattern) => text.includes(pattern));
 }
 
-const CRISIS_REPLY = `I’m really glad you reached out. I’m an AI companion and cannot provide emergency help, but you deserve immediate human support right now.
+const CRISIS_REPLY = `I’m really glad you told me. I’m an AI companion and cannot provide emergency help, but you deserve immediate human support right now.
 
-Please open Emergency Support in MindMate or call your local emergency service. If you can, move near someone you trust and tell them you need help staying safe.`;
+Please open Emergency Support now. If you are in immediate danger or have already hurt yourself, call your local emergency service now. Move near someone you trust and put distance between yourself and anything you could use to hurt yourself. If you can, tell someone: “I might not be safe alone right now.” Are you in immediate danger right now, or have you already hurt yourself? Once you are with someone, you can tell me what brought you to this point.`;
+
+const CRISIS_ACTION = Object.freeze({
+  type: 'open_emergency_support',
+  label: 'Open Emergency Support',
+});
 
 const QUOTA_FALLBACK = `The AI companion has reached today’s service limit. MindMate’s guided breathing, meditation, journaling, and human-support options are still available.
 
@@ -303,7 +329,11 @@ const worker = {
           mode,
           messageLength: userMessage.length,
         });
-        return jsonResponse({ reply: CRISIS_REPLY }, 200, requestId);
+        return jsonResponse(
+          { reply: CRISIS_REPLY, action: CRISIS_ACTION },
+          200,
+          requestId,
+        );
       }
 
       if (env.MINDMATE_RATE_LIMIT) {
@@ -347,7 +377,7 @@ const worker = {
 
       const aiResponse = await env.AI.run(model, {
         messages,
-        max_tokens: 220,
+        max_tokens: 320,
         temperature: 0.65,
       });
 

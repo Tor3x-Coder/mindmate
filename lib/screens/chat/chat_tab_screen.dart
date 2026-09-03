@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 import '../../models/learn_article_model.dart';
 import '../../services/chat_service.dart';
 import '../../utils/app_theme.dart';
+import '../emergency_support_screen.dart';
 
 class _ChatMessage {
   final String role;
   final String content;
   final bool isError;
+  final ChatAction? action;
 
   const _ChatMessage({
     required this.role,
     required this.content,
     this.isError = false,
+    this.action,
   });
 }
 
@@ -77,8 +80,9 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
         break;
     }
     // The starter helper clears the mode; re-apply it afterwards so the
-    // chosen direction is actually sent with the first message.
-    setState(() => _activeMode = mode);
+    // chosen direction is actually sent with the first message. The UI label
+    // is "plan", while the Worker contract calls this mode "make_plan".
+    setState(() => _activeMode = mode == 'plan' ? 'make_plan' : mode);
   }
 
   void _showAiBoundary() {
@@ -114,8 +118,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
     final text = _inputController.text.trim();
     if (text.isEmpty || _isSending) return;
 
-    // Keep the client request small while the backend history limit is still
-    // being completed in the AI safety batch.
+    // Keep the client request aligned with the Worker history limit.
     final previousMessages = _messages
         .where((message) => !message.isError)
         .toList();
@@ -138,7 +141,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
     _scrollToBottom();
 
     try {
-      final reply = await _chatService.sendMessage(
+      final result = await _chatService.sendChat(
         userMessage: text,
         history: history,
         mode: modeToSend,
@@ -147,7 +150,13 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
 
       if (!mounted) return;
       setState(() {
-        _messages.add(_ChatMessage(role: 'assistant', content: reply));
+        _messages.add(
+          _ChatMessage(
+            role: 'assistant',
+            content: result.reply,
+            action: result.action,
+          ),
+        );
         _isSending = false;
       });
       _scrollToBottom();
@@ -429,10 +438,38 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
             ),
           ],
         ),
-        child: Text(
-          message.content,
-          style: TextStyle(color: textColor, fontSize: 14, height: 1.4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              message.content,
+              style: TextStyle(color: textColor, fontSize: 14, height: 1.4),
+            ),
+            if (!isUser && !message.isError && message.action != null) ...[
+              const SizedBox(height: 14),
+              _buildMessageAction(message.action!),
+            ],
+          ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildMessageAction(ChatAction action) {
+    if (!action.opensEmergencySupport) return const SizedBox.shrink();
+
+    return ElevatedButton.icon(
+      onPressed: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => const EmergencySupportScreen(),
+        ),
+      ),
+      icon: const Icon(Icons.support_agent_rounded, size: 18),
+      label: Text(action.label),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppTheme.danger,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       ),
     );
   }
