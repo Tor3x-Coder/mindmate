@@ -13,7 +13,7 @@ Flutter calls the Worker; it never contains a model/provider secret.
 - Flutter client sanitization: updated locally; the prior developer-PC full Flutter suite was **47/47 passed** with analyzer 0 errors/0 warnings. The new Chat action tests/analyzer pass remain pending on the developer PC.
 - Selected default model: `@cf/meta/llama-3.3-70b-instruct-fp8-fast`.
 - Live Worker deployment: `2026-09-02-learn-context` is currently live and the dashboard shows the required `AI` Workers AI binding and explicit `AI_MODEL` variable. No optional rate-limit or metrics bindings were previously configured or added.
-- Pending source update: `2026-09-03-connected-chat` adds richer make-plan replies, broader clear-danger phrase coverage, and an allow-listed Emergency Support action for the Flutter UI. Deploy this source only after the local tests pass and the existing bindings are verified again.
+- Pending source update: `2026-09-03-connected-chat-r2` adds richer make-plan replies, broader clear-danger phrase coverage, and an allow-listed Emergency Support action for the Flutter UI. Deploy this source only after the local tests pass and the existing bindings are verified again.
 - Previous live POST smoke matrix: **passed** for normal plan, calm, Learn article context, and deterministic crisis guidance. Re-run it after the source update is deployed.
 - Live endpoint currently configured in Flutter:
 
@@ -22,7 +22,7 @@ https://mindmate-ai-chat.tor3x-akachukwu.workers.dev
 ```
 
 The currently live Worker is the earlier Learn-context deployment. After
-publishing `2026-09-03-connected-chat`, `/health` should report the new version.
+publishing `2026-09-03-connected-chat-r2`, `/health` should report the new version.
 Do not call that deployment fully verified until the live POST matrix passes. A
 local Wrangler dry run without a configuration reports `No bindings found`; do
 not use that path for future updates because the Worker requires the existing
@@ -70,7 +70,7 @@ Expected after deployment:
 {
   "service": "mindmate-ai-chat",
   "status": "ok",
-  "version": "2026-09-03-connected-chat",
+  "version": "2026-09-03-connected-chat-r2",
   "defaultModel": "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
 }
 ```
@@ -167,7 +167,7 @@ authenticated to Cloudflare. Use the dashboard path below, or first complete
 https://mindmate-ai-chat.tor3x-akachukwu.workers.dev/health
 ```
 
-Confirm version `2026-09-03-connected-chat` and the model before testing normal chat, article-context chat, and crisis action metadata.
+Confirm version `2026-09-03-connected-chat-r2` and the model before testing normal chat, article-context chat, and crisis action metadata.
 
 ## Live PowerShell smoke matrix
 

@@ -8,7 +8,7 @@
 //   - Client history/modes are treated as untrusted input.
 //   - Logs contain request metadata and lengths, never message text.
 
-const WORKER_VERSION = '2026-09-03-connected-chat';
+const WORKER_VERSION = '2026-09-03-connected-chat-r2';
 const DEFAULT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const ALLOWED_MODES = new Set(['listen', 'calm', 'make_plan']);
 const MAX_BODY_CHARS = 64_000;
