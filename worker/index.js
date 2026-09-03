@@ -68,7 +68,9 @@ function normalizeMode(value) {
 }
 
 function isCrisis(message) {
-  const text = typeof message === 'string' ? message.toLowerCase() : '';
+  const text = typeof message === 'string'
+    ? message.toLowerCase().replace(/\bmy\s+self\b/g, 'myself')
+    : '';
   const patterns = [
     'kill myself',
     'killing myself',

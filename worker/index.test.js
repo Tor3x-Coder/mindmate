@@ -98,6 +98,7 @@ test('mode and crisis helpers accept only intended values', () => {
   assert.equal(normalizeMode('system_override'), '');
   assert.equal(normalizeMode({ mode: 'listen' }), '');
   assert.equal(isCrisis('I plan to kill myself tonight.'), true);
+  assert.equal(isCrisis('I think I wanna kill my self ahh.'), true);
   assert.equal(isCrisis('I want to take my own life.'), true);
   assert.equal(isCrisis('I feel suicidal.'), true);
   assert.equal(isCrisis('I want to die.'), true);
