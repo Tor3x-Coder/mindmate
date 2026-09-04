@@ -61,7 +61,11 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
     // Learn can open Chat in a lightweight route without the app shell's
     // provider tree (for example, in widget tests). Treat that as guest scope
     // rather than preventing the article-to-Chat handoff from rendering.
-    _chatUserKey = context.read<AuthService?>()?.currentUser?.uid ?? 'guest';
+    try {
+      _chatUserKey = context.read<AuthService>().currentUser?.uid ?? 'guest';
+    } on ProviderNotFoundException {
+      _chatUserKey = 'guest';
+    }
     unawaited(_loadConversationHistory());
   }
 
