@@ -58,7 +58,10 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
   void initState() {
     super.initState();
     _activeLearnArticle = widget.learnArticle;
-    _chatUserKey = context.read<AuthService>().currentUser?.uid ?? 'guest';
+    // Learn can open Chat in a lightweight route without the app shell's
+    // provider tree (for example, in widget tests). Treat that as guest scope
+    // rather than preventing the article-to-Chat handoff from rendering.
+    _chatUserKey = context.read<AuthService?>()?.currentUser?.uid ?? 'guest';
     unawaited(_loadConversationHistory());
   }
 
