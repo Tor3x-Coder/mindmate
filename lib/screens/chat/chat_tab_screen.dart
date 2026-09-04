@@ -1,8 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/learn_article_model.dart';
+import '../../services/auth_service.dart';
+import '../../services/chat_history_service.dart';
 import '../../services/chat_service.dart';
 import '../../utils/app_theme.dart';
+import '../../utils/learn_articles.dart';
 import '../emergency_support_screen.dart';
 
 class _ChatMessage {
@@ -33,12 +39,18 @@ class ChatTabScreen extends StatefulWidget {
 
 class _ChatTabScreenState extends State<ChatTabScreen> {
   final ChatService _chatService = ChatService();
+  final ChatHistoryService _chatHistoryService = ChatHistoryService();
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final FocusNode _inputFocusNode = FocusNode();
 
   final List<_ChatMessage> _messages = [];
+  final List<ChatConversation> _conversations = [];
   bool _isSending = false;
+  bool _isLoadingHistory = true;
+  String _chatUserKey = 'guest';
+  Future<void> _saveQueue = Future<void>.value();
+  String? _activeConversationId;
   String? _activeMode;
   LearnArticle? _activeLearnArticle;
 
@@ -46,6 +58,34 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
   void initState() {
     super.initState();
     _activeLearnArticle = widget.learnArticle;
+    _chatUserKey = context.read<AuthService>().currentUser?.uid ?? 'guest';
+    unawaited(_loadConversationHistory());
+  }
+
+  Future<void> _loadConversationHistory() async {
+    try {
+      final saved = await _chatHistoryService.load(_chatUserKey);
+      if (!mounted) return;
+
+      setState(() {
+        _conversations
+          ..clear()
+          ..addAll(saved);
+        _isLoadingHistory = false;
+
+        // An article-scoped entry should start a fresh conversation. Otherwise,
+        // reopen the most recently used conversation after the app restarts.
+        if (widget.learnArticle == null && saved.isNotEmpty) {
+          _loadConversationIntoView(saved.first);
+        }
+      });
+      _scrollToBottom();
+    } catch (_) {
+      // Local history is an enhancement; a damaged/unavailable preference
+      // store must never stop a user from starting a new Chat.
+      if (!mounted) return;
+      setState(() => _isLoadingHistory = false);
+    }
   }
 
   @override
@@ -54,6 +94,363 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
     _scrollController.dispose();
     _inputFocusNode.dispose();
     super.dispose();
+  }
+
+  LearnArticle? _articleForId(String? id) {
+    if (id == null || id.isEmpty) return null;
+    for (final article in learnArticles) {
+      if (article.id == id) return article;
+    }
+    return null;
+  }
+
+  void _loadConversationIntoView(ChatConversation conversation) {
+    _activeConversationId = conversation.id;
+    _messages
+      ..clear()
+      ..addAll(
+        conversation.messages.map(
+          (message) => _ChatMessage(
+            role: message.role,
+            content: message.content,
+            action: _actionFromWireValue(message.actionType),
+          ),
+        ),
+      );
+    _activeLearnArticle = _articleForId(conversation.learnArticleId);
+    _activeMode = null;
+  }
+
+  ChatAction? _actionFromWireValue(String? value) {
+    if (value != ChatAction.openEmergencySupportWireValue) return null;
+    return const ChatAction(
+      type: ChatActionType.openEmergencySupport,
+      label: ChatAction.openEmergencySupportLabel,
+    );
+  }
+
+  String _conversationTitle(String message) {
+    final clean = message.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (clean.length <= 48) return clean;
+    return '${clean.substring(0, 47)}…';
+  }
+
+  void _ensureCurrentConversation(String firstMessage) {
+    if (_activeConversationId != null) return;
+
+    final conversation = ChatConversation(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      title: _conversationTitle(firstMessage),
+      updatedAt: DateTime.now(),
+      learnArticleId: _activeLearnArticle?.id,
+      messages: const [],
+    );
+    _activeConversationId = conversation.id;
+    _conversations.insert(0, conversation);
+  }
+
+  Future<void> _persistCurrentConversation() {
+    final id = _activeConversationId;
+    if (id == null || _messages.isEmpty) return Future<void>.value();
+
+    final index = _conversations.indexWhere((item) => item.id == id);
+    if (index < 0) return Future<void>.value();
+
+    final savedMessages = _messages
+        .where((message) => !message.isError)
+        .map(
+          (message) => ChatHistoryMessage(
+            role: message.role,
+            content: message.content,
+            actionType: message.action == null
+                ? null
+                : ChatAction.openEmergencySupportWireValue,
+          ),
+        )
+        .toList(growable: false);
+    if (savedMessages.isEmpty) return Future<void>.value();
+
+    final current = _conversations[index];
+    final updated = ChatConversation(
+      id: current.id,
+      title: current.title,
+      updatedAt: DateTime.now(),
+      learnArticleId: current.learnArticleId,
+      messages: savedMessages,
+    );
+    _conversations
+      ..removeAt(index)
+      ..insert(0, updated);
+    final snapshot = List<ChatConversation>.of(_conversations);
+    _saveQueue = _saveQueue
+        .then((_) => _chatHistoryService.save(_chatUserKey, snapshot))
+        .catchError((_) {
+          // Chat remains usable even if browser/device storage is unavailable.
+        });
+    return _saveQueue;
+  }
+
+  void _startNewConversation() {
+    if (_isSending) return;
+    setState(() {
+      _activeConversationId = null;
+      _messages.clear();
+      _activeMode = null;
+      _activeLearnArticle = null;
+    });
+    Navigator.of(context).maybePop();
+  }
+
+  void _selectConversation(ChatConversation conversation) {
+    if (_isSending) return;
+    setState(() => _loadConversationIntoView(conversation));
+    Navigator.of(context).maybePop();
+    _scrollToBottom();
+  }
+
+  Future<void> _confirmDeleteConversation(ChatConversation conversation) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete this chat?'),
+        content: const Text(
+          'This removes the conversation from this device. It cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _conversations.removeWhere((item) => item.id == conversation.id);
+      if (_activeConversationId == conversation.id) {
+        _activeConversationId = null;
+        _messages.clear();
+        _activeMode = null;
+        _activeLearnArticle = null;
+      }
+    });
+    await _chatHistoryService.save(_chatUserKey, _conversations);
+  }
+
+  Future<void> _confirmClearHistory() async {
+    if (_conversations.isEmpty) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Clear Chat history?'),
+        content: const Text(
+          'All saved conversations will be removed from this device.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Clear history'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _conversations.clear();
+      _activeConversationId = null;
+      _messages.clear();
+      _activeMode = null;
+      _activeLearnArticle = null;
+    });
+    await _chatHistoryService.clear(_chatUserKey);
+    if (mounted) Navigator.of(context).maybePop();
+  }
+
+  Widget _buildChatDrawer() {
+    final grouped = <Widget>[];
+    String? lastSection;
+    for (final conversation in _conversations) {
+      final section = _isToday(conversation.updatedAt) ? 'Today' : 'Older';
+      if (section != lastSection) {
+        grouped.add(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 16, 6),
+            child: Text(
+              section,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ),
+        );
+        lastSection = section;
+      }
+      grouped.add(
+        ListTile(
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+          leading: Icon(
+            Icons.chat_bubble_outline_rounded,
+            size: 18,
+            color: conversation.id == _activeConversationId
+                ? AppTheme.primary
+                : Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          title: Text(
+            conversation.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: conversation.id == _activeConversationId
+                  ? FontWeight.w800
+                  : FontWeight.w600,
+            ),
+          ),
+          subtitle: Text(
+            '${conversation.messages.length} messages',
+            style: TextStyle(
+              fontSize: 11,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          selected: conversation.id == _activeConversationId,
+          selectedTileColor: AppTheme.primary.withValues(alpha: 0.10),
+          onTap: () => _selectConversation(conversation),
+          trailing: PopupMenuButton<String>(
+            tooltip: 'Chat options',
+            onSelected: (value) {
+              if (value == 'delete') {
+                unawaited(_confirmDeleteConversation(conversation));
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'delete',
+                child: Text('Delete chat'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 16, 6),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.forum_rounded,
+                      color: AppTheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Chat history',
+                      style: TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                    tooltip: 'Close chat history',
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+              child: FilledButton.icon(
+                onPressed: _isSending ? null : _startNewConversation,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('New chat'),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              child: Text(
+                'Saved on this device for this account. Chat history is not uploaded to Firestore.',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 11,
+                  height: 1.3,
+                ),
+              ),
+            ),
+            Expanded(
+              child: _isLoadingHistory
+                  ? const Center(child: CircularProgressIndicator())
+                  : _conversations.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(28),
+                            child: Text(
+                              'Your saved conversations will appear here.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        )
+                      : ListView(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          children: grouped,
+                        ),
+            ),
+            if (_conversations.isNotEmpty)
+              ListTile(
+                leading: Icon(
+                  Icons.delete_outline_rounded,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                title: const Text('Clear chat history'),
+                onTap: () => unawaited(_confirmClearHistory()),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _isToday(DateTime value) {
+    final now = DateTime.now();
+    final local = value.toLocal();
+    return local.year == now.year &&
+        local.month == now.month &&
+        local.day == now.day;
   }
 
   void _useStarter(String starter) {
@@ -133,11 +530,13 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
     final modeToSend = _activeMode;
     final learnContextToSend = _activeLearnArticle?.aiContext;
     setState(() {
+      _ensureCurrentConversation(text);
       _messages.add(_ChatMessage(role: 'user', content: text));
       _isSending = true;
       _activeMode = null;
       _inputController.clear();
     });
+    unawaited(_persistCurrentConversation());
     _scrollToBottom();
 
     try {
@@ -159,6 +558,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
         );
         _isSending = false;
       });
+      unawaited(_persistCurrentConversation());
       _scrollToBottom();
     } catch (_) {
       if (!mounted) return;
@@ -185,6 +585,13 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
       appBar: AppBar(
         title: const Text('Talk with MindMate'),
         automaticallyImplyLeading: false,
+        leading: Builder(
+          builder: (context) => IconButton(
+            onPressed: () => Scaffold.of(context).openDrawer(),
+            icon: const Icon(Icons.menu_rounded),
+            tooltip: 'Open chat history',
+          ),
+        ),
         actions: [
           IconButton(
             onPressed: _showAiBoundary,
@@ -193,6 +600,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
           ),
         ],
       ),
+      drawer: _buildChatDrawer(),
       body: SafeArea(
         child: Column(
           children: [
