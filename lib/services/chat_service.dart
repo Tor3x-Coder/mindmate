@@ -3,6 +3,9 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../models/check_in_context_model.dart';
+import '../models/guidance_response_model.dart';
+
 typedef ChatHttpPost = Future<http.Response> Function(
   Uri url, {
   Map<String, String>? headers,
@@ -46,15 +49,29 @@ class ChatResponse {
   });
 }
 
+class GuidanceChatResponse {
+  final String reply;
+  final GuidanceResponse guidance;
+  final ChatAction? action;
+
+  const GuidanceChatResponse({
+    required this.reply,
+    required this.guidance,
+    this.action,
+  });
+}
+
 class ChatService {
   static const int _maxMessageChars = 4000;
   static const int _maxHistoryChars = 4000;
   static const int _maxHistoryTurns = 12;
   static const int _maxLearnContextChars = 5000;
+  static const int _maxFreeTextChars = 500;
   static const Set<String> _allowedModes = {
     'listen',
     'calm',
     'make_plan',
+    'guidance',
   };
 
   static const String _defaultWorkerUrl =
@@ -98,6 +115,7 @@ class ChatService {
   //   'listen'    - reflective listening, minimal advice
   //   'calm'      - grounding, calming language
   //   'make_plan' - help make one small, realistic next step
+  //   'guidance'  - structured One Safe Step guidance
   //   null        - general supportive conversation
   //
   // [learnContext] is the selected, bundled Learn article. It is optional and
@@ -199,6 +217,122 @@ class ChatService {
       }
 
       return ChatResponse(reply: reply.trim(), action: action);
+    } on http.ClientException {
+      throw Exception(
+        'Could not reach the AI companion. Check your internet connection.',
+      );
+    } on TimeoutException {
+      throw Exception('The AI companion took too long to respond. Try again.');
+    } on FormatException {
+      throw Exception('The AI companion returned an unexpected response.');
+    }
+  }
+
+  /// Sends a contextual check-in to get personalised One Safe Step guidance.
+  ///
+  /// The check-in context is bounded and validated before sending.
+  /// The AI must return an allow-listed action_id; unknown actions are rejected.
+  /// Crisis-first routing is preserved: if the Worker detects crisis language,
+  /// it returns an emergency action and guidance marked as crisis.
+  Future<GuidanceChatResponse> sendGuidance({
+    required CheckInContext checkInContext,
+    String? learnContext,
+  }) async {
+    final boundedFreeText = checkInContext.boundedFreeText;
+    if (boundedFreeText.length > _maxFreeTextChars) {
+      throw Exception('Additional context is too long. Shorten it.');
+    }
+
+    final normalizedLearnContext = learnContext?.trim() ?? '';
+    final limitedLearnContext = normalizedLearnContext.length >
+            _maxLearnContextChars
+        ? normalizedLearnContext.substring(0, _maxLearnContextChars)
+        : normalizedLearnContext;
+
+    final body = <String, dynamic>{
+      'message': '', // guidance mode uses checkInContext, message optional
+      'mode': 'guidance',
+      'checkInContext': checkInContext.toJson(),
+      if (limitedLearnContext.isNotEmpty) 'learnContext': limitedLearnContext,
+    };
+
+    try {
+      final response = await _post(
+        _workerUri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 45));
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException('Unexpected Worker response shape.');
+      }
+
+      if (response.statusCode != 200) {
+        final workerError = decoded['error'];
+        throw Exception(
+          workerError is String && workerError.trim().isNotEmpty
+              ? workerError
+              : 'The AI companion is unavailable right now.',
+        );
+      }
+
+      final reply = decoded['reply'];
+      if (reply is! String || reply.trim().isEmpty) {
+        throw Exception('The AI companion returned an empty reply.');
+      }
+
+      final guidanceRaw = decoded['guidance'];
+      if (guidanceRaw is! Map<String, dynamic>) {
+        throw const FormatException('Missing guidance in Worker response.');
+      }
+
+      // Validate guidance and reject unknown action_ids
+      late GuidanceResponse guidance;
+      try {
+        guidance = GuidanceResponse.fromJson(
+          guidanceRaw,
+          context: checkInContext,
+        );
+      } on FormatException catch (e) {
+        throw Exception('The guidance response was invalid: ${e.message}');
+      }
+
+      // Extra client-side allow-list check (defense in depth)
+      if (!GuidanceActionIds.isAllowed(guidance.nextStep.actionId)) {
+        throw Exception('The AI returned an unsupported action.');
+      }
+      for (final alt in guidance.alternatives) {
+        if (!GuidanceActionIds.isAllowed(alt.actionId)) {
+          throw Exception('The AI returned an unsupported alternative action.');
+        }
+      }
+
+      ChatAction? action;
+      final rawAction = decoded['action'];
+      if (rawAction is Map<String, dynamic>) {
+        final type = rawAction['type'];
+        if (type == ChatAction.openEmergencySupportWireValue) {
+          action = const ChatAction(
+            type: ChatActionType.openEmergencySupport,
+            label: ChatAction.openEmergencySupportLabel,
+          );
+        }
+      }
+
+      // If guidance itself is marked crisis or has emergency action, ensure action is set
+      if (guidance.isCrisis || guidance.hasEmergencyAction) {
+        action ??= const ChatAction(
+          type: ChatActionType.openEmergencySupport,
+          label: ChatAction.openEmergencySupportLabel,
+        );
+      }
+
+      return GuidanceChatResponse(
+        reply: reply.trim(),
+        guidance: guidance,
+        action: action,
+      );
     } on http.ClientException {
       throw Exception(
         'Could not reach the AI companion. Check your internet connection.',

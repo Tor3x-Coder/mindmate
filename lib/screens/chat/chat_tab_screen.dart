@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/check_in_context_model.dart';
 import '../../models/learn_article_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/chat_history_service.dart';
@@ -27,10 +28,12 @@ class _ChatMessage {
 
 class ChatTabScreen extends StatefulWidget {
   final LearnArticle? learnArticle;
+  final CheckInContext? checkInContext;
 
   const ChatTabScreen({
     super.key,
     this.learnArticle,
+    this.checkInContext,
   });
 
   @override
@@ -53,11 +56,13 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
   String? _activeConversationId;
   String? _activeMode;
   LearnArticle? _activeLearnArticle;
+  CheckInContext? _activeCheckIn;
 
   @override
   void initState() {
     super.initState();
     _activeLearnArticle = widget.learnArticle;
+    _activeCheckIn = widget.checkInContext;
     // Learn can open Chat in a lightweight route without the app shell's
     // provider tree (for example, in widget tests). Treat that as guest scope
     // rather than preventing the article-to-Chat handoff from rendering.
@@ -80,10 +85,22 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
           ..addAll(saved);
         _isLoadingHistory = false;
 
-        // An article-scoped entry should start a fresh conversation. Otherwise,
-        // reopen the most recently used conversation after the app restarts.
-        if (widget.learnArticle == null && saved.isNotEmpty) {
+        // An article-scoped or check-in-scoped entry should start a fresh conversation.
+        // Otherwise, reopen the most recently used conversation after the app restarts.
+        if (widget.learnArticle == null &&
+            widget.checkInContext == null &&
+            saved.isNotEmpty) {
           _loadConversationIntoView(saved.first);
+        }
+
+        // If check-in context is provided, prefill a starter message that
+        // carries the context into Chat without requiring the user to retype.
+        if (widget.checkInContext != null && _messages.isEmpty) {
+          final ctx = widget.checkInContext!;
+          _inputController.text =
+              'I checked in as ${ctx.feeling.displayLabel.toLowerCase()} and what is taking energy is ${ctx.energySource.displayLabel.toLowerCase()}. '
+              'What would help most is ${ctx.need.displayLabel.toLowerCase()}.'
+              '${ctx.hasFreeText ? ' ${ctx.boundedFreeText}' : ''}';
         }
       });
       _scrollToBottom();
@@ -204,6 +221,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
       _messages.clear();
       _activeMode = null;
       _activeLearnArticle = null;
+      _activeCheckIn = null;
     });
     Navigator.of(context).maybePop();
   }
@@ -244,6 +262,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
         _messages.clear();
         _activeMode = null;
         _activeLearnArticle = null;
+        _activeCheckIn = null;
       }
     });
     await _chatHistoryService.save(_chatUserKey, _conversations);
@@ -278,6 +297,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
       _messages.clear();
       _activeMode = null;
       _activeLearnArticle = null;
+      _activeCheckIn = null;
     });
     await _chatHistoryService.clear(_chatUserKey);
     if (mounted) Navigator.of(context).maybePop();
@@ -613,6 +633,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
           children: [
             if (_activeLearnArticle != null)
               _buildLearnContextBanner(_activeLearnArticle!),
+            if (_activeCheckIn != null) _buildCheckInBanner(_activeCheckIn!),
             Expanded(
               child: _messages.isEmpty
                   ? _buildGuidedStart(isDark)
@@ -671,6 +692,48 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
           ),
           TextButton(
             onPressed: () => setState(() => _activeLearnArticle = null),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text('Clear'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCheckInBanner(CheckInContext ctx) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+      decoration: BoxDecoration(
+        color: AppTheme.primary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.primary.withValues(alpha: 0.30),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(ctx.feeling.emoji, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              'Checked in as ${ctx.feeling.displayLabel} • ${ctx.energySource.displayLabel}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppTheme.primary,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                height: 1.25,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => setState(() => _activeCheckIn = null),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               minimumSize: Size.zero,

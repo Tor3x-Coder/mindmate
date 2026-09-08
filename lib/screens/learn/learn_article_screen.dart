@@ -4,9 +4,9 @@ import '../../models/learn_article_model.dart';
 import '../../utils/app_theme.dart';
 import '../breathing/breathing_screen.dart';
 import '../chat/chat_tab_screen.dart';
+import '../check_in/contextual_check_in_screen.dart';
 import '../emergency_support_screen.dart';
 import '../journal/journal_screen.dart';
-import '../mood/mood_checkin_screen.dart';
 
 class LearnArticleScreen extends StatelessWidget {
   final LearnArticle article;
@@ -31,7 +31,7 @@ class LearnArticleScreen extends StatelessWidget {
       case LearnTool.breathing:
         screen = const BreathingScreen();
       case LearnTool.moodCheckIn:
-        screen = const MoodCheckinScreen();
+        screen = const ContextualCheckInScreen();
       case LearnTool.journal:
         screen = const JournalScreen();
       case LearnTool.emergencySupport:

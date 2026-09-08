@@ -5,7 +5,7 @@ import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/app_theme.dart';
 import '../me/me_screen.dart';
-import '../mood/mood_checkin_screen.dart';
+import '../check_in/contextual_check_in_screen.dart';
 import '../journal/journal_screen.dart';
 import '../breathing/breathing_screen.dart';
 import '../progress/progress_screen.dart';
@@ -209,7 +209,9 @@ Container(
                                   colors: [Color(0xFFDCEEE7), Color(0xFFE8F4F0)],
                                 ),
                           onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const MoodCheckinScreen()),
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    const ContextualCheckInScreen()),
                           ),
                         ),
                         const SizedBox(height: 12),

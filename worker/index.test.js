@@ -2,16 +2,27 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import worker, {
+  ALLOWED_GUIDANCE_ACTIONS,
+  ALLOWED_FEELINGS,
+  ALLOWED_ENERGY,
+  ALLOWED_NEEDS,
   DEFAULT_MODEL,
+  MAX_CHECKIN_FREETEXT_CHARS,
   MAX_HISTORY_TURN_CHARS,
   MAX_HISTORY_TURNS,
   MAX_LEARN_CONTEXT_CHARS,
   WORKER_VERSION,
+  buildCheckInSummary,
+  fallbackGuidance,
   isCrisis,
+  isCrisisInCheckIn,
   looksLikeQuotaError,
   normalizeMode,
+  parseGuidanceJson,
+  sanitizeCheckInContext,
   sanitizeHistory,
   sanitizeLearnContext,
+  validateGuidanceResponse,
 } from './index.js';
 
 function createContext() {
@@ -95,6 +106,7 @@ test('Learn context is bounded and blank context is ignored', () => {
 test('mode and crisis helpers accept only intended values', () => {
   assert.equal(normalizeMode(' calm '), 'calm');
   assert.equal(normalizeMode('make_plan'), 'make_plan');
+  assert.equal(normalizeMode('guidance'), 'guidance');
   assert.equal(normalizeMode('system_override'), '');
   assert.equal(normalizeMode({ mode: 'listen' }), '');
   assert.equal(isCrisis('I plan to kill myself tonight.'), true);
@@ -181,6 +193,8 @@ test('crisis route runs before rate limiting and model generation', async () => 
     type: 'open_emergency_support',
     label: 'Open Emergency Support',
   });
+  assert.ok(data.guidance);
+  assert.equal(data.guidance.next_step.action_id, 'open_emergency_support');
   assert.equal(aiCalls.length, 0);
   assert.equal(rateLimitCalls.length, 0);
 });
@@ -315,4 +329,322 @@ test('missing AI binding and empty model replies fail safely', async () => {
     createContext(),
   );
   assert.equal(emptyResponse.status, 502);
+});
+
+// ---- New guidance tests ----
+
+test('check-in context sanitizer validates allowed values and bounds free text', () => {
+  const valid = sanitizeCheckInContext({
+    feeling: 'overwhelmed',
+    energySource: 'school_or_work',
+    need: 'calm_mind',
+    freeText: '  I have exams  ',
+    situationHint: 'overwhelmed',
+  });
+  assert.ok(valid);
+  assert.equal(valid.feeling, 'overwhelmed');
+  assert.equal(valid.freeText, 'I have exams');
+
+  const tooLong = sanitizeCheckInContext({
+    feeling: 'overwhelmed',
+    energySource: 'school_or_work',
+    need: 'calm_mind',
+    freeText: 'x'.repeat(MAX_CHECKIN_FREETEXT_CHARS + 100),
+  });
+  assert.equal(tooLong.freeText.length, MAX_CHECKIN_FREETEXT_CHARS);
+
+  assert.equal(
+    sanitizeCheckInContext({
+      feeling: 'invalid_feeling',
+      energySource: 'school_or_work',
+      need: 'calm_mind',
+    }),
+    null,
+  );
+  assert.equal(
+    sanitizeCheckInContext({
+      feeling: 'overwhelmed',
+      energySource: 'invalid',
+      need: 'calm_mind',
+    }),
+    null,
+  );
+  assert.equal(
+    sanitizeCheckInContext({
+      feeling: 'overwhelmed',
+      energySource: 'school_or_work',
+      need: 'invalid_need',
+    }),
+    null,
+  );
+});
+
+test('crisis detection in check-in free text', () => {
+  assert.equal(
+    isCrisisInCheckIn({
+      feeling: 'overwhelmed',
+      energySource: 'school_or_work',
+      need: 'calm_mind',
+      freeText: 'I want to kill myself',
+    }),
+    true,
+  );
+  assert.equal(
+    isCrisisInCheckIn({
+      feeling: 'overwhelmed',
+      energySource: 'school_or_work',
+      need: 'calm_mind',
+      freeText: 'I have a lot of homework',
+    }),
+    false,
+  );
+});
+
+test('guidance JSON parser handles fences and extra text', () => {
+  const jsonStr = JSON.stringify({
+    summary: 'Test',
+    what_might_be_happening: 'Something',
+    next_step: { title: 'Breathe', description: 'Breathe slowly', action_id: 'breathing' },
+    alternatives: [],
+  });
+
+  assert.deepEqual(parseGuidanceJson(jsonStr), JSON.parse(jsonStr));
+  assert.deepEqual(
+    parseGuidanceJson('```json\n' + jsonStr + '\n```'),
+    JSON.parse(jsonStr),
+  );
+  assert.deepEqual(
+    parseGuidanceJson('Here is guidance: ' + jsonStr + ' hope it helps'),
+    JSON.parse(jsonStr),
+  );
+  assert.equal(parseGuidanceJson('not json'), null);
+});
+
+test('guidance validator rejects unknown action_ids and accepts valid', () => {
+  const valid = {
+    summary: 'Thanks for checking in',
+    what_might_be_happening: 'When things feel heavy, starting can be hard.',
+    next_step: {
+      title: 'Try breathing',
+      description: 'Take a few slow breaths',
+      action_id: 'breathing',
+    },
+    alternatives: [
+      { title: 'Talk', action_id: 'open_chat' },
+    ],
+  };
+  const validated = validateGuidanceResponse(valid);
+  assert.ok(validated);
+  assert.equal(validated.next_step.action_id, 'breathing');
+
+  const invalidAction = {
+    summary: 'Thanks',
+    what_might_be_happening: 'Something',
+    next_step: {
+      title: 'Hack',
+      description: 'Do evil',
+      action_id: 'open_random_url',
+    },
+    alternatives: [],
+  };
+  assert.equal(validateGuidanceResponse(invalidAction), null);
+
+  const invalidAlt = {
+    summary: 'Thanks',
+    what_might_be_happening: 'Something',
+    next_step: {
+      title: 'Breathe',
+      description: 'Breathe',
+      action_id: 'breathing',
+    },
+    alternatives: [{ title: 'Bad', action_id: 'evil_action' }],
+  };
+  assert.equal(validateGuidanceResponse(invalidAlt), null);
+});
+
+test('fallback guidance uses only allowed actions', () => {
+  const ctx = {
+    feeling: 'overwhelmed',
+    energySource: 'school_or_work',
+    need: 'calm_mind',
+    freeText: '',
+  };
+  const fallback = fallbackGuidance(ctx);
+  assert.ok(fallback.summary);
+  assert.ok(fallback.what_might_be_happening);
+  assert.ok(ALLOWED_GUIDANCE_ACTIONS.has(fallback.next_step.action_id));
+  assert.ok(fallback.alternatives.every((a) => ALLOWED_GUIDANCE_ACTIONS.has(a.action_id)));
+});
+
+test('guidance crisis route for free text', async () => {
+  const { env, aiCalls } = createEnv();
+  const response = await worker.fetch(
+    post({
+      message: '',
+      mode: 'guidance',
+      checkInContext: {
+        feeling: 'overwhelmed',
+        energySource: 'my_thoughts',
+        need: 'calm_mind',
+        freeText: 'I want to die',
+      },
+    }),
+    env,
+    createContext(),
+  );
+  const data = await responseJson(response);
+  assert.equal(response.status, 200);
+  assert.equal(data.guidance.next_step.action_id, 'open_emergency_support');
+  assert.deepEqual(data.action, {
+    type: 'open_emergency_support',
+    label: 'Open Emergency Support',
+  });
+  assert.equal(aiCalls.length, 0);
+});
+
+test('guidance mode generates structured response and validates action_id', async () => {
+  const guidanceJson = JSON.stringify({
+    summary: 'It sounds like you may be carrying a lot right now.',
+    what_might_be_happening:
+      'When school or work takes most energy, it can feel harder to start. Your mind might be trying to hold everything at once.',
+    next_step: {
+      title: 'Make the next few minutes smaller',
+      description: 'Write down what is competing for your attention, then pick one thing for today.',
+      action_id: 'small_plan',
+    },
+    alternatives: [
+      { title: 'Try a calming reset', action_id: 'breathing' },
+      { title: 'Talk it through', action_id: 'open_chat' },
+    ],
+    why_it_might_help: 'Breaking it into one small piece can make it feel more doable.',
+    gentle_question: 'Is there one small thing that would make the next hour kinder?',
+  });
+
+  const { env, aiCalls } = createEnv({
+    aiResponse: { response: guidanceJson },
+  });
+
+  const response = await worker.fetch(
+    post({
+      message: '',
+      mode: 'guidance',
+      checkInContext: {
+        feeling: 'overwhelmed',
+        energySource: 'school_or_work',
+        need: 'figure_out',
+        freeText: 'Exams next week',
+      },
+    }),
+    env,
+    createContext(),
+  );
+
+  const data = await responseJson(response);
+  assert.equal(response.status, 200);
+  assert.ok(data.guidance);
+  assert.equal(data.guidance.next_step.action_id, 'small_plan');
+  assert.equal(data.guidance.alternatives.length, 2);
+  assert.equal(aiCalls.length, 1);
+  // Guidance uses larger max_tokens
+  assert.equal(aiCalls[0].input.max_tokens, 600);
+  assert.match(aiCalls[0].input.messages[0].content, /One Safe Step guidance engine/);
+});
+
+test('guidance mode falls back when AI returns invalid JSON or disallowed action', async () => {
+  const { env } = createEnv({
+    aiResponse: { response: 'This is not JSON at all' },
+  });
+
+  const response = await worker.fetch(
+    post({
+      message: '',
+      mode: 'guidance',
+      checkInContext: {
+        feeling: 'lonely_or_disconnected',
+        energySource: 'relationships_or_family',
+        need: 'connect_someone',
+        freeText: '',
+      },
+    }),
+    env,
+    createContext(),
+  );
+
+  const data = await responseJson(response);
+  assert.equal(response.status, 200);
+  assert.ok(data.guidance);
+  // Fallback should be valid and allowed
+  assert.ok(ALLOWED_GUIDANCE_ACTIONS.has(data.guidance.next_step.action_id));
+});
+
+test('guidance mode falls back when AI returns disallowed action_id', async () => {
+  const badGuidance = JSON.stringify({
+    summary: 'Hi',
+    what_might_be_happening: 'Something',
+    next_step: {
+      title: 'Bad',
+      description: 'Bad action',
+      action_id: 'open_evil_url',
+    },
+    alternatives: [],
+  });
+
+  const { env } = createEnv({
+    aiResponse: { response: badGuidance },
+  });
+
+  const response = await worker.fetch(
+    post({
+      message: '',
+      mode: 'guidance',
+      checkInContext: {
+        feeling: 'overwhelmed',
+        energySource: 'school_or_work',
+        need: 'calm_mind',
+        freeText: '',
+      },
+    }),
+    env,
+    createContext(),
+  );
+
+  const data = await responseJson(response);
+  assert.equal(response.status, 200);
+  assert.ok(data.guidance);
+  // Should have fallen back to allowed action, not the evil one
+  assert.notEqual(data.guidance.next_step.action_id, 'open_evil_url');
+  assert.ok(ALLOWED_GUIDANCE_ACTIONS.has(data.guidance.next_step.action_id));
+});
+
+test('check-in summary builder does not leak extra fields', () => {
+  const ctx = {
+    feeling: 'overwhelmed',
+    energySource: 'school_or_work',
+    need: 'figure_out',
+    freeText: 'Exams',
+    situationHint: 'overwhelmed',
+  };
+  const summary = buildCheckInSummary(ctx);
+  assert.match(summary, /Feeling: overwhelmed/);
+  assert.match(summary, /Energy source: school_or_work/);
+  assert.match(summary, /Need: figure_out/);
+  assert.match(summary, /Additional context: Exams/);
+});
+
+test('allowed guidance actions list matches spec', () => {
+  const expected = [
+    'breathing',
+    'meditation',
+    'journal_prompt',
+    'thought_reframe',
+    'small_plan',
+    'open_learn',
+    'open_chat',
+    'trusted_person_prompt',
+    'open_emergency_support',
+  ];
+  for (const action of expected) {
+    assert.ok(ALLOWED_GUIDANCE_ACTIONS.has(action), `missing ${action}`);
+  }
+  assert.equal(ALLOWED_GUIDANCE_ACTIONS.size, expected.length);
 });
