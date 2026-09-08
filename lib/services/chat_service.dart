@@ -3,8 +3,6 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-import '../models/personalised_guidance_model.dart';
-
 typedef ChatHttpPost = Future<http.Response> Function(
   Uri url, {
   Map<String, String>? headers,
@@ -48,23 +46,6 @@ class ChatResponse {
   });
 }
 
-class PersonalisedGuidanceResult {
-  final PersonalisedGuidanceResponse? guidance;
-  final String? crisisReply;
-  final ChatAction? action;
-
-  const PersonalisedGuidanceResult.guidance(this.guidance)
-      : crisisReply = null,
-        action = null;
-
-  const PersonalisedGuidanceResult.crisis({
-    required this.crisisReply,
-    required this.action,
-  }) : guidance = null;
-
-  bool get isCrisis => crisisReply != null;
-}
-
 class ChatService {
   static const int _maxMessageChars = 4000;
   static const int _maxHistoryChars = 4000;
@@ -102,78 +83,6 @@ class ChatService {
       learnContext: learnContext,
     );
     return result.reply;
-  }
-
-  /// Sends a short contextual check-in to the Worker and parses the typed
-  /// Personalised One Safe Step contract. The check-in does not include
-  /// journal history and its optional free text is bounded by the model.
-  Future<PersonalisedGuidanceResult> sendGuidance({
-    required ContextualCheckIn checkIn,
-  }) async {
-    final optionalContext = checkIn.context.trim();
-    if (optionalContext.length > ContextualCheckIn.maxContextCharacters) {
-      throw Exception(
-        'That context is too long. Keep it under 500 characters.',
-      );
-    }
-
-    try {
-      final response = await _post(
-        _workerUri,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'kind': 'personalised_guidance',
-          'message': 'Personalised check-in',
-          'checkIn': checkIn.toJson(),
-        }),
-      ).timeout(const Duration(seconds: 30));
-
-      final decoded = jsonDecode(response.body);
-      if (decoded is! Map<String, dynamic>) {
-        throw const FormatException('Unexpected guidance response shape.');
-      }
-
-      if (response.statusCode != 200) {
-        final workerError = decoded['error'];
-        throw Exception(
-          workerError is String && workerError.trim().isNotEmpty
-              ? workerError
-              : 'The AI companion is unavailable right now.',
-        );
-      }
-
-      final rawGuidance = decoded['guidance'];
-      if (rawGuidance is Map<String, dynamic>) {
-        return PersonalisedGuidanceResult.guidance(
-          PersonalisedGuidanceResponse.fromJson(rawGuidance),
-        );
-      }
-
-      final crisisReply = decoded['reply'];
-      final rawAction = decoded['action'];
-      if (crisisReply is String && rawAction is Map<String, dynamic>) {
-        final actionType = rawAction['type'];
-        if (actionType == ChatAction.openEmergencySupportWireValue) {
-          return PersonalisedGuidanceResult.crisis(
-            crisisReply: crisisReply.trim(),
-            action: const ChatAction(
-              type: ChatActionType.openEmergencySupport,
-              label: ChatAction.openEmergencySupportLabel,
-            ),
-          );
-        }
-      }
-
-      throw const FormatException('Missing typed guidance response.');
-    } on http.ClientException {
-      throw Exception(
-        'Could not reach the AI companion. Check your internet connection.',
-      );
-    } on TimeoutException {
-      throw Exception('The AI companion took too long to respond. Try again.');
-    } on FormatException {
-      throw Exception('The AI companion returned an unexpected response.');
-    }
   }
 
   // Sends [userMessage] to the AI, along with [history] (recent prior
