@@ -124,11 +124,9 @@ class _GuidanceResultScreenState extends State<GuidanceResultScreen> {
     }
 
     if (!mounted) return;
-    if (destination != null) {
-      await Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => destination!),
-      );
-    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => destination!),
+    );
 
     if (!mounted) return;
     setState(() {});

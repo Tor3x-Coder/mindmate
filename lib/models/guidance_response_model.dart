@@ -84,7 +84,7 @@ class GuidanceNextStep {
       throw const FormatException('Invalid next_step description');
     }
     if (actionId is! String || !GuidanceActionIds.isAllowed(actionId)) {
-      throw const FormatException('Invalid or disallowed next_step action_id: $actionId');
+      throw FormatException('Invalid or disallowed next_step action_id: $actionId');
     }
 
     return GuidanceNextStep(
