@@ -293,11 +293,15 @@ class ChatService {
 
       final guidanceRaw = decoded['guidance'];
       late GuidanceResponse guidance;
+      bool isFallback = false;
 
       if (guidanceRaw is! Map<String, dynamic>) {
         // Old Worker or non-guidance response: use safe local fallback
         // so the UI still works even before new Worker is deployed.
+        // ignore: avoid_print
+        print('[Guidance] FALLBACK USED - no guidance field in Worker response (old Worker?)');
         guidance = GuidanceResponse.fallback(checkInContext);
+        isFallback = true;
       } else {
         // Validate guidance and reject unknown action_ids
         try {
@@ -305,6 +309,10 @@ class ChatService {
             guidanceRaw,
             context: checkInContext,
           );
+          // ignore: avoid_print
+          print('[Guidance] AI SUCCESSFULLY RESPONDED - action_id: ${guidance.nextStep.actionId}');
+          print('[Guidance] AI summary: ${guidance.summary}');
+          print('[Guidance] AI whatMight: ${guidance.whatMightBeHappening}');
         } on FormatException catch (e) {
           // If AI returns invalid guidance, fall back to deterministic safe guidance
           // instead of showing a hard error, but still log the issue via exception
@@ -312,10 +320,21 @@ class ChatService {
           // For now, fallback ensures release is recoverable.
           if (e.message.contains('disallowed') ||
               e.message.contains('Invalid or disallowed')) {
+            // ignore: avoid_print
+            print('[Guidance] REJECTED - disallowed action_id: ${e.message}');
             throw Exception('The guidance response was invalid: ${e.message}');
           }
+          // ignore: avoid_print
+          print('[Guidance] FALLBACK USED - parse failed: ${e.message}');
+          print('[Guidance] Raw guidance that failed: $guidanceRaw');
           guidance = GuidanceResponse.fallback(checkInContext);
+          isFallback = true;
         }
+      }
+
+      if (isFallback) {
+        // ignore: avoid_print
+        print('[Guidance] FALLBACK DETAILS - feeling: ${checkInContext.feeling.wireValue}, need: ${checkInContext.need.wireValue}, freeText: "${checkInContext.boundedFreeText}"');
       }
 
       // Extra client-side allow-list check (defense in depth)

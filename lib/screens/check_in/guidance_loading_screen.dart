@@ -33,10 +33,20 @@ class _GuidanceLoadingScreenState extends State<GuidanceLoadingScreen> {
       _error = null;
     });
 
+    // Debug: show what we're sending
+    debugPrint('[Guidance] Sending check-in: ${widget.checkInContext.toJson()}');
+    debugPrint('[Guidance] FreeText: "${widget.checkInContext.boundedFreeText}"');
+
     try {
       final response = await _chatService.sendGuidance(
         checkInContext: widget.checkInContext,
       );
+
+      debugPrint('[Guidance] Received reply: ${response.reply}');
+      debugPrint('[Guidance] Next step: ${response.guidance.nextStep.actionId} - ${response.guidance.nextStep.title}');
+      debugPrint('[Guidance] What might be happening: ${response.guidance.whatMightBeHappening}');
+      debugPrint('[Guidance] Is crisis: ${response.guidance.isCrisis}');
+      debugPrint('[Guidance] Alternatives: ${response.guidance.alternatives.map((a) => a.actionId).join(', ')}');
 
       if (!mounted) return;
 
