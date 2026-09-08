@@ -296,9 +296,12 @@ function jsonResponse(data, status, requestId) {
 function requestIdFor(request) {
   const cloudflareRay = request.headers.get('cf-ray');
   if (cloudflareRay) return cloudflareRay;
-  if (globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function') {
-    return globalThis.crypto.randomUUID();
-  }
+  try {
+    // crypto is available in Workers runtime
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+  } catch (_) {}
   return `local-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
