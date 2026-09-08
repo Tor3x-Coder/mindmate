@@ -6,6 +6,8 @@ import worker, {
   MAX_HISTORY_TURN_CHARS,
   MAX_HISTORY_TURNS,
   MAX_LEARN_CONTEXT_CHARS,
+  parseGuidancePayload,
+  sanitizeCheckIn,
   WORKER_VERSION,
   isCrisis,
   looksLikeQuotaError,
@@ -109,6 +111,142 @@ test('mode and crisis helpers accept only intended values', () => {
   assert.equal(isCrisis('I might take myself out.'), true);
   assert.equal(isCrisis('I need to kill time before class.'), false);
   assert.equal(isCrisis('I have a work emergency and need a small plan.'), false);
+});
+
+
+test('contextual check-ins are bounded and guidance actions are allow-listed', () => {
+  const checkIn = sanitizeCheckIn({
+    feeling: '  Overwhelmed  ',
+    impact: 'School or work',
+    need: 'Figure out what to do',
+    context: 'x'.repeat(600),
+    ignored: 'not forwarded',
+  });
+
+  assert.deepEqual(checkIn, {
+    feeling: 'Overwhelmed',
+    impact: 'School or work',
+    need: 'Figure out what to do',
+    context: 'x'.repeat(500),
+  });
+  assert.equal(sanitizeCheckIn({ feeling: 'Only one answer' }), null);
+
+  const guidance = parseGuidancePayload(JSON.stringify({
+    acknowledgement: 'That sounds like a lot to hold at once.',
+    what_might_be_happening:
+      'When several demands compete for attention, starting can feel harder.',
+    next_step: {
+      title: 'Make the next few minutes smaller',
+      description: 'Write down one thing and choose the first tiny part.',
+      action_id: 'small_plan',
+    },
+    why_it_may_help: 'A smaller task can make the first move feel more possible.',
+    alternatives: [
+      {
+        title: 'Try a breathing reset',
+        description: 'Take a short guided pause.',
+        action_id: 'breathing',
+      },
+    ],
+    question: 'Which demand feels most urgent?',
+  }));
+  assert.equal(guidance.next_step.action_id, 'small_plan');
+  assert.equal(guidance.alternatives.length, 1);
+
+  assert.throws(
+    () => parseGuidancePayload(JSON.stringify({
+      acknowledgement: 'Okay',
+      what_might_be_happening: 'Maybe a lot is happening.',
+      next_step: {
+        title: 'Open something',
+        description: 'Try it.',
+        action_id: 'open_random_url',
+      },
+      why_it_may_help: 'It may help.',
+      alternatives: [
+        {
+          title: 'Talk',
+          description: 'Share it.',
+          action_id: 'open_chat',
+        },
+      ],
+      question: null,
+    })),
+    /Unknown guidance action/,
+  );
+});
+
+test('personalised guidance validates structured model output', async () => {
+  const modelPayload = {
+    response: JSON.stringify({
+      acknowledgement: 'That sounds like a lot to hold at once.',
+      what_might_be_happening:
+        'When several demands compete for attention, starting can feel harder.',
+      next_step: {
+        title: 'Make the next few minutes smaller',
+        description: 'Write down one thing and choose the first tiny part.',
+        action_id: 'small_plan',
+      },
+      why_it_may_help: 'A smaller task can make the first move feel more possible.',
+      alternatives: [
+        {
+          title: 'Try a breathing reset',
+          description: 'Take a short guided pause.',
+          action_id: 'breathing',
+        },
+      ],
+      question: null,
+    }),
+  };
+  const { env, aiCalls } = createEnv({ aiResponse: modelPayload });
+  const response = await worker.fetch(
+    post({
+      kind: 'personalised_guidance',
+      message: 'Personalised check-in',
+      checkIn: {
+        feeling: 'Overwhelmed',
+        impact: 'School or work',
+        need: 'Figure out what to do',
+        context: 'Three deadlines are close together.',
+      },
+    }),
+    env,
+    createContext(),
+  );
+  const data = await responseJson(response);
+
+  assert.equal(response.status, 200);
+  assert.equal(data.guidance.next_step.action_id, 'small_plan');
+  assert.equal(aiCalls.length, 1);
+  assert.match(aiCalls[0].input.messages[0].content, /valid JSON object/i);
+  assert.match(aiCalls[0].input.messages[1].content, /Three deadlines/);
+});
+
+test('personalised guidance keeps crisis routing before the model', async () => {
+  const { env, aiCalls, rateLimitCalls } = createEnv({
+    rateLimitSuccess: false,
+  });
+  const response = await worker.fetch(
+    post({
+      kind: 'personalised_guidance',
+      message: 'Personalised check-in',
+      checkIn: {
+        feeling: 'Overwhelmed',
+        impact: 'My thoughts',
+        need: 'Connect with someone',
+        context: 'I am going to hurt myself tonight.',
+      },
+    }),
+    env,
+    createContext(),
+  );
+  const data = await responseJson(response);
+
+  assert.equal(response.status, 200);
+  assert.match(data.reply, /immediate human support/i);
+  assert.equal(data.action.type, 'open_emergency_support');
+  assert.equal(aiCalls.length, 0);
+  assert.equal(rateLimitCalls.length, 0);
 });
 
 test('quota classifier does not mistake ordinary generation errors for limits', () => {

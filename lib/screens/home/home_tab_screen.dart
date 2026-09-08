@@ -6,10 +6,10 @@ import '../../services/firestore_service.dart';
 import '../../utils/app_theme.dart';
 import '../breathing/breathing_screen.dart';
 import '../chat/chat_tab_screen.dart';
+import '../check_in/contextual_check_in_screen.dart';
 import '../emergency_support_screen.dart';
 import '../journal/journal_screen.dart';
 import '../learn/learn_screen.dart';
-import '../mood/mood_checkin_screen.dart';
 import '../settings/settings_screen.dart';
 import '../wellness/wellness_assessment_screen.dart';
 
@@ -73,7 +73,7 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
 
   void _openMoodCheckIn() {
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const MoodCheckinScreen()),
+      MaterialPageRoute(builder: (_) => const ContextualCheckInScreen()),
     );
   }
 
