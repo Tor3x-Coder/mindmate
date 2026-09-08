@@ -268,19 +268,19 @@ class GuidanceResponse {
 
     final whatMight = switch (feeling) {
       CheckInFeeling.overwhelmed =>
-        'When a lot competes for your attention, it can feel harder to start. It makes sense that your mind might be trying to hold everything at once.',
+        'When a lot competes for your attention, it may feel harder to start. It makes sense that your mind might be trying to hold everything at once.',
       CheckInFeeling.lonelyOrDisconnected =>
         'Feeling disconnected can happen even around others. It may be that you are needing more of a sense of being seen or understood right now.',
       CheckInFeeling.anxiousOrWorried =>
         'When thoughts keep looping, your mind may be trying to prepare or protect you, even if the looping itself feels tiring.',
       CheckInFeeling.lowOrSad =>
-        'Low or sad feelings can make energy and motivation feel lower. It makes sense that starting things might feel heavier right now.',
+        'Low or sad feelings may make energy and motivation feel lower. It makes sense that starting things might feel heavier right now.',
       CheckInFeeling.numbOrTired =>
         'Feeling numb or tired can be a sign your system has been carrying a lot. It may help to focus on one gentle, restful next step.',
       CheckInFeeling.frustratedOrAngry =>
-        'Frustration or anger can show up when something feels blocked or unfair. It makes sense to want space before deciding what to do next.',
+        'Frustration or anger can show up when something feels blocked or unfair. It may make sense to want space before deciding what to do next.',
       CheckInFeeling.okayCheckIn =>
-        'It sounds like you are checking in with curiosity. Noticing what is present can be a useful step on its own.',
+        'It sounds like you are checking in with curiosity. Noticing what is present may be a useful step on its own.',
     };
 
     final alternatives = <GuidanceAlternative>[];
@@ -298,7 +298,7 @@ class GuidanceResponse {
     }
 
     return GuidanceResponse(
-      summary: 'Thanks for checking in — ${feeling.displayLabel.toLowerCase()} can be a lot to hold.',
+      summary: 'Thanks for checking in - ${feeling.displayLabel.toLowerCase()} can be a lot to hold.',
       whatMightBeHappening: whatMight,
       nextStep: GuidanceNextStep(
         title: title,

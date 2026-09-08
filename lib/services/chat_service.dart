@@ -182,7 +182,8 @@ class ChatService {
         body: jsonEncode(body),
       ).timeout(const Duration(seconds: 30));
 
-      final decoded = jsonDecode(response.body);
+      // Use bodyBytes + utf8 to support em dash, curly quotes, emojis from AI.
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       if (decoded is! Map<String, dynamic>) {
         throw const FormatException('Unexpected Worker response shape.');
       }
@@ -263,7 +264,8 @@ class ChatService {
         body: jsonEncode(body),
       ).timeout(const Duration(seconds: 45));
 
-      final decoded = jsonDecode(response.body);
+      // Use bodyBytes + utf8 to support em dash, curly quotes, emojis from AI.
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       if (decoded is! Map<String, dynamic>) {
         throw const FormatException('Unexpected Worker response shape.');
       }

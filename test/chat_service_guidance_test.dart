@@ -6,6 +6,14 @@ import 'package:mindmate/models/check_in_context_model.dart';
 import 'package:mindmate/models/guidance_response_model.dart';
 import 'package:mindmate/services/chat_service.dart';
 
+http.Response okJson(Map<String, dynamic> data) {
+  return http.Response.bytes(
+    utf8.encode(jsonEncode(data)),
+    200,
+    headers: {'content-type': 'application/json; charset=utf-8'},
+  );
+}
+
 void main() {
   group('ChatService guidance', () {
     test('sends check-in context with guidance mode and validates action_id', () async {
@@ -15,25 +23,22 @@ void main() {
         workerUrl: 'https://example.test/chat',
         post: (url, {headers, body, encoding}) async {
           sentBody = jsonDecode(body! as String) as Map<String, dynamic>;
-          return http.Response(
-            jsonEncode({
-              'reply': 'Thanks for checking in — it makes sense this feels present.',
-              'guidance': {
-                'summary': 'Thanks for checking in — it makes sense this feels present.',
-                'what_might_be_happening':
-                    'When a lot competes for attention, it can feel harder to start.',
-                'next_step': {
-                  'title': 'Make the next few minutes smaller',
-                  'description': 'Write down what is competing, pick one thing.',
-                  'action_id': 'small_plan',
-                },
-                'alternatives': [
-                  {'title': 'Try a calming reset', 'action_id': 'breathing'},
-                ],
+          return okJson({
+            'reply': 'Thanks for checking in - it makes sense this feels present.',
+            'guidance': {
+              'summary': 'Thanks for checking in - it makes sense this feels present.',
+              'what_might_be_happening':
+                  'When a lot competes for attention, it can feel harder to start.',
+              'next_step': {
+                'title': 'Make the next few minutes smaller',
+                'description': 'Write down what is competing, pick one thing.',
+                'action_id': 'small_plan',
               },
-            }),
-            200,
-          );
+              'alternatives': [
+                {'title': 'Try a calming reset', 'action_id': 'breathing'},
+              ],
+            },
+          });
         },
       );
 
@@ -57,22 +62,19 @@ void main() {
     test('rejects unknown action_id from Worker', () async {
       final service = ChatService(
         post: (url, {headers, body, encoding}) async {
-          return http.Response(
-            jsonEncode({
-              'reply': 'Some reply',
-              'guidance': {
-                'summary': 'Hi',
-                'what_might_be_happening': 'Something',
-                'next_step': {
-                  'title': 'Bad',
-                  'description': 'Bad',
-                  'action_id': 'open_random_url',
-                },
-                'alternatives': [],
+          return okJson({
+            'reply': 'Some reply',
+            'guidance': {
+              'summary': 'Hi',
+              'what_might_be_happening': 'Something',
+              'next_step': {
+                'title': 'Bad',
+                'description': 'Bad',
+                'action_id': 'open_random_url',
               },
-            }),
-            200,
-          );
+              'alternatives': [],
+            },
+          });
         },
       );
 
@@ -91,24 +93,21 @@ void main() {
     test('rejects unknown alternative action_id', () async {
       final service = ChatService(
         post: (url, {headers, body, encoding}) async {
-          return http.Response(
-            jsonEncode({
-              'reply': 'Some reply',
-              'guidance': {
-                'summary': 'Hi',
-                'what_might_be_happening': 'Something',
-                'next_step': {
-                  'title': 'Breathe',
-                  'description': 'Breathe',
-                  'action_id': 'breathing',
-                },
-                'alternatives': [
-                  {'title': 'Evil', 'action_id': 'evil_action'},
-                ],
+          return okJson({
+            'reply': 'Some reply',
+            'guidance': {
+              'summary': 'Hi',
+              'what_might_be_happening': 'Something',
+              'next_step': {
+                'title': 'Breathe',
+                'description': 'Breathe',
+                'action_id': 'breathing',
               },
-            }),
-            200,
-          );
+              'alternatives': [
+                {'title': 'Evil', 'action_id': 'evil_action'},
+              ],
+            },
+          });
         },
       );
 
@@ -127,28 +126,25 @@ void main() {
     test('parses crisis guidance with emergency action', () async {
       final service = ChatService(
         post: (url, {headers, body, encoding}) async {
-          return http.Response(
-            jsonEncode({
-              'reply': 'I’m really glad you told me...',
-              'guidance': {
-                'summary': 'Thank you for sharing',
-                'what_might_be_happening':
-                    'When thoughts about not wanting to be here come up...',
-                'next_step': {
-                  'title': 'Reach human support right now',
-                  'description': 'Please open Emergency Support',
-                  'action_id': 'open_emergency_support',
-                },
-                'alternatives': [],
-                'is_crisis': true,
+          return okJson({
+            'reply': 'I am really glad you told me...',
+            'guidance': {
+              'summary': 'Thank you for sharing',
+              'what_might_be_happening':
+                  'When thoughts about not wanting to be here come up...',
+              'next_step': {
+                'title': 'Reach human support right now',
+                'description': 'Please open Emergency Support',
+                'action_id': 'open_emergency_support',
               },
-              'action': {
-                'type': 'open_emergency_support',
-                'label': 'Open Emergency Support',
-              },
-            }),
-            200,
-          );
+              'alternatives': [],
+              'is_crisis': true,
+            },
+            'action': {
+              'type': 'open_emergency_support',
+              'label': 'Open Emergency Support',
+            },
+          });
         },
       );
 
@@ -170,13 +166,10 @@ void main() {
     test('handles malformed guidance response', () async {
       final service = ChatService(
         post: (url, {headers, body, encoding}) async {
-          return http.Response(
-            jsonEncode({
-              'reply': 'Some reply',
-              // missing guidance
-            }),
-            200,
-          );
+          return okJson({
+            'reply': 'Some reply',
+            // missing guidance
+          });
         },
       );
 
@@ -197,22 +190,19 @@ void main() {
       final service = ChatService(
         post: (url, {headers, body, encoding}) async {
           sentBody = jsonDecode(body! as String) as Map<String, dynamic>;
-          return http.Response(
-            jsonEncode({
-              'reply': 'Reply',
-              'guidance': {
-                'summary': 'Thanks',
-                'what_might_be_happening': 'Something may be happening',
-                'next_step': {
-                  'title': 'Breathe',
-                  'description': 'Breathe slowly',
-                  'action_id': 'breathing',
-                },
-                'alternatives': [],
+          return okJson({
+            'reply': 'Reply',
+            'guidance': {
+              'summary': 'Thanks',
+              'what_might_be_happening': 'Something may be happening',
+              'next_step': {
+                'title': 'Breathe',
+                'description': 'Breathe slowly',
+                'action_id': 'breathing',
               },
-            }),
-            200,
-          );
+              'alternatives': [],
+            },
+          });
         },
       );
 
