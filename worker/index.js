@@ -558,7 +558,7 @@ function fallbackGuidance(ctx) {
 
   switch (feeling) {
     case 'overwhelmed':
-      whatMight = 'When a lot competes for your attention, it can feel harder to start. Your mind might be trying to hold everything at once.';
+      whatMight = 'When a lot competes for your attention, it may feel harder to start. It makes sense that your mind might be trying to hold everything at once.';
       break;
     case 'lonely_or_disconnected':
       whatMight = 'Feeling disconnected can happen even around others. It may be that you are needing more of a sense of being seen or understood right now.';
@@ -567,16 +567,16 @@ function fallbackGuidance(ctx) {
       whatMight = 'When thoughts keep looping, your mind may be trying to prepare or protect you, even if the looping itself feels tiring.';
       break;
     case 'low_or_sad':
-      whatMight = 'Low or sad feelings can make energy and motivation feel lower. It makes sense that starting things might feel heavier right now.';
+      whatMight = 'Low or sad feelings may make energy and motivation feel lower. It makes sense that starting things might feel heavier right now.';
       break;
     case 'numb_or_tired':
       whatMight = 'Feeling numb or tired can be a sign your system has been carrying a lot. It may help to focus on one gentle, restful next step.';
       break;
     case 'frustrated_or_angry':
-      whatMight = 'Frustration or anger can show up when something feels blocked or unfair. It makes sense to want space before deciding what to do next.';
+      whatMight = 'Frustration or anger can show up when something feels blocked or unfair. It may make sense to want space before deciding what to do next.';
       break;
     case 'okay_checkin':
-      whatMight = 'Checking in with curiosity can be useful on its own. Noticing what is present is already a thoughtful step.';
+      whatMight = 'It sounds like you are checking in with curiosity. Noticing what is present may be a useful step on its own.';
       break;
   }
 
@@ -589,7 +589,7 @@ function fallbackGuidance(ctx) {
   }
 
   return {
-    summary: 'Thanks for checking in — it makes sense that this feels present right now.',
+    summary: 'Thanks for checking in - it makes sense that this feels present right now.',
     what_might_be_happening: whatMight,
     next_step: {
       title,

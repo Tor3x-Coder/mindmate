@@ -163,12 +163,12 @@ void main() {
       expect(response.action!.opensEmergencySupport, isTrue);
     });
 
-    test('handles malformed guidance response', () async {
+    test('falls back to safe guidance when Worker returns no guidance', () async {
       final service = ChatService(
         post: (url, {headers, body, encoding}) async {
           return okJson({
             'reply': 'Some reply',
-            // missing guidance
+            // missing guidance - old Worker compatibility
           });
         },
       );
@@ -179,10 +179,11 @@ void main() {
         need: CheckInNeed.calmMind,
       );
 
-      await expectLater(
-        service.sendGuidance(checkInContext: ctx),
-        throwsA(isA<Exception>()),
-      );
+      final response = await service.sendGuidance(checkInContext: ctx);
+      // Should fallback to allowed action, not crash
+      expect(GuidanceActionIds.isAllowed(response.guidance.nextStep.actionId),
+          isTrue);
+      expect(response.reply, isNotEmpty);
     });
 
     test('bounds free text before sending', () async {
