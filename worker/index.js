@@ -8,7 +8,7 @@
 //   - Client history/modes are treated as untrusted input.
 //   - Logs contain request metadata and lengths, never message text.
 
-const WORKER_VERSION = '2026-09-08-guidance-v3';
+const WORKER_VERSION = '2026-09-08-guidance-v4';
 const DEFAULT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const ALLOWED_MODES = new Set(['listen', 'calm', 'make_plan', 'guidance']);
 const MAX_BODY_CHARS = 64_000;
@@ -151,7 +151,26 @@ Check-in: feeling=anxious_or_worried, energy=school_or_work, need=figure_out, Ad
   "gentle_question": "What one small piece would make you feel a bit lighter if you finished it next?"
 }
 
-EXAMPLE 2 - Without Additional context:
+EXAMPLE 2 - With Additional context about teaching students:
+Check-in: feeling=anxious_or_worried, energy=school_or_work, need=get_off_chest, Additional context="i have students to teach tomorrow and i havent even made a note or something to use teach them"
+
+{
+  "summary": "It sounds like you have a class to teach tomorrow and you haven't had a chance to prepare notes yet, which feels really pressured when you're already feeling anxious about work.",
+  "what_might_be_happening": "When you have to teach and you're not prepared yet, it may feel like a lot is resting on tonight. Your mind might be looping over what to cover, which can make it harder to settle.",
+  "next_step": {
+    "title": "Get it out of your head",
+    "description": "Write down what you need to teach tomorrow and what feels most unfinished, just for 5 minutes without needing to fix it yet.",
+    "action_id": "journal_prompt"
+  },
+  "alternatives": [
+    { "title": "Make the next few minutes smaller", "action_id": "small_plan" },
+    { "title": "Try a calming reset", "action_id": "breathing" }
+  ],
+  "why_it_might_help": "Getting the teaching worries out of your head can create a little space to see what to prepare first.",
+  "gentle_question": "What one part of tomorrow's lesson feels most important to have ready?"
+}
+
+EXAMPLE 3 - Without Additional context:
 {
   "summary": "It sounds like you may be carrying several demands at once.",
   "what_might_be_happening": "When too much competes for attention, starting can feel harder. Your mind might be trying to hold everything at once.",
@@ -167,6 +186,9 @@ EXAMPLE 2 - Without Additional context:
   "why_it_might_help": "Breaking it into one small piece can make it feel more doable.",
   "gentle_question": "Is there one small thing that would make the next hour a bit kinder?"
 }
+
+FINAL RULE - DYNAMIC FOR ANY TOPIC:
+- This must work for ANY Additional context, not just app deadlines. If someone says "students to teach", talk about teaching. If they say "fight with my friend", talk about friendship. If they say "money worries", talk about money. Always paraphrase their specific situation, never return generic "Thanks for sharing that context".
 `;
 
 function modePrompt(mode) {
@@ -611,25 +633,48 @@ function fallbackGuidance(ctx) {
     alternatives.push({ title: 'Talk it through', action_id: 'open_chat' });
   }
 
-  // Personalise fallback with freeText if available, so it doesn't feel generic
-  // IMPORTANT: Paraphrase, don't just quote verbatim like 'Thanks for sharing about "X"'
+  // Personalise fallback dynamically for ANY freeText, not just deadlines
+  // We paraphrase instead of just saying "Thanks for sharing that context"
   let summary = 'Thanks for checking in - it makes sense that this feels present right now.';
-  if (ctx?.freeText && ctx.freeText.length > 0) {
-    const lower = ctx.freeText.toLowerCase();
-    if (/app|deadline|deliver|project/i.test(lower)) {
+  const free = (ctx?.freeText || '').trim();
+  const lower = free.toLowerCase();
+
+  if (free.length > 0) {
+    if (/app|deadline|deliver|project|present.*tomorrow/i.test(lower)) {
       summary = `That deadline tomorrow for your app sounds really pressured, especially when you're already feeling ${ctx.feeling.replaceAll('_', ' ')}. It makes sense you want to figure out what to do next.`;
+    } else if (/student|teach|class|lesson|note.*teach|tutor/i.test(lower)) {
+      // Teaching case
+      summary = `It sounds like you have students to teach tomorrow and you haven't had a chance to prepare notes yet. That can feel really pressured when you're already feeling ${ctx.feeling.replaceAll('_', ' ')}.`;
+      if (need === 'get_off_chest') {
+        title = 'Get it out of your head';
+        description = 'Write down what you need to teach tomorrow and what feels most unfinished, just to get it out of your head for a few minutes.';
+        why = 'Getting the teaching worries out of your head can create a little space to plan.';
+      } else if (need === 'figure_out') {
+        title = 'Make the next few minutes smaller';
+        description = 'List the 2-3 things you need for tomorrow\'s class, then pick one small piece to prepare for the next 20 minutes.';
+        why = 'One small prepared piece can make teaching tomorrow feel more doable.';
+      }
     } else if (/exam|test|assignment|school|work/i.test(lower)) {
       summary = `It sounds like school or work has been weighing on you. Thanks for checking in about it - it makes sense that it feels heavy right now.`;
-    } else if (ctx.freeText.length < 30) {
-      summary = `Thanks for checking in as ${ctx.feeling.replaceAll('_', ' ')}. Even a short note like "${ctx.freeText}" can be a lot to hold.`;
+    } else if (free.length < 40) {
+      summary = `Thanks for checking in as ${ctx.feeling.replaceAll('_', ' ')} about "${free}" - even a short note can be a lot to hold.`;
     } else {
-      summary = `Thanks for sharing that context - it sounds like there's a lot on your mind right now and it makes sense that it feels heavy.`;
+      // Generic but includes what they wrote in a natural way
+      const short = free.length > 80 ? free.slice(0, 80) + '...' : free;
+      summary = `It sounds like "${short}" has been on your mind while you're feeling ${ctx.feeling.replaceAll('_', ' ')}. Thanks for sharing - it makes sense that feels heavy.`;
     }
   }
 
-  // If freeText mentions app/deadline, make whatMight more specific even in fallback
-  if (ctx?.freeText && /app|deadline|deliver|project|exam|assignment/i.test(ctx.freeText)) {
-    whatMight = `${whatMight} When a deadline is close and there's still work left, it may feel harder to focus or know where to start, and your mind might be trying to hold all the pieces at once.`;
+  // Make whatMight more specific based on freeText for any case
+  if (free.length > 0) {
+    if (/app|deadline|deliver|project/i.test(lower)) {
+      whatMight = `${whatMight} When a deadline is close and there's still work left, it may feel harder to focus or know where to start, and your mind might be trying to hold all the pieces at once.`;
+    } else if (/student|teach|class|lesson/i.test(lower)) {
+      whatMight = `${whatMight} When you have to teach tomorrow and notes aren't ready yet, it may feel like a lot is resting on tonight. It makes sense that your mind might be looping over what to prepare.`;
+    } else if (free.length > 15) {
+      // For any other freeText, add a generic personalised sentence
+      whatMight = `${whatMight} With "${free.slice(0, 50)}${free.length > 50 ? '...' : ''}" on your mind, it may make it harder to settle and figure out the next step.`;
+    }
   }
 
   return {
