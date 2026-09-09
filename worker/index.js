@@ -8,7 +8,7 @@
 //   - Client history/modes are treated as untrusted input.
 //   - Logs contain request metadata and lengths, never message text.
 
-const WORKER_VERSION = '2026-09-08-guidance-v2';
+const WORKER_VERSION = '2026-09-08-guidance-v3';
 const DEFAULT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const ALLOWED_MODES = new Set(['listen', 'calm', 'make_plan', 'guidance']);
 const MAX_BODY_CHARS = 64_000;
@@ -105,11 +105,12 @@ You must output a single JSON object with exactly this shape:
 
 CRITICAL PERSONALISATION RULES - YOU MUST FOLLOW THESE:
 - You MUST use the Additional context field if it is provided. Do NOT ignore it.
-- If Additional context says something like "I have an app that I must deliver by tomorrow and I'm not done yet", your summary MUST reference the app deadline, e.g. "It makes sense that an app deadline tomorrow feels heavy when you're already feeling anxious about school/work."
-- summary must acknowledge their specific feeling AND their specific situation from Additional context. NEVER return generic fallback phrases like "Thanks for checking in - it makes sense that this feels present right now." That is forbidden. You must generate new, specific wording.
-- what_might_be_happening must connect their feeling + energy source + Additional context in a normalising way, using may/might. For example, if Additional context mentions deadline, explain how deadlines can make it harder to start.
+- If Additional context says something like "I have an app that I must deliver by tomorrow and I'm not done yet", your summary MUST reference the app deadline in your own words, e.g. "It sounds like that app deadline tomorrow is weighing on you while you're feeling anxious about school/work." Do NOT just quote their text verbatim like 'Thanks for sharing about "I have an app to deliver..."' - that is FORBIDDEN. Paraphrase with understanding.
+- summary must acknowledge their specific feeling AND their specific situation from Additional context. NEVER return generic fallback phrases like "Thanks for checking in - it makes sense that this feels present right now." or "Thanks for sharing about X - it makes sense that this feels heavy". Those are forbidden. You must generate new, specific, empathetic wording that shows you understood.
+- what_might_be_happening must connect their feeling + energy source + Additional context in a normalising way, using may/might. For example, if Additional context mentions deadline, explain how deadlines can make it harder to start. Do NOT just repeat their text in quotes.
+- next_step description and why_it_might_help must be tailored to their Additional context. If they mention app deadline, suggest breaking down the app work specifically.
 - Do not hardcode the same response for everyone. Each response must be different based on the check-in.
-- Keep language warm, concise, non-clinical, youth-friendly.
+- Keep language warm, concise, non-clinical, youth-friendly, and natural - like a supportive peer, not a template.
 
 ACTION SELECTION RULES:
 - calm_mind -> breathing or meditation
@@ -611,15 +612,24 @@ function fallbackGuidance(ctx) {
   }
 
   // Personalise fallback with freeText if available, so it doesn't feel generic
+  // IMPORTANT: Paraphrase, don't just quote verbatim like 'Thanks for sharing about "X"'
   let summary = 'Thanks for checking in - it makes sense that this feels present right now.';
   if (ctx?.freeText && ctx.freeText.length > 0) {
-    const snippet = ctx.freeText.slice(0, 80);
-    summary = `Thanks for sharing about "${snippet}${ctx.freeText.length > 80 ? '...' : ''}" - it makes sense that this feels heavy right now.`;
+    const lower = ctx.freeText.toLowerCase();
+    if (/app|deadline|deliver|project/i.test(lower)) {
+      summary = `That deadline tomorrow for your app sounds really pressured, especially when you're already feeling ${ctx.feeling.replaceAll('_', ' ')}. It makes sense you want to figure out what to do next.`;
+    } else if (/exam|test|assignment|school|work/i.test(lower)) {
+      summary = `It sounds like school or work has been weighing on you. Thanks for checking in about it - it makes sense that it feels heavy right now.`;
+    } else if (ctx.freeText.length < 30) {
+      summary = `Thanks for checking in as ${ctx.feeling.replaceAll('_', ' ')}. Even a short note like "${ctx.freeText}" can be a lot to hold.`;
+    } else {
+      summary = `Thanks for sharing that context - it sounds like there's a lot on your mind right now and it makes sense that it feels heavy.`;
+    }
   }
 
   // If freeText mentions app/deadline, make whatMight more specific even in fallback
   if (ctx?.freeText && /app|deadline|deliver|project|exam|assignment/i.test(ctx.freeText)) {
-    whatMight = `${whatMight} When a deadline like "${ctx.freeText.slice(0, 60)}" is close, it may make it harder to focus and start.`;
+    whatMight = `${whatMight} When a deadline is close and there's still work left, it may feel harder to focus or know where to start, and your mind might be trying to hold all the pieces at once.`;
   }
 
   return {
