@@ -8,7 +8,7 @@
 //   - Client history/modes are treated as untrusted input.
 //   - Logs contain request metadata and lengths, never message text.
 
-const WORKER_VERSION = '2026-09-08-guidance-v1';
+const WORKER_VERSION = '2026-09-08-guidance-v2';
 const DEFAULT_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const ALLOWED_MODES = new Set(['listen', 'calm', 'make_plan', 'guidance']);
 const MAX_BODY_CHARS = 64_000;
@@ -103,12 +103,13 @@ You must output a single JSON object with exactly this shape:
   "gentle_question": "At most one gentle follow-up question, optional."
 }
 
-RULES FOR DYNAMIC WORDING:
-- Generate personalised wording based on feeling, energy source, need, and optional free text.
-- Do not hardcode the same response for everyone.
+CRITICAL PERSONALISATION RULES - YOU MUST FOLLOW THESE:
+- You MUST use the Additional context field if it is provided. Do NOT ignore it.
+- If Additional context says something like "I have an app that I must deliver by tomorrow and I'm not done yet", your summary MUST reference the app deadline, e.g. "It makes sense that an app deadline tomorrow feels heavy when you're already feeling anxious about school/work."
+- summary must acknowledge their specific feeling AND their specific situation from Additional context. NEVER return generic fallback phrases like "Thanks for checking in - it makes sense that this feels present right now." That is forbidden. You must generate new, specific wording.
+- what_might_be_happening must connect their feeling + energy source + Additional context in a normalising way, using may/might. For example, if Additional context mentions deadline, explain how deadlines can make it harder to start.
+- Do not hardcode the same response for everyone. Each response must be different based on the check-in.
 - Keep language warm, concise, non-clinical, youth-friendly.
-- summary should acknowledge their specific feeling and need.
-- what_might_be_happening should connect their feeling + energy source in a normalising way, using may/might.
 
 ACTION SELECTION RULES:
 - calm_mind -> breathing or meditation
@@ -130,8 +131,26 @@ VALIDATION:
 - Keep each field under 400 characters.
 - Do not include markdown, only plain text inside JSON values.
 
-EXAMPLE (do not copy verbatim, generate new wording):
+EXAMPLE 1 - With Additional context about app deadline:
+Check-in: feeling=anxious_or_worried, energy=school_or_work, need=figure_out, Additional context="I have an app that i must deliver by tomorrow and im not done yet"
 
+{
+  "summary": "It sounds like that app deadline tomorrow is weighing on you while you're feeling anxious about school or work. It makes sense to want to figure out what to do next.",
+  "what_might_be_happening": "When a deadline is close and there's still a lot left to do, it may feel harder to start. Your mind might be looping over what needs doing, which can make the workload feel even bigger.",
+  "next_step": {
+    "title": "Make the next few minutes smaller",
+    "description": "Write down the 2-3 pieces left for the app, then pick just one small piece for the next 25 minutes.",
+    "action_id": "small_plan"
+  },
+  "alternatives": [
+    { "title": "Try a calming reset", "action_id": "breathing" },
+    { "title": "Talk it through", "action_id": "open_chat" }
+  ],
+  "why_it_might_help": "Breaking the app into one small piece can make tomorrow's deadline feel more doable.",
+  "gentle_question": "What one small piece would make you feel a bit lighter if you finished it next?"
+}
+
+EXAMPLE 2 - Without Additional context:
 {
   "summary": "It sounds like you may be carrying several demands at once.",
   "what_might_be_happening": "When too much competes for attention, starting can feel harder. Your mind might be trying to hold everything at once.",
@@ -591,8 +610,20 @@ function fallbackGuidance(ctx) {
     alternatives.push({ title: 'Talk it through', action_id: 'open_chat' });
   }
 
+  // Personalise fallback with freeText if available, so it doesn't feel generic
+  let summary = 'Thanks for checking in - it makes sense that this feels present right now.';
+  if (ctx?.freeText && ctx.freeText.length > 0) {
+    const snippet = ctx.freeText.slice(0, 80);
+    summary = `Thanks for sharing about "${snippet}${ctx.freeText.length > 80 ? '...' : ''}" - it makes sense that this feels heavy right now.`;
+  }
+
+  // If freeText mentions app/deadline, make whatMight more specific even in fallback
+  if (ctx?.freeText && /app|deadline|deliver|project|exam|assignment/i.test(ctx.freeText)) {
+    whatMight = `${whatMight} When a deadline like "${ctx.freeText.slice(0, 60)}" is close, it may make it harder to focus and start.`;
+  }
+
   return {
-    summary: 'Thanks for checking in - it makes sense that this feels present right now.',
+    summary,
     what_might_be_happening: whatMight,
     next_step: {
       title,
