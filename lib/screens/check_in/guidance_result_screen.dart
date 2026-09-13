@@ -95,14 +95,23 @@ class _GuidanceResultScreenState extends State<GuidanceResultScreen> {
         destination = const CbtThoughtReframeScreen();
         break;
       case GuidanceActionIds.smallPlan:
-        // Small plan is supported via Chat with make_plan mode or journal
-        destination = ChatTabScreen(checkInContext: widget.checkInContext);
+        // Small plan auto-starts chat in make_plan mode so it fires on its own
+        destination = ChatTabScreen(
+          checkInContext: widget.checkInContext,
+          initialMode: 'make_plan',
+          autoSend: true,
+        );
         break;
       case GuidanceActionIds.openLearn:
         destination = const LearnScreen();
         break;
       case GuidanceActionIds.openChat:
-        destination = ChatTabScreen(checkInContext: widget.checkInContext);
+        // Open chat auto-sends check-in context in listen mode
+        destination = ChatTabScreen(
+          checkInContext: widget.checkInContext,
+          initialMode: 'listen',
+          autoSend: true,
+        );
         break;
       case GuidanceActionIds.trustedPersonPrompt:
         // Show trusted person prompt then open emergency support for contacts
@@ -259,7 +268,7 @@ class _GuidanceResultScreenState extends State<GuidanceResultScreen> {
               _buildWhatMightCard(guidance),
               const SizedBox(height: 18),
               _buildNextStepCard(guidance),
-              if (guidance.alternatives.isNotEmpty) ...[
+              if (guidance.alternatives.isNotEmpty && !_hasOpenedActivity) ...[
                 const SizedBox(height: 22),
                 Text(
                   'Other ways to help',
@@ -281,9 +290,24 @@ class _GuidanceResultScreenState extends State<GuidanceResultScreen> {
               const SizedBox(height: 20),
               _buildSupportFooter(),
               const SizedBox(height: 12),
-              TextButton(
-                onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+              FilledButton(
+                onPressed: () {
+                  // ignore: avoid_print
+                  print('[GuidanceResult] Done for now tapped, popping to first route');
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.surfaceAlt,
+                  foregroundColor: AppTheme.textDark,
+                ),
                 child: const Text('I’m done for now'),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+                child: const Text('Back to Home'),
               ),
             ],
           ),
@@ -345,6 +369,12 @@ class _GuidanceResultScreenState extends State<GuidanceResultScreen> {
   }
 
   Widget _buildJourneyTrail() {
+    final bool step1Done = true; // checked in is always done here
+    final bool step2Done = _hasOpenedActivity;
+    final bool step2Active = !_hasOpenedActivity;
+    final bool step3Active = _hasOpenedActivity && !_hasSavedFeedback;
+    final bool step3Done = _hasSavedFeedback;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
@@ -356,33 +386,42 @@ class _GuidanceResultScreenState extends State<GuidanceResultScreen> {
       ),
       child: Row(
         children: [
-          const _JourneyStage(
+          _JourneyStage(
             icon: Icons.check_rounded,
             label: 'Checked in',
-            isComplete: true,
+            isComplete: step1Done,
           ),
           Expanded(
             child: Divider(
               indent: 8,
               endIndent: 8,
-              color: AppTheme.primary.withValues(alpha: 0.35),
+              color: (step1Done
+                      ? AppTheme.primary
+                      : AppTheme.surfaceBorder)
+                  .withValues(alpha: 0.35),
             ),
           ),
-          const _JourneyStage(
+          _JourneyStage(
             icon: Icons.near_me_rounded,
             label: 'One safe step',
-            isActive: true,
+            isComplete: step2Done,
+            isActive: step2Active,
           ),
           Expanded(
             child: Divider(
               indent: 8,
               endIndent: 8,
-              color: AppTheme.surfaceBorder.withValues(alpha: 0.9),
+              color: (step2Done
+                      ? AppTheme.primary
+                      : AppTheme.surfaceBorder)
+                  .withValues(alpha: 0.9),
             ),
           ),
-          const _JourneyStage(
+          _JourneyStage(
             icon: Icons.edit_note_rounded,
             label: 'Reflect',
+            isComplete: step3Done,
+            isActive: step3Active,
           ),
         ],
       ),
@@ -787,6 +826,8 @@ class _GuidanceResultScreenState extends State<GuidanceResultScreen> {
                 MaterialPageRoute(
                   builder: (_) => ChatTabScreen(
                     checkInContext: widget.checkInContext,
+                    initialMode: 'listen',
+                    autoSend: true,
                   ),
                 ),
               ),

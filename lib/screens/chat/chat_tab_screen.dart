@@ -29,11 +29,15 @@ class _ChatMessage {
 class ChatTabScreen extends StatefulWidget {
   final LearnArticle? learnArticle;
   final CheckInContext? checkInContext;
+  final String? initialMode;
+  final bool autoSend;
 
   const ChatTabScreen({
     super.key,
     this.learnArticle,
     this.checkInContext,
+    this.initialMode,
+    this.autoSend = false,
   });
 
   @override
@@ -63,6 +67,7 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
     super.initState();
     _activeLearnArticle = widget.learnArticle;
     _activeCheckIn = widget.checkInContext;
+    _activeMode = widget.initialMode;
     // Learn can open Chat in a lightweight route without the app shell's
     // provider tree (for example, in widget tests). Treat that as guest scope
     // rather than preventing the article-to-Chat handoff from rendering.
@@ -101,9 +106,26 @@ class _ChatTabScreenState extends State<ChatTabScreen> {
               'I checked in as ${ctx.feeling.displayLabel.toLowerCase()} and what is taking energy is ${ctx.energySource.displayLabel.toLowerCase()}. '
               'What would help most is ${ctx.need.displayLabel.toLowerCase()}.'
               '${ctx.hasFreeText ? ' ${ctx.boundedFreeText}' : ''}';
+          if (widget.initialMode != null) {
+            _activeMode = widget.initialMode;
+          } else if (ctx.need == CheckInNeed.figureOut) {
+            _activeMode = 'make_plan';
+          }
         }
       });
       _scrollToBottom();
+
+      if (widget.autoSend &&
+          widget.checkInContext != null &&
+          _inputController.text.trim().isNotEmpty) {
+        Future.delayed(const Duration(milliseconds: 400), () {
+          if (mounted && !_isSending) {
+            // ignore: avoid_print
+            print('[Chat] Auto-sending check-in context for ${widget.initialMode}');
+            _sendMessage();
+          }
+        });
+      }
     } catch (_) {
       // Local history is an enhancement; a damaged/unavailable preference
       // store must never stop a user from starting a new Chat.
