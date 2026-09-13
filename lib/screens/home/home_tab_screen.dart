@@ -10,10 +10,7 @@ import '../check_in/contextual_check_in_screen.dart';
 import '../emergency_support_screen.dart';
 import '../journal/journal_screen.dart';
 import '../learn/learn_screen.dart';
-<<<<<<< HEAD
-=======
 import '../programmes/programme_list_screen.dart';
->>>>>>> f364cfe (feat: simulated structured-programme demo — no payment)
 import '../settings/settings_screen.dart';
 import '../wellness/wellness_assessment_screen.dart';
 
