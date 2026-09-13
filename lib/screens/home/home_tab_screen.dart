@@ -10,6 +10,10 @@ import '../check_in/contextual_check_in_screen.dart';
 import '../emergency_support_screen.dart';
 import '../journal/journal_screen.dart';
 import '../learn/learn_screen.dart';
+<<<<<<< HEAD
+=======
+import '../programmes/programme_list_screen.dart';
+>>>>>>> f364cfe (feat: simulated structured-programme demo — no payment)
 import '../settings/settings_screen.dart';
 import '../wellness/wellness_assessment_screen.dart';
 
@@ -151,6 +155,8 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
                     _buildWellnessCard(onSurface),
                     const SizedBox(height: 14),
                     _buildLearnCard(),
+                    const SizedBox(height: 14),
+                    _buildProgrammesDemoCard(),
                     const SizedBox(height: 26),
                     Text(
                       'Quick starts',
@@ -485,6 +491,104 @@ class _HomeTabScreenState extends State<HomeTabScreen> {
             color: AppTheme.textLight,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildProgrammesDemoCard() {
+    return InkWell(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const ProgrammeListScreen()),
+      ),
+      borderRadius: BorderRadius.circular(23),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(23),
+          border: Border.all(
+            color: const Color(0xFF6B7BFF).withValues(alpha: 0.30),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF6B7BFF).withValues(alpha: 0.08),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: const Color(0xFF6B7BFF).withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: const Icon(
+                Icons.auto_awesome_rounded,
+                color: Color(0xFF6B7BFF),
+              ),
+            ),
+            const SizedBox(width: 13),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'PROGRAMMES',
+                        style: TextStyle(
+                          color: Color(0xFF6B7BFF),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'DEMO',
+                        style: TextStyle(
+                          color: Color(0xFF856404),
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    'Structured programmes — demo',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      height: 1.25,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    '7-Day Overthinking Reset — illustrative future paid depth. No payment, no bank details.',
+                    style: TextStyle(
+                      color: AppTheme.textLight,
+                      fontSize: 12,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: Color(0xFF6B7BFF),
+            ),
+          ],
+        ),
       ),
     );
   }

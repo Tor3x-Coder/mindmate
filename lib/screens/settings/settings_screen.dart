@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../services/app_settings_controller.dart';
+import '../../services/demo_entitlement_service.dart';
 import '../../services/reminder_service.dart';
 import '../../utils/app_theme.dart';
 import 'delete_account_screen.dart';
@@ -190,6 +191,58 @@ class SettingsScreen extends StatelessWidget {
                             settings.updatePreferredSessionMinutes(minutes),
                       );
                     }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            const _SectionTitle(title: 'Demo programmes'),
+            _SettingsCard(
+              child: Column(
+                children: [
+                  const Text(
+                    'Structured programmes demo is local-only. No payment provider is used, no bank details are requested. You can clear demo access here.',
+                    style: TextStyle(
+                      color: AppTheme.textLight,
+                      fontSize: 12,
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _ActionSetting(
+                    icon: Icons.restart_alt_rounded,
+                    title: 'Clear demo programme access',
+                    subtitle:
+                        'Removes local demo unlocks and progress. No payment affected — none was processed.',
+                    onTap: () async {
+                      final confirmed = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text('Clear demo access?'),
+                          content: const Text(
+                            'This will remove all locally stored demo programme unlocks and progress. No payment is involved — demo access was free and local only.',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(false),
+                              child: const Text('Cancel'),
+                            ),
+                            FilledButton(
+                              onPressed: () => Navigator.of(ctx).pop(true),
+                              child: const Text('Clear'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed != true) return;
+                      await DemoEntitlementService().clearAll();
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Demo programme access cleared.'),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
